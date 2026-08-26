@@ -298,90 +298,12 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           )}
 
           {/* ===============================================================
-              RIGHT HAND ERGONOMIC ACTION BUTTONS (Dash, Reload, Grenade, Shop)
+              RIGHT HAND ERGONOMIC COMBAT CLUSTER (Weapon Belt + Skills + Dash)
           ================================================================ */}
-          <div className="absolute right-3 bottom-3 pointer-events-auto flex flex-col items-end gap-2 z-40">
-            <div className="flex items-center gap-2">
-              {/* Quick Reload Button */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
-                onClick={onReload}
-                className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
-                  isReloading
-                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
-                    : 'bg-neutral-950/85 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
-                }`}
-                title="Nạp đạn (R)"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
-                <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
-              </button>
-
-              {/* Quick Grenade Button */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
-                onClick={onThrowGrenade}
-                disabled={grenadesLeft <= 0}
-                className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
-                  grenadesLeft > 0
-                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
-                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
-                }`}
-                title="Ném lựu đạn nổ diện rộng (G)"
-              >
-                <Bomb className="w-3.5 h-3.5" />
-                <span className="font-mono">{grenadesLeft}</span>
-              </button>
-
-              {/* Quick Shop Modal Button */}
-              {onOpenShop && (
-                <button
-                  onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
-                  onClick={onOpenShop}
-                  className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
-                    canAffordShop
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/30'
-                      : 'bg-neutral-950/85 border-neutral-700 text-amber-400 hover:bg-neutral-900'
-                  }`}
-                  title="Mở Cửa Hàng Nâng Cấp (B)"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>SHOP</span>
-                  {canAffordShop && (
-                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1" />
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Prominent Large Dash Button */}
-            <button
-              onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
-              onClick={onDash}
-              disabled={!canDash}
-              className={`w-full py-2.5 px-4 rounded-xl border flex items-center justify-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs backdrop-blur-md relative overflow-hidden ${
-                canDash
-                  ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
-                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
-              }`}
-              title="Lướt né đòn (Space)"
-            >
-              <Zap className={`w-4 h-4 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
-              <span>LƯỚT [SPACE]</span>
-
-              {/* Micro Stamina Progress */}
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-300 transition-all"
-                style={{ width: `${staminaPct}%` }}
-              />
-            </button>
-          </div>
-
-          {/* ===============================================================
-              CENTER BOTTOM: 1-TOUCH COMPACT WEAPON BELT
-          ================================================================ */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-auto z-40 max-w-[62vw] sm:max-w-none">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-2xl overflow-x-auto no-scrollbar">
+          <div className="absolute right-2.5 bottom-2.5 pointer-events-auto flex flex-col items-end gap-1.5 z-40 max-w-[260px] sm:max-w-none">
+            
+            {/* 1-Touch Compact Weapon Belt */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-lg overflow-x-auto max-w-[250px] no-scrollbar">
               {unlockedWeaponList.map((wep) => {
                 const isSelected = wep.id === currentWeaponId;
                 const magPct = wep.magSize > 0 ? (wep.currentMag / wep.magSize) * 100 : 100;
@@ -398,14 +320,14 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                       soundManager.playEmptyClick();
                       if (onSelectWeapon) onSelectWeapon(wep.id);
                     }}
-                    className={`relative p-1 sm:p-1.5 rounded-lg flex flex-col items-center min-w-[42px] sm:min-w-[50px] transition-all active:scale-90 ${
+                    className={`relative p-1 rounded-lg flex flex-col items-center min-w-[40px] sm:min-w-[48px] transition-all active:scale-90 ${
                       isSelected
                         ? 'bg-amber-500/30 border border-amber-400 text-white shadow-md'
                         : 'bg-neutral-900/80 border border-neutral-800/80 text-neutral-400 hover:border-neutral-700'
                     }`}
                   >
-                    <span className="text-sm sm:text-base leading-none">{wep.icon}</span>
-                    <span className="text-[8px] sm:text-[9px] font-bold font-mono truncate max-w-[38px] mt-0.5" style={{ color: wep.color }}>
+                    <span className="text-sm leading-none">{wep.icon}</span>
+                    <span className="text-[7.5px] sm:text-[8.5px] font-bold font-mono truncate max-w-[36px] mt-0.5" style={{ color: wep.color }}>
                       {wep.nameVi.split(' ')[0]}
                     </span>
 
@@ -418,13 +340,89 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                     </div>
 
                     {/* Level Badge */}
-                    <div className="absolute -top-1 -right-1 px-0.5 rounded bg-neutral-950 border border-amber-500/50 text-[7px] font-bold text-amber-300 font-mono leading-tight">
+                    <div className="absolute -top-1 -right-1 px-0.5 rounded bg-neutral-950 border border-amber-500/50 text-[6.5px] font-bold text-amber-300 font-mono leading-tight">
                       v{wep.level}
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            {/* Tactical Actions: Reload, Grenade, Shop */}
+            <div className="flex items-center gap-1.5 w-full justify-end">
+              {/* Quick Reload Button */}
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
+                onClick={onReload}
+                className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] backdrop-blur-md ${
+                  isReloading
+                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
+                    : 'bg-neutral-950/85 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
+                }`}
+                title="Nạp đạn (R)"
+              >
+                <RefreshCw className={`w-3 h-3 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
+                <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
+              </button>
+
+              {/* Quick Grenade Button */}
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
+                onClick={onThrowGrenade}
+                disabled={grenadesLeft <= 0}
+                className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] backdrop-blur-md ${
+                  grenadesLeft > 0
+                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+                }`}
+                title="Ném lựu đạn nổ diện rộng (G)"
+              >
+                <Bomb className="w-3 h-3" />
+                <span className="font-mono">{grenadesLeft}</span>
+              </button>
+
+              {/* Quick Shop Modal Button */}
+              {onOpenShop && (
+                <button
+                  onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
+                  onClick={onOpenShop}
+                  className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] backdrop-blur-md ${
+                    canAffordShop
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/30'
+                      : 'bg-neutral-950/85 border-neutral-700 text-amber-400 hover:bg-neutral-900'
+                  }`}
+                  title="Mở Cửa Hàng Nâng Cấp (B)"
+                >
+                  <ShoppingCart className="w-3 h-3" />
+                  <span>SHOP</span>
+                  {canAffordShop && (
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Prominent Dash Button */}
+            <button
+              onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
+              onClick={onDash}
+              disabled={!canDash}
+              className={`w-full py-2 px-3 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md relative overflow-hidden ${
+                canDash
+                  ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
+                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+              }`}
+              title="Lướt né đòn (Space)"
+            >
+              <Zap className={`w-3.5 h-3.5 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
+              <span>LƯỚT [SPACE]</span>
+
+              {/* Micro Stamina Progress */}
+              <div 
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-300 transition-all"
+                style={{ width: `${staminaPct}%` }}
+              />
+            </button>
           </div>
         </>
       )}
