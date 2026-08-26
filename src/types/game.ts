@@ -40,7 +40,10 @@ export type ZombieType =
   | 'spitter' 
   | 'bomber' 
   | 'boss_mutant'
-  | 'boss_abomination';
+  | 'boss_abomination'
+  | 'boss_cyber_behemoth'
+  | 'boss_inferno_titan'
+  | 'boss_void_reaper';
 
 export interface Zombie {
   id: string;
@@ -117,6 +120,8 @@ export type PowerUpType =
   | 'gold_coin'
   | 'gold_ingot'
   | 'coin_bag'
+  | 'diamond_gem'
+  | 'boss_chest'
   | 'medkit' 
   | 'ammo' 
   | 'nuke' 

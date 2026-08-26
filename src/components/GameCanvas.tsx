@@ -100,6 +100,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     reloadDuration: number;
     wave: number;
     zombiesToSpawn: number;
+    bossesToSpawn: number;
+    nextBossSpawnTime: number;
     lastSpawnTime: number;
     mousePos: { x: number; y: number };
     isMouseDown: boolean;
@@ -129,6 +131,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     reloadDuration: 0,
     wave,
     zombiesToSpawn: 0,
+    bossesToSpawn: 0,
+    nextBossSpawnTime: 0,
     lastSpawnTime: 0,
     mousePos: { x: 0, y: 0 },
     isMouseDown: false,
@@ -415,13 +419,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const baseCount = Math.floor((12 + waveNum * 6) * diffMult);
     
     state.zombiesToSpawn = baseCount;
+    // Every round adds 1 boss (Wave 1 = 1 boss, Wave 2 = 2 bosses, Wave 3 = 3 bosses, etc.)
+    state.bossesToSpawn = waveNum;
+    state.nextBossSpawnTime = performance.now() + 1500;
     state.isWaveEnding = false;
-    setTotalZombiesInWave(baseCount);
-    setZombiesRemaining(baseCount);
+    setTotalZombiesInWave(baseCount + state.bossesToSpawn);
+    setZombiesRemaining(baseCount + state.bossesToSpawn);
 
-    if (waveNum % 5 === 0) {
-      soundManager.playBossAlarm();
-    }
+    soundManager.playBossAlarm();
+
+    // Visual wave banner
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x: state.player.x,
+      y: state.player.y - 45,
+      text: `⚠️ VÒNG ${waveNum}: CÓ ${waveNum} TRÙM TỬ THẦN!`,
+      color: '#ef4444',
+      alpha: 1,
+      life: 90,
+      isCrit: true
+    });
   };
 
   // Keyboard Listeners
@@ -832,8 +849,82 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      // 4. SPAWN ZOMBIE LOGIC
-      if (state.zombiesToSpawn > 0 && currentTime - state.lastSpawnTime > (mode === 'endless' ? 450 : 850)) {
+      // 4. SPAWN BOSS LOGIC (+1 Boss per wave: Wave 1 = 1 boss, Wave 2 = 2 bosses, etc.)
+      if (state.bossesToSpawn > 0 && currentTime >= state.nextBossSpawnTime) {
+        state.bossesToSpawn -= 1;
+        state.nextBossSpawnTime = currentTime + 8500; // Stagger next boss spawn
+
+        // Choose boss type based on current wave progression
+        let chosenBossType: keyof typeof ZOMBIE_TEMPLATES = 'boss_mutant';
+        if (state.wave === 1) {
+          chosenBossType = 'boss_mutant';
+        } else if (state.wave === 2) {
+          chosenBossType = state.bossesToSpawn === 0 ? 'boss_abomination' : 'boss_mutant';
+        } else if (state.wave === 3) {
+          const w3Pool: (keyof typeof ZOMBIE_TEMPLATES)[] = ['boss_mutant', 'boss_abomination', 'boss_cyber_behemoth'];
+          chosenBossType = w3Pool[Math.floor(Math.random() * w3Pool.length)];
+        } else if (state.wave === 4) {
+          const w4Pool: (keyof typeof ZOMBIE_TEMPLATES)[] = ['boss_abomination', 'boss_cyber_behemoth', 'boss_inferno_titan'];
+          chosenBossType = w4Pool[Math.floor(Math.random() * w4Pool.length)];
+        } else {
+          const w5Pool: (keyof typeof ZOMBIE_TEMPLATES)[] = ['boss_cyber_behemoth', 'boss_inferno_titan', 'boss_void_reaper', 'boss_mutant', 'boss_abomination'];
+          chosenBossType = w5Pool[Math.floor(Math.random() * w5Pool.length)];
+        }
+
+        const template = ZOMBIE_TEMPLATES[chosenBossType];
+        const spawnSide = Math.floor(Math.random() * 4);
+        let spawnX = 0;
+        let spawnY = 0;
+        if (spawnSide === 0) { spawnX = Math.random() * MAP_SIZE.width; spawnY = 50; }
+        else if (spawnSide === 1) { spawnX = MAP_SIZE.width - 50; spawnY = Math.random() * MAP_SIZE.height; }
+        else if (spawnSide === 2) { spawnX = Math.random() * MAP_SIZE.width; spawnY = MAP_SIZE.height - 50; }
+        else { spawnX = 50; spawnY = Math.random() * MAP_SIZE.height; }
+
+        const hpScale = 1 + (state.wave - 1) * 0.22;
+        const newBoss: Zombie = {
+          id: `boss_${Math.random().toString()}`,
+          type: chosenBossType,
+          x: spawnX,
+          y: spawnY,
+          radius: template.radius,
+          hp: Math.round(template.hp * hpScale),
+          maxHp: Math.round(template.hp * hpScale),
+          speed: template.speed,
+          baseSpeed: template.speed,
+          damage: template.damage,
+          scoreValue: template.score,
+          goldValue: template.gold,
+          color: template.color,
+          angle: 0,
+          animationFrame: Math.random() * 100,
+          frozenTimer: 0,
+          burnTimer: 0,
+          poisonTimer: 0,
+          attackCooldown: 0,
+          isBoss: true,
+          bossSpecialState: 'idle',
+          bossAttackTimer: 3000
+        };
+
+        state.zombies.push(newBoss);
+        soundManager.playBossAlarm();
+        state.screenShake = 16;
+        setBossHp({ current: newBoss.hp, max: newBoss.maxHp, name: template.nameVi });
+
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: spawnX,
+          y: spawnY - 30,
+          text: `⚠️ CẢNH BÁO: ${template.nameVi} XUẤT HIỆN!`,
+          color: '#f59e0b',
+          alpha: 1,
+          life: 90,
+          isCrit: true
+        });
+      }
+
+      // 4b. SPAWN REGULAR ZOMBIE LOGIC
+      if (state.zombiesToSpawn > 0 && currentTime - state.lastSpawnTime > (mode === 'endless' ? 450 : 800)) {
         state.lastSpawnTime = currentTime;
         state.zombiesToSpawn -= 1;
 
@@ -841,15 +932,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         let chosenType: keyof typeof ZOMBIE_TEMPLATES = 'walker';
         const rand = Math.random();
 
-        if (state.wave >= 10 && rand < 0.08) chosenType = 'boss_abomination';
-        else if (state.wave >= 5 && state.zombiesToSpawn === 0 && !state.zombies.some(z => z.isBoss)) chosenType = 'boss_mutant';
-        else if (state.wave >= 4 && rand < 0.22) chosenType = 'bomber';
+        if (state.wave >= 4 && rand < 0.22) chosenType = 'bomber';
         else if (state.wave >= 3 && rand < 0.28) chosenType = 'spitter';
         else if (state.wave >= 2 && rand < 0.35) chosenType = 'runner';
         else if (state.wave >= 3 && rand < 0.20) chosenType = 'tank';
 
         const template = ZOMBIE_TEMPLATES[chosenType];
-        const isBoss = chosenType.startsWith('boss');
 
         // Spawn on map perimeter away from player
         const spawnSide = Math.floor(Math.random() * 4);
@@ -881,16 +969,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           burnTimer: 0,
           poisonTimer: 0,
           attackCooldown: 0,
-          isBoss,
-          bossSpecialState: isBoss ? 'idle' : undefined,
-          bossAttackTimer: isBoss ? 3000 : undefined
+          isBoss: false
         };
 
         state.zombies.push(newZombie);
-
-        if (isBoss) {
-          setBossHp({ current: newZombie.hp, max: newZombie.maxHp, name: template.nameVi });
-        }
       }
 
       // 5. UPDATE TURRETS
@@ -1245,12 +1327,29 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           soundManager.playCoinClink();
 
           if (z.isBoss) {
-            // Boss spawns massive scatter of gold coins + ingots + coin bag!
-            const coinCount = 6;
-            const coinVal = Math.max(15, Math.round((goldGain * 0.4) / coinCount));
+            // Screen shake and epic celebration on boss death
+            state.screenShake = 22;
+            soundManager.playExplosion();
+            soundManager.playPowerUp();
+
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: z.x,
+              y: z.y - 45,
+              text: `💥 TIÊU DIỆT TRÙM! RƠI CƠN MƯA VÀNG & RƯƠNG TRÙM!`,
+              color: '#facc15',
+              alpha: 1,
+              life: 90,
+              isCrit: true
+            });
+
+            // 1. MASSIVE GOLD SHOWER (Coins, Ingots, Sacks, Diamond Gems)
+            // 14 bouncing golden coins
+            const coinCount = 14;
+            const coinVal = Math.max(25, Math.round((goldGain * 0.35) / coinCount));
             for (let c = 0; c < coinCount; c++) {
-              const scatterAngle = (c / coinCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-              const scatterSpeed = 2 + Math.random() * 3.5;
+              const scatterAngle = (c / coinCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+              const scatterSpeed = 2.5 + Math.random() * 4.5;
               state.drops.push({
                 id: Math.random().toString(),
                 x: z.x,
@@ -1262,43 +1361,136 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 createdAt: currentTime,
                 vx: Math.cos(scatterAngle) * scatterSpeed,
                 vy: Math.sin(scatterAngle) * scatterSpeed,
-                bounceZ: 25 + Math.random() * 15,
-                vz: 3 + Math.random() * 2
+                bounceZ: 30 + Math.random() * 20,
+                vz: 3.5 + Math.random() * 2.5
               });
             }
-            // 2 heavy gold ingots
-            for (let ing = 0; ing < 2; ing++) {
-              const ingAngle = Math.random() * Math.PI * 2;
+
+            // 5 Heavy Gold Ingots
+            for (let ing = 0; ing < 5; ing++) {
+              const ingAngle = (ing / 5) * Math.PI * 2 + Math.random() * 0.4;
               state.drops.push({
                 id: Math.random().toString(),
                 x: z.x,
                 y: z.y,
                 type: 'gold_ingot',
-                value: Math.round(goldGain * 0.2),
+                value: Math.round((goldGain * 0.25) / 5) + 50,
                 radius: 14,
                 pulse: Math.random() * Math.PI * 2,
                 createdAt: currentTime,
-                vx: Math.cos(ingAngle) * 2.5,
-                vy: Math.sin(ingAngle) * 2.5,
-                bounceZ: 30,
+                vx: Math.cos(ingAngle) * 3,
+                vy: Math.sin(ingAngle) * 3,
+                bounceZ: 35 + Math.random() * 15,
+                vz: 4.2
+              });
+            }
+
+            // 2 King's Sacks of Gold
+            for (let bg = 0; bg < 2; bg++) {
+              const bgAngle = (bg * Math.PI) + (Math.random() - 0.5);
+              state.drops.push({
+                id: Math.random().toString(),
+                x: z.x,
+                y: z.y,
+                type: 'coin_bag',
+                value: Math.round((goldGain * 0.2) / 2) + 120,
+                radius: 16,
+                pulse: 0,
+                createdAt: currentTime,
+                vx: Math.cos(bgAngle) * 2.2,
+                vy: Math.sin(bgAngle) * 2.2,
+                bounceZ: 40,
+                vz: 4.5
+              });
+            }
+
+            // 2 Sparkling Blue Diamonds (Kim Cương Trùm)
+            for (let dm = 0; dm < 2; dm++) {
+              const dmAngle = (dm * Math.PI) + Math.PI / 2 + (Math.random() - 0.5);
+              state.drops.push({
+                id: Math.random().toString(),
+                x: z.x,
+                y: z.y,
+                type: 'diamond_gem',
+                value: 350 + state.wave * 50,
+                radius: 15,
+                pulse: Math.random() * Math.PI * 2,
+                createdAt: currentTime,
+                vx: Math.cos(dmAngle) * 2.8,
+                vy: Math.sin(dmAngle) * 2.8,
+                bounceZ: 38,
                 vz: 4
               });
             }
-            // 1 huge sack of gold
+
+            // 2. GUARANTEED TACTICAL POWERUPS & BOSS CHEST
+            // A. Legendary Boss Chest
             state.drops.push({
               id: Math.random().toString(),
               x: z.x,
               y: z.y,
-              type: 'coin_bag',
-              value: Math.round(goldGain * 0.2),
-              radius: 16,
+              type: 'boss_chest',
+              value: 0,
+              radius: 18,
               pulse: 0,
               createdAt: currentTime,
               vx: 0,
-              vy: 0,
-              bounceZ: 35,
-              vz: 4.5
+              vy: -1.2,
+              bounceZ: 45,
+              vz: 5
             });
+
+            // B. Guaranteed Medkit (Hồi máu)
+            state.drops.push({
+              id: Math.random().toString(),
+              x: z.x,
+              y: z.y,
+              type: 'medkit',
+              value: 0,
+              radius: 15,
+              pulse: 0,
+              createdAt: currentTime,
+              vx: -2.5,
+              vy: 1.5,
+              bounceZ: 30,
+              vz: 3.5
+            });
+
+            // C. Guaranteed Ammo (Đạn dược)
+            state.drops.push({
+              id: Math.random().toString(),
+              x: z.x,
+              y: z.y,
+              type: 'ammo',
+              value: 0,
+              radius: 15,
+              pulse: 0,
+              createdAt: currentTime,
+              vx: 2.5,
+              vy: 1.5,
+              bounceZ: 30,
+              vz: 3.5
+            });
+
+            // D. Random Super Buff (Nuke, Double Damage, Shield, Turret, Freeze, Speed)
+            const superBuffs: PowerUpType[] = ['nuke', 'double_damage', 'shield', 'turret', 'freeze', 'speed_boost'];
+            const chosenBuff = superBuffs[Math.floor(Math.random() * superBuffs.length)];
+            state.drops.push({
+              id: Math.random().toString(),
+              x: z.x,
+              y: z.y,
+              type: chosenBuff,
+              value: 0,
+              radius: 15,
+              pulse: 0,
+              createdAt: currentTime,
+              vx: 0,
+              vy: 2.5,
+              bounceZ: 32,
+              vz: 3.8
+            });
+
+            setBossHp(null);
           } else if (z.type === 'tank' || z.type === 'spitter' || z.type === 'bomber') {
             // Elites / Tanks drop a heavy gold ingot or 2 gold coins
             if (goldGain >= 30) {
@@ -1338,6 +1530,27 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 vz: 3
               });
             }
+
+            // Tactical Drop Chance for elites (25%)
+            if (Math.random() < 0.25) {
+              const types: PowerUpType[] = ['medkit', 'ammo', 'double_damage', 'speed_boost', 'freeze', 'shield', 'turret'];
+              const chosenDrop = types[Math.floor(Math.random() * types.length)];
+              const pAngle = Math.random() * Math.PI * 2;
+              state.drops.push({
+                id: Math.random().toString(),
+                x: z.x,
+                y: z.y,
+                type: chosenDrop,
+                value: 0,
+                radius: 15,
+                pulse: 0,
+                createdAt: currentTime,
+                vx: Math.cos(pAngle) * 2,
+                vy: Math.sin(pAngle) * 2,
+                bounceZ: 24,
+                vz: 3.5
+              });
+            }
           } else {
             // Standard Walkers / Runners drop a gleaming gold coin!
             const popAngle = Math.random() * Math.PI * 2;
@@ -1356,28 +1569,27 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               bounceZ: 18 + Math.random() * 8,
               vz: 2.8
             });
-          }
 
-          // Bonus Tactical Powerups chance (18% or boss guaranteed nuke)
-          const dropRoll = Math.random();
-          if (dropRoll < 0.18 || z.isBoss) {
-            const types: PowerUpType[] = ['medkit', 'ammo', 'double_damage', 'speed_boost', 'freeze', 'shield', 'turret'];
-            const chosenDrop = z.isBoss ? 'nuke' : types[Math.floor(Math.random() * types.length)];
-            const pAngle = Math.random() * Math.PI * 2;
-            state.drops.push({
-              id: Math.random().toString(),
-              x: z.x,
-              y: z.y,
-              type: chosenDrop,
-              value: 0,
-              radius: 15,
-              pulse: 0,
-              createdAt: currentTime,
-              vx: Math.cos(pAngle) * 2,
-              vy: Math.sin(pAngle) * 2,
-              bounceZ: 24,
-              vz: 3.5
-            });
+            // Normal powerup drop chance (12%)
+            if (Math.random() < 0.12) {
+              const types: PowerUpType[] = ['medkit', 'ammo', 'double_damage', 'speed_boost', 'freeze', 'shield', 'turret'];
+              const chosenDrop = types[Math.floor(Math.random() * types.length)];
+              const pAngle = Math.random() * Math.PI * 2;
+              state.drops.push({
+                id: Math.random().toString(),
+                x: z.x,
+                y: z.y,
+                type: chosenDrop,
+                value: 0,
+                radius: 15,
+                pulse: 0,
+                createdAt: currentTime,
+                vx: Math.cos(pAngle) * 2,
+                vy: Math.sin(pAngle) * 2,
+                bounceZ: 24,
+                vz: 3.5
+              });
+            }
           }
 
           // Kamikaze explode
@@ -1493,8 +1705,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         // Pickup item when player touches it
         if (dist < p.radius + item.radius) {
-          if (item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag') {
-            // GOLD PICKUP
+          if (item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag' || item.type === 'diamond_gem') {
+            // GOLD & GEM PICKUP
             soundManager.playGoldPickup();
             p.gold += item.value;
             p.score += item.value * 2;
@@ -1507,17 +1719,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             }));
 
             // Sparkle particles burst
-            for (let sp = 0; sp < 6; sp++) {
+            const isDiamond = item.type === 'diamond_gem';
+            const sparkleColor = isDiamond ? '#38bdf8' : '#facc15';
+            for (let sp = 0; sp < (isDiamond ? 10 : 6); sp++) {
               state.particles.push({
                 x: p.x,
                 y: p.y,
-                vx: (Math.random() - 0.5) * 5,
-                vy: (Math.random() - 0.5) * 5 - 2,
-                radius: 2.5,
-                color: '#facc15',
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6 - 2,
+                radius: isDiamond ? 3 : 2.5,
+                color: sparkleColor,
                 alpha: 1,
                 life: 0,
-                maxLife: 16,
+                maxLife: 18,
                 decay: 0.06,
                 shape: 'spark'
               });
@@ -1527,11 +1741,67 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               id: Math.random().toString(),
               x: p.x + (Math.random() - 0.5) * 20,
               y: p.y - 25,
-              text: `+${item.value} VÀNG`,
+              text: isDiamond ? `💎 +${item.value} KIM CƯƠNG VÀNG!` : `+${item.value} VÀNG`,
+              color: isDiamond ? '#38bdf8' : '#facc15',
+              alpha: 1,
+              life: 45,
+              isCrit: item.type === 'coin_bag' || item.type === 'gold_ingot' || isDiamond
+            });
+          } else if (item.type === 'boss_chest') {
+            // EPIC BOSS CHEST PICKUP
+            soundManager.playPowerUp();
+            soundManager.playGoldPickup();
+
+            // Fully restore HP and Armor
+            p.hp = p.maxHp;
+            p.armor = p.maxArmor;
+            p.grenadeCount = Math.min(6, (p.grenadeCount || 0) + 3);
+            p.gold += 500;
+            p.score += 2500;
+
+            // Refill all reserve ammo
+            (Object.values(state.weapons) as Weapon[]).forEach(w => {
+              if (w.reserveAmmo !== -1) w.reserveAmmo = w.magSize * 6;
+            });
+
+            setPlayer(prev => ({
+              ...prev,
+              hp: p.hp,
+              armor: p.armor,
+              grenadeCount: p.grenadeCount,
+              gold: p.gold,
+              score: p.score
+            }));
+            setWeapons(prev => ({ ...prev }));
+
+            // Massive colorful victory fireworks
+            for (let sp = 0; sp < 16; sp++) {
+              const fAngle = (sp / 16) * Math.PI * 2;
+              const fSpeed = 3 + Math.random() * 4;
+              state.particles.push({
+                x: p.x,
+                y: p.y,
+                vx: Math.cos(fAngle) * fSpeed,
+                vy: Math.sin(fAngle) * fSpeed,
+                radius: 3.5,
+                color: ['#facc15', '#ec4899', '#38bdf8', '#4ade80', '#a855f7'][sp % 5],
+                alpha: 1,
+                life: 0,
+                maxLife: 25,
+                decay: 0.04,
+                shape: 'spark'
+              });
+            }
+
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: p.x,
+              y: p.y - 35,
+              text: '👑 RƯƠNG TRÙM: HỒI ĐẦY MÁU/GIÁP, +3 LỰU ĐẠN & +500 VÀNG!',
               color: '#facc15',
               alpha: 1,
-              life: 38,
-              isCrit: item.type === 'coin_bag' || item.type === 'gold_ingot'
+              life: 80,
+              isCrit: true
             });
           } else {
             // TACTICAL POWERUPS

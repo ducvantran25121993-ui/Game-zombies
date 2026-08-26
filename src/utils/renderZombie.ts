@@ -76,10 +76,26 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     fleshColor = '#582c20';        // Feverish burnt orange
     torsoClothColor = '#3b1c11';
     eyeGlowColor = '#fb923c';
-  } else if (z.type === 'boss_mutant' || z.type === 'boss_abomination') {
-    fleshColor = '#381616';        // Bio-engineered nightmare flesh
+  } else if (z.type === 'boss_mutant') {
+    fleshColor = '#381616';        // Bio-engineered nightmare crimson flesh
     torsoClothColor = '#0f172a';
-    eyeGlowColor = '#dc2626';
+    eyeGlowColor = '#ef4444';
+  } else if (z.type === 'boss_abomination') {
+    fleshColor = '#2e1065';        // Void purple decay
+    torsoClothColor = '#022c22';
+    eyeGlowColor = '#a855f7';
+  } else if (z.type === 'boss_cyber_behemoth') {
+    fleshColor = '#082f49';        // Cybernetic steel titanium
+    torsoClothColor = '#0f172a';
+    eyeGlowColor = '#06b6d4';      // High voltage cyan
+  } else if (z.type === 'boss_inferno_titan') {
+    fleshColor = '#431407';        // Burning molten charcoal & magma
+    torsoClothColor = '#1c1917';
+    eyeGlowColor = '#f97316';      // Inferno blaze
+  } else if (z.type === 'boss_void_reaper') {
+    fleshColor = '#1e1b4b';        // Cosmic dark matter
+    torsoClothColor = '#09090b';
+    eyeGlowColor = '#818cf8';      // Void purple
   }
 
   if (isFrozen) {

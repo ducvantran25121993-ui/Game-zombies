@@ -234,22 +234,52 @@ export const ZOMBIE_TEMPLATES: Record<ZombieType, {
   boss_mutant: {
     nameVi: 'TRÙM ĐỘT BIẾN HUỶ DIỆT',
     radius: 46,
-    hp: 2200,
+    hp: 1800,
     speed: 1.4,
-    damage: 45,
-    score: 5000,
-    gold: 800,
+    damage: 42,
+    score: 4000,
+    gold: 850,
     color: '#e11d48'
   },
   boss_abomination: {
     nameVi: 'CHÚA TỂ HỖN MANG',
-    radius: 55,
-    hp: 4500,
+    radius: 54,
+    hp: 3200,
+    speed: 1.45,
+    damage: 52,
+    score: 7500,
+    gold: 1350,
+    color: '#9333ea'
+  },
+  boss_cyber_behemoth: {
+    nameVi: 'QUÁI VẬT CYBER MECHA',
+    radius: 52,
+    hp: 4800,
     speed: 1.5,
     damage: 60,
-    score: 10000,
-    gold: 1500,
-    color: '#9333ea'
+    score: 11000,
+    gold: 1850,
+    color: '#06b6d4'
+  },
+  boss_inferno_titan: {
+    nameVi: 'BẠO CHÚA LỬA ĐỊA NGỤC',
+    radius: 58,
+    hp: 6500,
+    speed: 1.55,
+    damage: 70,
+    score: 16000,
+    gold: 2400,
+    color: '#f97316'
+  },
+  boss_void_reaper: {
+    nameVi: 'TỬ THẦN HƯ VÔ TỐI THƯỢNG',
+    radius: 62,
+    hp: 9000,
+    speed: 1.65,
+    damage: 85,
+    score: 25000,
+    gold: 3500,
+    color: '#6366f1'
   }
 };
 

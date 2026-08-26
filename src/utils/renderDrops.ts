@@ -36,6 +36,10 @@ export function renderDrops({ ctx, drops, time }: RenderDropsParams) {
       renderGoldIngot(ctx, item, time);
     } else if (item.type === 'coin_bag') {
       renderGoldCoinBag(ctx, item, time);
+    } else if (item.type === 'diamond_gem') {
+      renderDiamondGem(ctx, item, time);
+    } else if (item.type === 'boss_chest') {
+      renderBossChest(ctx, item, time);
     } else {
       renderTacticalPowerUp(ctx, item, time);
     }
@@ -293,4 +297,122 @@ function renderTacticalPowerUp(ctx: CanvasRenderingContext2D, item: DropItem, ti
   else if (item.type === 'turret') icon = '🤖';
 
   ctx.fillText(icon, 0, 1);
+}
+
+// ----------------------------------------------------
+// 5. RENDER SHINING DIAMOND / BOSS GEM
+// ----------------------------------------------------
+function renderDiamondGem(ctx: CanvasRenderingContext2D, item: DropItem, time: number) {
+  const r = item.radius * 1.1;
+
+  // Blue / Cyan Diamond Halo
+  const halo = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 2.2);
+  halo.addColorStop(0, 'rgba(56, 189, 248, 0.7)');
+  halo.addColorStop(0.5, 'rgba(14, 165, 233, 0.25)');
+  halo.addColorStop(1, 'rgba(14, 165, 233, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Diamond Octagon / Faceted Prism
+  ctx.save();
+  ctx.rotate(Math.sin(time * 0.003 + item.pulse) * 0.15);
+
+  // Diamond Polygon
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.9, -r * 0.2);
+  ctx.lineTo(0, r * 1.1);
+  ctx.lineTo(-r * 0.9, -r * 0.2);
+  ctx.closePath();
+
+  const gemGrad = ctx.createLinearGradient(-r, -r, r, r);
+  gemGrad.addColorStop(0, '#e0f2fe');
+  gemGrad.addColorStop(0.3, '#38bdf8');
+  gemGrad.addColorStop(0.7, '#0284c7');
+  gemGrad.addColorStop(1, '#0369a1');
+  ctx.fillStyle = gemGrad;
+  ctx.fill();
+
+  ctx.strokeStyle = '#bae6fd';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Internal facets
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(0, r * 1.1);
+  ctx.moveTo(-r * 0.9, -r * 0.2);
+  ctx.lineTo(r * 0.9, -r * 0.2);
+  ctx.moveTo(-r * 0.5, -r * 0.6);
+  ctx.lineTo(r * 0.5, -r * 0.6);
+  ctx.stroke();
+
+  // Sparkle glint
+  const glint = (Math.sin(time * 0.006 + item.pulse) + 1) / 2;
+  ctx.fillStyle = `rgba(255, 255, 255, ${glint})`;
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.3, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ----------------------------------------------------
+// 6. RENDER LEGENDARY BOSS LOOT CHEST
+// ----------------------------------------------------
+function renderBossChest(ctx: CanvasRenderingContext2D, item: DropItem, time: number) {
+  const w = item.radius * 2;
+  const h = item.radius * 1.5;
+
+  // Golden / Amber Epic Aura
+  const aura = ctx.createRadialGradient(0, 0, 4, 0, 0, item.radius * 2.5);
+  aura.addColorStop(0, 'rgba(245, 158, 11, 0.65)');
+  aura.addColorStop(0.6, 'rgba(217, 119, 6, 0.2)');
+  aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, item.radius * 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Chest Base Body (Reinforced Dark Wood & Gold Inlay)
+  ctx.fillStyle = '#451a03';
+  ctx.beginPath();
+  ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+  ctx.fill();
+
+  // Metallic Gold Corner Braces
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Chest Lid Line
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h * 0.1);
+  ctx.lineTo(w / 2, -h * 0.1);
+  ctx.stroke();
+
+  // Golden Lock Plate with Ruby Gem
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Floating Crown / Star above chest
+  const bob = Math.sin(time * 0.005) * 3;
+  ctx.fillStyle = '#fde047';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('👑', 0, -h / 2 - 8 + bob);
 }
