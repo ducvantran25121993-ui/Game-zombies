@@ -209,44 +209,10 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 select-none overflow-hidden touch-none font-sans">
-      
-      {/* -------------------------------------------------------------------
-          TOP QUICK TOGGLE / MOBILE STATUS BAR (Discreet & Touch-Friendly)
-      -------------------------------------------------------------------- */}
-      <div className="absolute top-16 right-3 pointer-events-auto flex items-center gap-2 z-40">
-        {/* Auto-Aim Assist Button */}
-        {onToggleAutoAim && (
-          <button
-            onClick={() => {
-              soundManager.playEmptyClick();
-              onToggleAutoAim();
-            }}
-            className={`px-2.5 py-1.5 rounded-full border text-[11px] font-black flex items-center gap-1.5 backdrop-blur-md shadow-lg transition-all active:scale-95 ${
-              autoAimEnabled
-                ? 'bg-emerald-500/25 border-emerald-400/80 text-emerald-300 shadow-emerald-500/20 animate-pulse'
-                : 'bg-neutral-900/80 border-neutral-700 text-neutral-400'
-            }`}
-            title="Bật/Tắt Tự Động Khóa Quái Gần Nhất"
-          >
-            <Target className={`w-3.5 h-3.5 ${autoAimEnabled ? 'text-emerald-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '6s' }} />
-            <span>TỰ NGẮM: {autoAimEnabled ? 'BẬT' : 'TẮT'}</span>
-          </button>
-        )}
-
-        {/* Toggle Controls Visibility Button */}
-        <button
-          onClick={() => setControlsVisible(prev => !prev)}
-          className="p-1.5 rounded-full bg-neutral-900/80 border border-neutral-700 text-neutral-300 backdrop-blur-md shadow-md active:scale-95"
-          title="Ẩn/Hiện Phím Cảm Ứng"
-        >
-          {controlsVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-amber-400" />}
-        </button>
-      </div>
-
       {controlsVisible && (
         <>
           {/* ===============================================================
-              LEFT TOUCH ZONE (Full Lower Left Quadrant for Dynamic Joystick)
+              LEFT TOUCH ZONE (Dynamic Joystick - Appears directly under finger)
           ================================================================ */}
           <div
             ref={leftZoneRef}
@@ -256,32 +222,29 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
             onTouchCancel={handleLeftTouchEnd}
             className="absolute left-0 bottom-0 w-1/2 h-2/3 pointer-events-auto touch-none"
           >
-            {/* Visual Movement Base when Active or Idle Indicator */}
+            {/* Minimalist Movement Base */}
             <div
-              className={`absolute rounded-full border-2 transition-opacity duration-150 flex items-center justify-center ${
+              className={`absolute rounded-full border transition-opacity duration-150 flex items-center justify-center ${
                 leftStickActive 
-                  ? 'border-amber-400/80 bg-neutral-950/80 opacity-100 scale-100 shadow-2xl shadow-amber-500/20' 
-                  : 'border-neutral-700/50 bg-neutral-950/40 opacity-60 scale-95'
+                  ? 'border-amber-400/80 bg-neutral-950/80 opacity-90 scale-100 shadow-xl shadow-amber-500/20' 
+                  : 'border-neutral-700/30 bg-neutral-950/20 opacity-25 scale-90'
               }`}
               style={{
-                width: 120,
-                height: 120,
-                left: leftStickActive ? leftStickOrigin.x - 60 : 40,
-                top: leftStickActive ? leftStickOrigin.y - 60 : undefined,
-                bottom: leftStickActive ? undefined : 40,
+                width: 100,
+                height: 100,
+                left: leftStickActive ? leftStickOrigin.x - 50 : 25,
+                top: leftStickActive ? leftStickOrigin.y - 50 : undefined,
+                bottom: leftStickActive ? undefined : 25,
                 pointerEvents: 'none'
               }}
             >
-              {/* Center Crosshair lines */}
-              <div className="absolute w-full h-[1px] bg-neutral-700/50" />
-              <div className="absolute h-full w-[1px] bg-neutral-700/50" />
-              <div className="absolute text-[9px] font-black text-amber-400/70 tracking-widest uppercase">
-                {leftStickActive ? 'DI CHUYỂN' : 'CHẠM ĐỂ ĐI'}
-              </div>
+              {/* Center lines */}
+              <div className="absolute w-full h-[1px] bg-neutral-700/40" />
+              <div className="absolute h-full w-[1px] bg-neutral-700/40" />
 
               {/* Thumb Knob */}
               <div
-                className="w-13 h-13 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-xl border-2 border-white/50 absolute flex items-center justify-center text-neutral-950 font-black text-[11px]"
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg border border-white/60 absolute flex items-center justify-center text-neutral-950 font-black text-[10px]"
                 style={{
                   transform: `translate(${leftThumbOffset.x}px, ${leftThumbOffset.y}px)`
                 }}
@@ -292,58 +255,133 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           </div>
 
           {/* ===============================================================
-              RIGHT TOUCH ZONE (Full Lower Right Quadrant for Aim & Shoot)
+              RIGHT TOUCH ZONE (Manual Aim JoyStick ONLY when Auto-Aim is OFF)
           ================================================================ */}
-          <div
-            ref={rightZoneRef}
-            onTouchStart={handleRightTouchStart}
-            onTouchMove={handleRightTouchMove}
-            onTouchEnd={handleRightTouchEnd}
-            onTouchCancel={handleRightTouchEnd}
-            className="absolute right-0 bottom-0 w-1/2 h-2/3 pointer-events-auto touch-none"
-          >
-            {/* Visual Aim Stick Knob */}
+          {!autoAimEnabled && (
             <div
-              className={`absolute rounded-full border-2 transition-opacity duration-150 flex items-center justify-center ${
-                rightStickActive 
-                  ? 'border-red-500/90 bg-neutral-950/85 opacity-100 scale-100 shadow-2xl shadow-red-500/30' 
-                  : 'border-red-900/40 bg-neutral-950/30 opacity-60 scale-95'
-              }`}
-              style={{
-                width: 120,
-                height: 120,
-                left: rightStickActive ? rightStickOrigin.x - 60 : undefined,
-                right: rightStickActive ? undefined : 40,
-                top: rightStickActive ? rightStickOrigin.y - 60 : undefined,
-                bottom: rightStickActive ? undefined : 40,
-                pointerEvents: 'none'
-              }}
+              ref={rightZoneRef}
+              onTouchStart={handleRightTouchStart}
+              onTouchMove={handleRightTouchMove}
+              onTouchEnd={handleRightTouchEnd}
+              onTouchCancel={handleRightTouchEnd}
+              className="absolute right-0 bottom-0 w-1/2 h-2/3 pointer-events-auto touch-none"
             >
-              {/* Crosshair Graphic */}
-              <Crosshair className={`w-8 h-8 ${rightStickActive ? 'text-red-400 animate-pulse' : 'text-red-900/40'}`} />
-              <div className="absolute bottom-2 text-[9px] font-black text-red-400/80 tracking-widest uppercase">
-                {rightStickActive ? 'ĐANG BẮN' : autoAimEnabled ? 'TỰ KHÓA QUÁI' : 'KÉO ĐỂ BẮN'}
-              </div>
-
-              {/* Thumb Knob */}
               <div
-                className="w-13 h-13 rounded-full bg-gradient-to-br from-red-500 to-rose-700 shadow-xl border-2 border-white/50 absolute flex items-center justify-center text-white font-black text-[11px]"
+                className={`absolute rounded-full border-2 transition-opacity duration-150 flex items-center justify-center ${
+                  rightStickActive 
+                    ? 'border-red-500/90 bg-neutral-950/85 opacity-100 scale-100 shadow-2xl shadow-red-500/30' 
+                    : 'border-red-900/40 bg-neutral-950/30 opacity-60 scale-95'
+                }`}
                 style={{
-                  transform: `translate(${rightThumbOffset.x}px, ${rightThumbOffset.y}px)`
+                  width: 100,
+                  height: 100,
+                  left: rightStickActive ? rightStickOrigin.x - 50 : undefined,
+                  right: rightStickActive ? undefined : 25,
+                  top: rightStickActive ? rightStickOrigin.y - 50 : undefined,
+                  bottom: rightStickActive ? undefined : 25,
+                  pointerEvents: 'none'
                 }}
               >
-                FIRE
+                <Crosshair className={`w-6 h-6 ${rightStickActive ? 'text-red-400 animate-pulse' : 'text-red-900/40'}`} />
+
+                {/* Thumb Knob */}
+                <div
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-rose-700 shadow-lg border border-white/60 absolute flex items-center justify-center text-white font-black text-[10px]"
+                  style={{
+                    transform: `translate(${rightThumbOffset.x}px, ${rightThumbOffset.y}px)`
+                  }}
+                >
+                  FIRE
+                </div>
               </div>
             </div>
+          )}
+
+          {/* ===============================================================
+              RIGHT HAND ERGONOMIC ACTION BUTTONS (Dash, Reload, Grenade, Shop)
+          ================================================================ */}
+          <div className="absolute right-3 bottom-3 pointer-events-auto flex flex-col items-end gap-2 z-40">
+            <div className="flex items-center gap-2">
+              {/* Quick Reload Button */}
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
+                onClick={onReload}
+                className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
+                  isReloading
+                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
+                    : 'bg-neutral-950/85 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
+                }`}
+                title="Nạp đạn (R)"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
+                <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
+              </button>
+
+              {/* Quick Grenade Button */}
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
+                onClick={onThrowGrenade}
+                disabled={grenadesLeft <= 0}
+                className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
+                  grenadesLeft > 0
+                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+                }`}
+                title="Ném lựu đạn nổ diện rộng (G)"
+              >
+                <Bomb className="w-3.5 h-3.5" />
+                <span className="font-mono">{grenadesLeft}</span>
+              </button>
+
+              {/* Quick Shop Modal Button */}
+              {onOpenShop && (
+                <button
+                  onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
+                  onClick={onOpenShop}
+                  className={`px-3 py-2 rounded-xl border flex items-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-[11px] backdrop-blur-md ${
+                    canAffordShop
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/30'
+                      : 'bg-neutral-950/85 border-neutral-700 text-amber-400 hover:bg-neutral-900'
+                  }`}
+                  title="Mở Cửa Hàng Nâng Cấp (B)"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <span>SHOP</span>
+                  {canAffordShop && (
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Prominent Large Dash Button */}
+            <button
+              onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
+              onClick={onDash}
+              disabled={!canDash}
+              className={`w-full py-2.5 px-4 rounded-xl border flex items-center justify-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs backdrop-blur-md relative overflow-hidden ${
+                canDash
+                  ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
+                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+              }`}
+              title="Lướt né đòn (Space)"
+            >
+              <Zap className={`w-4 h-4 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
+              <span>LƯỚT [SPACE]</span>
+
+              {/* Micro Stamina Progress */}
+              <div 
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-300 transition-all"
+                style={{ width: `${staminaPct}%` }}
+              />
+            </button>
           </div>
 
           {/* ===============================================================
-              CENTER BOTTOM: 1-TOUCH WEAPON BELT & ACTION SKILL BUTTONS
+              CENTER BOTTOM: 1-TOUCH COMPACT WEAPON BELT
           ================================================================ */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw] z-40">
-            
-            {/* Quick 1-Touch Weapon Belt (Chạm 1 chạm chọn súng lập tức) */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-neutral-950/85 border border-neutral-800/90 backdrop-blur-md shadow-2xl overflow-x-auto max-w-[92vw] no-scrollbar">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-auto z-40 max-w-[62vw] sm:max-w-none">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-2xl overflow-x-auto no-scrollbar">
               {unlockedWeaponList.map((wep) => {
                 const isSelected = wep.id === currentWeaponId;
                 const magPct = wep.magSize > 0 ? (wep.currentMag / wep.magSize) * 100 : 100;
@@ -360,110 +398,32 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                       soundManager.playEmptyClick();
                       if (onSelectWeapon) onSelectWeapon(wep.id);
                     }}
-                    className={`relative p-1.5 sm:p-2 rounded-xl flex flex-col items-center min-w-[50px] sm:min-w-[58px] transition-all active:scale-90 ${
+                    className={`relative p-1 sm:p-1.5 rounded-lg flex flex-col items-center min-w-[42px] sm:min-w-[50px] transition-all active:scale-90 ${
                       isSelected
-                        ? 'bg-gradient-to-b from-amber-500/30 to-amber-900/40 border-2 border-amber-400 text-white shadow-lg shadow-amber-500/20'
-                        : 'bg-neutral-900/80 border border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                        ? 'bg-amber-500/30 border border-amber-400 text-white shadow-md'
+                        : 'bg-neutral-900/80 border border-neutral-800/80 text-neutral-400 hover:border-neutral-700'
                     }`}
                   >
-                    <span className="text-base sm:text-lg leading-none">{wep.icon}</span>
-                    <span className="text-[9px] font-bold font-mono truncate max-w-[48px] mt-0.5" style={{ color: wep.color }}>
+                    <span className="text-sm sm:text-base leading-none">{wep.icon}</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold font-mono truncate max-w-[38px] mt-0.5" style={{ color: wep.color }}>
                       {wep.nameVi.split(' ')[0]}
                     </span>
 
-                    {/* Ammo micro bar */}
-                    <div className="w-full h-1 bg-neutral-800 rounded-full mt-1 overflow-hidden">
+                    {/* Micro Ammo Bar */}
+                    <div className="w-full h-0.5 bg-neutral-800 rounded-full mt-0.5 overflow-hidden">
                       <div 
                         className={`h-full ${magPct < 25 ? 'bg-red-500' : 'bg-amber-400'}`}
                         style={{ width: `${magPct}%` }}
                       />
                     </div>
 
-                    {/* Level Pill */}
-                    <div className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded-full bg-neutral-950 border border-amber-500/60 text-[8px] font-black text-amber-300 font-mono">
+                    {/* Level Badge */}
+                    <div className="absolute -top-1 -right-1 px-0.5 rounded bg-neutral-950 border border-amber-500/50 text-[7px] font-bold text-amber-300 font-mono leading-tight">
                       v{wep.level}
                     </div>
                   </button>
                 );
               })}
-            </div>
-
-            {/* Quick Tactical Combat Actions: Dash, Reload, Grenade, Shop */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              
-              {/* Quick Dash Button (Lướt) with Stamina Cooldown */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
-                onClick={onDash}
-                disabled={!canDash}
-                className={`relative px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border flex items-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs ${
-                  canDash
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-500/30'
-                    : 'bg-neutral-900/80 border-neutral-800 text-neutral-600 opacity-60'
-                }`}
-                title="Lướt né đòn (Space)"
-              >
-                <Zap className={`w-4 h-4 ${canDash ? 'fill-white text-yellow-300 animate-bounce' : 'text-neutral-600'}`} />
-                <span>LƯỚT</span>
-
-                {/* Micro Stamina Ring */}
-                <div 
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-300 rounded-b-2xl transition-all"
-                  style={{ width: `${staminaPct}%` }}
-                />
-              </button>
-
-              {/* Quick Reload Button with Circular / Animated Bar */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
-                onClick={onReload}
-                className={`px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border flex items-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs ${
-                  isReloading
-                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
-                    : 'bg-neutral-900/90 border-amber-500/50 text-amber-400 hover:bg-neutral-800'
-                }`}
-                title="Nạp đạn (R)"
-              >
-                <RefreshCw className={`w-4 h-4 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
-                <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
-              </button>
-
-              {/* Quick Grenade Button */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
-                onClick={onThrowGrenade}
-                disabled={grenadesLeft <= 0}
-                className={`px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border flex items-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs ${
-                  grenadesLeft > 0
-                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/30'
-                    : 'bg-neutral-900/80 border-neutral-800 text-neutral-600 opacity-60'
-                }`}
-                title="Ném lựu đạn nổ diện rộng (G)"
-              >
-                <Bomb className="w-4 h-4" />
-                <span className="font-mono text-sm">{grenadesLeft}</span>
-              </button>
-
-              {/* Quick Shop / Armory Modal Button */}
-              {onOpenShop && (
-                <button
-                  onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
-                  onClick={onOpenShop}
-                  className={`px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border flex items-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs ${
-                    canAffordShop
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/40'
-                      : 'bg-neutral-900/90 border-neutral-700 text-amber-400 hover:bg-neutral-800'
-                  }`}
-                  title="Mở Cửa Hàng Nâng Cấp (B)"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>SHOP</span>
-                  {canAffordShop && (
-                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1" />
-                  )}
-                </button>
-              )}
-
             </div>
           </div>
         </>

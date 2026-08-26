@@ -59,6 +59,7 @@ interface GameCanvasProps {
   touchMoveInput: { dx: number; dy: number };
   touchAimInput: { angle: number; isShooting: boolean };
   autoAimEnabled?: boolean;
+  cameraZoomMode?: 'wide' | 'ultrawide' | 'normal';
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -91,7 +92,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onGameOver,
   touchMoveInput,
   touchAimInput,
-  autoAimEnabled = true
+  autoAimEnabled = true,
+  cameraZoomMode = 'wide'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -658,29 +660,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     setZombiesRemaining(baseCount + state.bossesToSpawn);
 
     soundManager.playBossAlarm();
-
-    // Visual map change & wave announcement banner
-    state.floatingTexts.push({
-      id: Math.random().toString(),
-      x: state.player.x,
-      y: state.player.y - 75,
-      text: `🗺️ BỐI CẢNH MỚI: ${mapMeta.nameVi.toUpperCase()} [${mapMeta.badge}]`,
-      color: mapMeta.accentColor,
-      alpha: 1,
-      life: 120,
-      isCrit: true
-    });
-
-    state.floatingTexts.push({
-      id: Math.random().toString(),
-      x: state.player.x,
-      y: state.player.y - 40,
-      text: `⚠️ ĐỢT ${waveNum}: XUẤT HIỆN ${waveNum} BOSS ĐỘT BIẾN!`,
-      color: '#ef4444',
-      alpha: 1,
-      life: 100,
-      isCrit: true
-    });
   };
 
   // Keyboard Listeners
@@ -2136,14 +2115,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      // 10. CAMERA CLOSE-UP TRACKING & SMOOTH PERSPECTIVE
-      // Dynamic Zoom for clear hero & weapon rendering across mobile, tablet, and desktop
-      const zoom = canvas.width < 640 ? 1.50 : canvas.width < 1024 ? 1.40 : 1.30;
+      // 10. WIDE TACTICAL CAMERA TRACKING & OPTIMIZED PERSPECTIVE
+      // Wide FOV view on mobile to see surrounding hordes and battlefield clearly
+      let baseZoom = canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+      if (cameraZoomMode === 'ultrawide') baseZoom *= 0.80;
+      else if (cameraZoomMode === 'normal') baseZoom *= 1.25;
+      const zoom = baseZoom;
+
       const viewHalfW = (canvas.width / 2) / zoom;
       const viewHalfH = (canvas.height / 2) / zoom;
       
       // Dynamic look-ahead lead in aiming direction
-      const lookAhead = 35;
+      const lookAhead = 25;
       let targetCamX = p.x + Math.cos(p.angle) * lookAhead;
       let targetCamY = p.y + Math.sin(p.angle) * lookAhead;
       
@@ -2401,7 +2384,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [difficulty, mode, selectedMapId, isPaused, isShopOpen, onGameOver, touchMoveInput, touchAimInput]);
+  }, [difficulty, mode, selectedMapId, isPaused, isShopOpen, onGameOver, touchMoveInput, touchAimInput, autoAimEnabled, cameraZoomMode]);
 
   // Mouse Handlers
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {

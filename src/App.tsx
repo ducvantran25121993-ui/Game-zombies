@@ -94,6 +94,17 @@ export const App: React.FC = () => {
   // Auto-Aim Assist (Default on for mobile convenience)
   const [autoAimEnabled, setAutoAimEnabled] = useState(true);
 
+  // Tactical Camera Zoom (Default 'wide' for maximum visibility on mobile)
+  const [cameraZoomMode, setCameraZoomMode] = useState<'wide' | 'ultrawide' | 'normal'>('wide');
+
+  const handleToggleCameraZoom = () => {
+    setCameraZoomMode(prev => {
+      if (prev === 'wide') return 'ultrawide';
+      if (prev === 'ultrawide') return 'normal';
+      return 'wide';
+    });
+  };
+
   // Touch Virtual Inputs
   const [touchMoveInput, setTouchMoveInput] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const [touchAimInput, setTouchAimInput] = useState<{ angle: number; isShooting: boolean }>({ angle: 0, isShooting: false });
@@ -479,6 +490,7 @@ export const App: React.FC = () => {
             touchMoveInput={touchMoveInput}
             touchAimInput={touchAimInput}
             autoAimEnabled={autoAimEnabled}
+            cameraZoomMode={cameraZoomMode}
           />
 
           {/* Top & Bottom HUD Display */}
@@ -500,6 +512,10 @@ export const App: React.FC = () => {
             isMuted={isMuted}
             onToggleMute={handleToggleMute}
             onSelectWeapon={(id) => setCurrentWeaponId(id)}
+            cameraZoomMode={cameraZoomMode}
+            onToggleCameraZoom={handleToggleCameraZoom}
+            autoAimEnabled={autoAimEnabled}
+            onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
             onThrowGrenade={() => {
               if (player.grenadeCount > 0) {
                 // Triggered through simulated key or direct state
