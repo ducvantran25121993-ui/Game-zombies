@@ -5,7 +5,7 @@ import {
   Flame, HelpCircle, Radio, Award, ChevronRight, Check,
   UserCheck, Sparkles, Heart, Footprints, MapPin, Building2,
   Biohazard, AlertTriangle, Ghost, SunMedium, Cpu, Layers,
-  Volume2, VolumeX, ShieldAlert
+  Volume2, VolumeX, ShieldAlert, Swords
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WARRIOR_HERO_BANNER } from '../data/warriors';
@@ -49,8 +49,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const activeWarrior = WARRIOR_CLASSES.find(w => w.id === selectedWarriorId) || WARRIOR_CLASSES[0];
   const activeMap = MAP_ENVIRONMENTS.find(m => m.id === selectedMapId) || MAP_ENVIRONMENTS[0];
 
+  const handleLaunchGame = () => {
+    soundManager.playEmptyClick();
+    soundManager.startMusic();
+    onStartGame(difficulty, mode, selectedWarriorId, selectedMapId);
+  };
+
   return (
-    <div className="relative w-full min-h-[100dvh] bg-neutral-950 flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4 md:p-6 overflow-y-auto text-neutral-200 select-none pb-10">
+    <div className="relative w-full min-h-[100dvh] bg-neutral-950 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6 overflow-y-auto text-neutral-200 select-none pb-24">
       
       {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -65,7 +71,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3rem_3rem]" />
       </div>
 
-      {/* TOP HEADER CONTROLS (Non-floating on mobile, integrates with layout) */}
+      {/* TOP HEADER BAR */}
       <div className="relative z-20 w-full max-w-4xl flex items-center justify-between py-2 px-1 mb-2">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
@@ -74,59 +80,109 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           </span>
         </div>
 
-        <button
-          onClick={onToggleMute}
-          className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 ${
-            isMuted 
-              ? 'bg-neutral-900/80 border-neutral-700 text-neutral-400' 
-              : 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
-          }`}
-        >
-          {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
-          <span>{isMuted ? 'Âm thanh: TẮT' : 'Âm thanh: BẬT'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleMute}
+            className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 ${
+              isMuted 
+                ? 'bg-neutral-900/80 border-neutral-700 text-neutral-400' 
+                : 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+            }`}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
+            <span>{isMuted ? 'Âm thanh: TẮT' : 'Âm thanh: BẬT'}</span>
+          </button>
+        </div>
       </div>
 
       {/* MAIN CONTAINER CARD */}
-      <div className="relative z-10 w-full max-w-4xl bg-neutral-900/95 border border-neutral-800/90 rounded-3xl p-3.5 sm:p-5 md:p-8 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-4xl bg-neutral-900/95 border border-neutral-800/90 rounded-3xl p-3.5 sm:p-5 md:p-7 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
         
-        {/* HERO BANNER SECTION WITH EPIC WARRIOR GRAPHICS */}
-        <div className="relative w-full h-32 sm:h-40 md:h-48 rounded-2xl overflow-hidden border border-neutral-700/80 mb-3 sm:mb-5 shadow-2xl group">
+        {/* HERO BANNER SECTION WITH DIRECT PLAY BUTTON */}
+        <div className="relative w-full h-36 sm:h-44 md:h-52 rounded-2xl overflow-hidden border border-neutral-700/80 mb-3.5 sm:mb-4 shadow-2xl group">
           <img 
             src={WARRIOR_HERO_BANNER} 
             alt="Zombie Apocalypse Warrior Hero" 
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-95"
+            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-transparent flex flex-col justify-end p-3 sm:p-4 md:p-6">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-full bg-red-600 text-[9px] sm:text-[10px] font-black text-white tracking-widest uppercase shadow-md">
-                TACTICAL SPEC-OPS
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-neutral-950/80 text-[9px] sm:text-[10px] font-bold text-amber-400 border border-amber-500/40">
-                SURVIVOR CORPS
-              </span>
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-transparent flex flex-col justify-between p-3.5 sm:p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-[9px] sm:text-[10px] font-black text-white tracking-widest uppercase shadow-md">
+                  TACTICAL SPEC-OPS
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-neutral-950/80 text-[9px] sm:text-[10px] font-bold text-amber-400 border border-amber-500/40">
+                  SURVIVOR CORPS
+                </span>
+              </div>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-4xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-300 to-amber-400 drop-shadow-[0_2px_12px_rgba(239,68,68,0.5)]">
-              ZOMBIE APOCALYPSE
-            </h1>
-            <p className="text-[10px] sm:text-xs font-semibold tracking-wider text-neutral-300 line-clamp-1">
-              SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
-            </p>
+
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <h1 className="text-xl sm:text-2xl md:text-4xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-300 to-amber-400 drop-shadow-[0_2px_12px_rgba(239,68,68,0.5)]">
+                  ZOMBIE APOCALYPSE
+                </h1>
+                <p className="text-[10px] sm:text-xs font-semibold tracking-wider text-neutral-300 line-clamp-1">
+                  SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
+                </p>
+              </div>
+
+              {/* DIRECT HERO START BUTTON */}
+              <button
+                onClick={handleLaunchGame}
+                className="px-5 py-2.5 sm:py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-xl shadow-red-600/50 transition-all flex items-center justify-center gap-2 active:scale-95 border-2 border-amber-400/80 animate-pulse shrink-0"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>BẮT ĐẦU CHƠI NGAY</span>
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* PROMINENT TOP CALL-TO-ACTION PLAY BAR */}
+        <div className="w-full mb-3.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-red-950/80 via-neutral-900 to-amber-950/80 border-2 border-red-500/60 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xl">
+          <div className="flex items-center gap-3 text-left w-full sm:w-auto">
+            <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-amber-400 shrink-0 bg-neutral-950">
+              <img 
+                src={activeWarrior.avatar} 
+                alt={activeWarrior.nameVi} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
+                <span>{activeWarrior.nameVi}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-600 text-white font-bold uppercase">
+                  {difficulty.toUpperCase()}
+                </span>
+              </div>
+              <div className="text-[10.5px] text-sky-300 font-medium">
+                📍 {activeMap.nameVi} • {mode === 'survival' ? 'Từng Đợt Sóng (Waves)' : 'Ác Mộng Vô Tận'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLaunchGame}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300 shrink-0"
+          >
+            <Play className="w-4 h-4 fill-white" />
+            <span>VÀO TRẬN CHIẾN ĐẤU</span>
+          </button>
         </div>
 
         {/* NAVIGATION TABS (Fluid Horizontal Scroll for Mobile) */}
         <div className="flex w-full border-b border-neutral-800 mb-3.5 sm:mb-5 gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar">
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
-            className={`flex-1 min-w-[95px] sm:min-w-[110px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
+            className={`flex-1 min-w-[110px] sm:min-w-[130px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
               activeTab === 'play'
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
             }`}
           >
-            <Play className="w-3.5 h-3.5 fill-current" /> XUẤT TRẬN
+            <Swords className="w-3.5 h-3.5" /> THIẾT LẬP VÀO TRẬN
           </button>
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
@@ -202,13 +258,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-400 text-xs font-bold transition-all border border-amber-500/30 shrink-0 active:scale-90"
-                >
-                  Đổi
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
+                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-400 text-xs font-bold transition-all border border-amber-500/30 shrink-0 active:scale-90"
+                  >
+                    Đổi
+                  </button>
+                </div>
               </div>
 
               {/* CURRENT SELECTED MAP ENVIRONMENT CARD WITH ARTWORK */}
@@ -242,13 +300,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sky-400 text-xs font-bold transition-all border border-sky-500/30 shrink-0 active:scale-90"
-                >
-                  Đổi
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
+                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sky-400 text-xs font-bold transition-all border border-sky-500/30 shrink-0 active:scale-90"
+                  >
+                    Đổi
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -401,18 +461,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </div>
             </div>
 
-            {/* HIGH VISIBILITY START BUTTON (NEVER CUT OFF) */}
-            <div className="pt-2">
+            {/* HIGH VISIBILITY LARGE BOTTOM START BUTTON */}
+            <div className="pt-3">
               <button
-                onClick={() => {
-                  soundManager.playEmptyClick();
-                  soundManager.startMusic();
-                  onStartGame(difficulty, mode, selectedWarriorId, selectedMapId);
-                }}
-                className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-sm sm:text-base uppercase tracking-widest shadow-2xl shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 group border border-red-400/40"
+                onClick={handleLaunchGame}
+                className="w-full py-4 sm:py-4.5 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-base sm:text-lg uppercase tracking-widest shadow-2xl shadow-red-600/50 transition-all flex items-center justify-center gap-3 active:scale-95 group border-2 border-amber-300"
               >
-                <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                <span>XUẤT TRẬN: {activeWarrior.nameVi.toUpperCase()}</span>
+                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-white group-hover:scale-110 transition-transform" />
+                <span>BẮT ĐẦU CHƠI: {activeWarrior.nameVi.toUpperCase()}</span>
               </button>
             </div>
           </div>
@@ -504,22 +560,35 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          soundManager.playEmptyClick();
-                          onSelectMap(map.id);
-                          setActiveTab('play');
-                        }}
-                        className={`w-full mt-3 py-2 sm:py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-sky-400 text-neutral-950 shadow-md'
-                            : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
-                        }`}
-                      >
-                        {isSelected ? 'ĐÃ CHỌN BỐI CẢNH NÀY' : 'CHỌN BỐI CẢNH NÀY'}
-                      </button>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            soundManager.playEmptyClick();
+                            onSelectMap(map.id);
+                            setActiveTab('play');
+                          }}
+                          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-sky-400 text-neutral-950 shadow-md'
+                              : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
+                          }`}
+                        >
+                          {isSelected ? 'ĐÃ CHỌN BỐI CẢNH NÀY' : 'CHỌN BỐI CẢNH'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectMap(map.id);
+                            handleLaunchGame();
+                          }}
+                          className="px-3.5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-95"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" /> CHƠI NGAY
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -597,22 +666,36 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       <div className="text-[11px] font-bold text-amber-300">
                         ⚡ Đặc Quyền: <span className="text-neutral-300 font-normal">{warrior.bonusDesc}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          soundManager.playEmptyClick();
-                          onSelectWarrior(warrior.id);
-                          setActiveTab('play');
-                        }}
-                        className={`w-full mt-3 py-2 sm:py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-amber-400 text-neutral-950 shadow-md'
-                            : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
-                        }`}
-                      >
-                        {isSelected ? 'ĐÃ CHỌN CHIẾN BINH NÀY' : 'CHỌN XUẤT TRẬN'}
-                      </button>
+                      
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            soundManager.playEmptyClick();
+                            onSelectWarrior(warrior.id);
+                            setActiveTab('play');
+                          }}
+                          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-amber-400 text-neutral-950 shadow-md'
+                              : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
+                          }`}
+                        >
+                          {isSelected ? 'ĐÃ CHỌN' : 'CHỌN TƯỚNG'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectWarrior(warrior.id);
+                            handleLaunchGame();
+                          }}
+                          className="px-3.5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-95"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" /> CHƠI NGAY
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -698,6 +781,37 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         )}
 
       </div>
+
+      {/* STICKY BOTTOM FLOATING PLAY BAR (Always visible on any screen size) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-2.5 sm:p-3 bg-neutral-950/90 backdrop-blur-xl border-t border-red-500/30 flex items-center justify-center shadow-2xl">
+        <div className="w-full max-w-4xl flex items-center justify-between gap-3 px-2">
+          <div className="flex items-center gap-2.5 truncate">
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-400 shrink-0 bg-neutral-900 hidden xs:block">
+              <img src={activeWarrior.avatar} alt={activeWarrior.nameVi} className="w-full h-full object-cover" />
+            </div>
+            <div className="truncate">
+              <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
+                <span>{activeWarrior.nameVi}</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-red-600 text-white font-bold uppercase">
+                  {difficulty.toUpperCase()}
+                </span>
+              </div>
+              <div className="text-[10px] text-neutral-400 truncate">
+                {activeMap.nameVi} • {mode === 'survival' ? 'Waves' : 'Endless'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLaunchGame}
+            className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-xl shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300 shrink-0 animate-pulse"
+          >
+            <Play className="w-4 h-4 fill-white" />
+            <span>BẮT ĐẦU CHƠI NGAY</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };
