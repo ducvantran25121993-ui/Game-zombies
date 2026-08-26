@@ -66,24 +66,24 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/90 backdrop-blur-lg">
-      <div className="bg-neutral-900 border-2 border-red-950/80 rounded-3xl w-full max-w-2xl p-6 md:p-8 flex flex-col items-center text-center shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-neutral-950/90 backdrop-blur-lg select-none">
+      <div className="bg-neutral-900 border-2 border-red-950/80 rounded-3xl w-full max-w-2xl max-h-[94vh] landscape:max-h-[92vh] overflow-y-auto p-4 sm:p-6 md:p-8 landscape:py-3 flex flex-col items-center text-center shadow-[0_0_50px_rgba(239,68,68,0.2)]">
         
         {/* Skull Icon */}
-        <div className="p-4 bg-red-600/10 border-2 border-red-500/40 rounded-3xl text-red-500 shadow-2xl animate-bounce mb-2">
-          <Skull className="w-10 h-10" />
+        <div className="p-2.5 sm:p-4 landscape:p-2 bg-red-600/10 border-2 border-red-500/40 rounded-2xl sm:rounded-3xl text-red-500 shadow-2xl animate-bounce mb-1 landscape:mb-0.5">
+          <Skull className="w-6 h-6 sm:w-10 sm:h-10 landscape:w-5 landscape:h-5" />
         </div>
 
-        <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-500 tracking-wider">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl landscape:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-500 tracking-wider">
           BẠN ĐÃ HY SINH!
         </h2>
-        <p className="text-xs md:text-sm text-neutral-400 mt-1">
+        <p className="text-[11px] sm:text-xs md:text-sm text-neutral-400 mt-0.5">
           Hành trình chống lại đại dịch kết thúc ở Đợt {wave}. Hãy tiếp tục chiến đấu để phá vỡ kỷ lục!
         </p>
 
         {/* Warrior In Memoriam Avatar & Honors */}
-        <div className="flex items-center gap-3 bg-neutral-950/80 p-3 rounded-2xl border border-neutral-800 my-4 text-left w-full">
-          <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-amber-500/70 shrink-0 shadow-md">
+        <div className="flex items-center gap-2.5 sm:gap-3 bg-neutral-950/80 p-2 sm:p-3 rounded-2xl border border-neutral-800 my-2.5 landscape:my-1.5 text-left w-full">
+          <div className="relative w-10 h-10 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-amber-500/70 shrink-0 shadow-md">
             <img 
               src={warrior.avatar} 
               alt={warrior.nameVi}
@@ -94,67 +94,67 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-sm">{warrior.nameVi}</span>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded bg-neutral-800 text-amber-400 border border-amber-500/30">
+              <span className="font-bold text-white text-xs sm:text-sm">{warrior.nameVi}</span>
+              <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded bg-neutral-800 text-amber-400 border border-amber-500/30">
                 {warrior.codename}
               </span>
             </div>
-            <p className="text-xs text-neutral-400 mt-0.5">{warrior.titleVi} • Tác chiến kiên cường tới phút cuối cùng</p>
+            <p className="text-[10px] sm:text-xs text-neutral-400 mt-0.5">{warrior.titleVi} • Tác chiến kiên cường tới phút cuối cùng</p>
           </div>
         </div>
 
         {/* STATS MATRIX */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full my-6">
-          <div className="bg-neutral-950/80 p-3 rounded-2xl border border-neutral-800 flex flex-col items-center">
-            <span className="text-[11px] font-bold text-neutral-400 uppercase">ĐIỂM SỐ</span>
-            <span className="text-xl md:text-2xl font-black text-white font-mono mt-0.5">{score}</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 landscape:grid-cols-4 gap-2 sm:gap-3 w-full my-3 landscape:my-1.5">
+          <div className="bg-neutral-950/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-neutral-800 flex flex-col items-center">
+            <span className="text-[9px] sm:text-[11px] font-bold text-neutral-400 uppercase">ĐIỂM SỐ</span>
+            <span className="text-base sm:text-xl md:text-2xl font-black text-white font-mono mt-0.5">{score}</span>
           </div>
 
-          <div className="bg-neutral-950/80 p-3 rounded-2xl border border-neutral-800 flex flex-col items-center">
-            <span className="text-[11px] font-bold text-neutral-400 uppercase">SỐ QUÁI DIỆT</span>
-            <span className="text-xl md:text-2xl font-black text-red-400 font-mono mt-0.5">{kills}</span>
+          <div className="bg-neutral-950/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-neutral-800 flex flex-col items-center">
+            <span className="text-[9px] sm:text-[11px] font-bold text-neutral-400 uppercase">SỐ QUÁI DIỆT</span>
+            <span className="text-base sm:text-xl md:text-2xl font-black text-red-400 font-mono mt-0.5">{kills}</span>
           </div>
 
-          <div className="bg-neutral-950/80 p-3 rounded-2xl border border-neutral-800 flex flex-col items-center">
-            <span className="text-[11px] font-bold text-neutral-400 uppercase">ĐỢT VƯỢT QUA</span>
-            <span className="text-xl md:text-2xl font-black text-amber-400 font-mono mt-0.5">{wave}</span>
+          <div className="bg-neutral-950/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-neutral-800 flex flex-col items-center">
+            <span className="text-[9px] sm:text-[11px] font-bold text-neutral-400 uppercase">ĐỢT VƯỢT QUA</span>
+            <span className="text-base sm:text-xl md:text-2xl font-black text-amber-400 font-mono mt-0.5">{wave}</span>
           </div>
 
-          <div className="bg-neutral-950/80 p-3 rounded-2xl border border-neutral-800 flex flex-col items-center">
-            <span className="text-[11px] font-bold text-neutral-400 uppercase">VÀNG THU THẬP</span>
-            <span className="text-xl md:text-2xl font-black text-emerald-400 font-mono mt-0.5">{goldEarned}</span>
+          <div className="bg-neutral-950/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-neutral-800 flex flex-col items-center">
+            <span className="text-[9px] sm:text-[11px] font-bold text-neutral-400 uppercase">VÀNG THU THẬP</span>
+            <span className="text-base sm:text-xl md:text-2xl font-black text-emerald-400 font-mono mt-0.5">{goldEarned}</span>
           </div>
         </div>
 
         {/* SAVE SCORE FORM */}
         {!isSaved ? (
-          <div className="w-full bg-neutral-950/60 p-3.5 rounded-2xl border border-neutral-800 flex flex-col sm:flex-row items-center gap-2 mb-6">
+          <div className="w-full bg-neutral-950/60 p-2.5 sm:p-3.5 rounded-2xl border border-neutral-800 flex flex-col sm:flex-row items-center gap-2 mb-3 landscape:mb-1.5">
             <input
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="Nhập tên của bạn..."
               maxLength={20}
-              className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 w-full"
+              className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500 w-full"
             />
             <button
               onClick={handleSaveScore}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20"
+              className="w-full sm:w-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 shrink-0"
             >
               <Trophy className="w-4 h-4" /> LƯU KỶ LỤC
             </button>
           </div>
         ) : (
-          <div className="w-full bg-emerald-950/40 border border-emerald-500/30 p-2.5 rounded-2xl text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 mb-6">
+          <div className="w-full bg-emerald-950/40 border border-emerald-500/30 p-2 rounded-2xl text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 mb-3 landscape:mb-1.5">
             <Check className="w-4 h-4" /> Đã lưu thành tích vào Bảng Xếp Hạng!
           </div>
         )}
 
         {/* ACTION BUTTONS */}
-        <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full">
           <button
             onClick={onGoHome}
-            className="flex-1 py-3 px-4 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs uppercase tracking-wider transition-all"
+            className="flex-1 py-2 sm:py-3 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs uppercase tracking-wider transition-all"
           >
             TRANG CHỦ
           </button>
@@ -163,9 +163,9 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
               soundManager.playEmptyClick();
               onRestart();
             }}
-            className="flex-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+            className="flex-2 py-2 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
           >
-            <RotateCcw className="w-5 h-5" /> CHƠI LẠI NGAY
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" /> CHƠI LẠI NGAY
           </button>
         </div>
 

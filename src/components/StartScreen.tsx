@@ -67,36 +67,36 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </div>
 
       {/* MAIN CONTAINER CARD */}
-      <div className="relative z-10 w-full max-w-4xl bg-neutral-900/90 border border-neutral-800 rounded-3xl p-5 md:p-8 shadow-2xl backdrop-blur-xl flex flex-col items-center my-auto">
+      <div className="relative z-10 w-full max-w-4xl max-h-[96vh] landscape:max-h-[92vh] overflow-y-auto bg-neutral-900/90 border border-neutral-800 rounded-3xl p-4 sm:p-5 md:p-8 landscape:p-4 shadow-2xl backdrop-blur-xl flex flex-col items-center my-auto">
         
         {/* HERO BANNER SECTION WITH EPIC WARRIOR GRAPHICS */}
-        <div className="relative w-full h-36 md:h-48 rounded-2xl overflow-hidden border border-neutral-800 mb-6 shadow-inner group">
+        <div className="relative w-full h-28 sm:h-36 md:h-48 landscape:h-28 rounded-2xl overflow-hidden border border-neutral-800 mb-4 sm:mb-6 landscape:mb-3 shadow-inner group">
           <img 
             src={WARRIOR_HERO_BANNER} 
             alt="Zombie Apocalypse Warrior Hero" 
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent flex flex-col justify-end p-4 md:p-6">
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent flex flex-col justify-end p-3 sm:p-4 md:p-6 landscape:p-3">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-red-600/90 text-[10px] font-black text-white tracking-widest uppercase shadow-md">
+              <span className="px-2.5 py-0.5 rounded-full bg-red-600/90 text-[9px] sm:text-[10px] font-black text-white tracking-widest uppercase shadow-md">
                 TACTICAL SPEC-OPS
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-neutral-900/80 text-[10px] font-bold text-amber-400 border border-amber-500/30">
+              <span className="px-2.5 py-0.5 rounded-full bg-neutral-900/80 text-[9px] sm:text-[10px] font-bold text-amber-400 border border-amber-500/30">
                 SURVIVOR CORPS
               </span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-300 to-amber-400 drop-shadow-[0_2px_12px_rgba(239,68,68,0.4)]">
+            <h1 className="text-xl sm:text-2xl md:text-4xl landscape:text-2xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-300 to-amber-400 drop-shadow-[0_2px_12px_rgba(239,68,68,0.4)]">
               ZOMBIE APOCALYPSE
             </h1>
-            <p className="text-[11px] md:text-xs font-semibold tracking-wider text-neutral-300">
+            <p className="text-[10px] sm:text-[11px] md:text-xs font-semibold tracking-wider text-neutral-300">
               SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
             </p>
           </div>
         </div>
 
         {/* NAVIGATION TABS */}
-        <div className="flex w-full border-b border-neutral-800 mb-6 gap-2 overflow-x-auto pb-1">
+        <div className="flex w-full border-b border-neutral-800 mb-4 sm:mb-6 landscape:mb-3 gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar">
           <button
             onClick={() => setActiveTab('play')}
             className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${

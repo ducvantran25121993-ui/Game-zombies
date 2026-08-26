@@ -66,19 +66,19 @@ export const ShopModal: React.FC<ShopModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-neutral-950/85 backdrop-blur-md select-none">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-4xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden text-neutral-200">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-4xl max-h-[94vh] landscape:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-neutral-200">
         
         {/* HEADER */}
-        <div className="p-3.5 sm:p-5 border-b border-neutral-800 flex flex-wrap items-center justify-between bg-neutral-950/70 gap-2">
+        <div className="p-3 sm:p-5 landscape:p-2.5 border-b border-neutral-800 flex flex-wrap items-center justify-between bg-neutral-950/70 gap-2">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="p-2 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
-              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-2 sm:p-3 landscape:p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 landscape:w-4 landscape:h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-2xl font-black text-white tracking-wider flex items-center gap-2">
+              <h2 className="text-base sm:text-2xl landscape:text-lg font-black text-white tracking-wider flex items-center gap-2">
                 KHO VŨ KHÍ & NÂNG CẤP
               </h2>
-              <p className="text-[11px] sm:text-xs text-neutral-400">Tối ưu trang bị, mua drone & nâng cấp toàn diện</p>
+              <p className="text-[11px] sm:text-xs landscape:hidden text-neutral-400">Tối ưu trang bị, mua drone & nâng cấp toàn diện</p>
             </div>
           </div>
 
@@ -90,7 +90,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   onQuickUpgradeAll();
                 }}
                 disabled={player.gold < 80}
-                className={`px-3 py-2 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
+                className={`px-3 py-1.5 sm:py-2 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
                   player.gold >= 80
                     ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-neutral-950 shadow-amber-500/30 animate-pulse'
                     : 'bg-neutral-800 text-neutral-500 opacity-60 cursor-not-allowed'
@@ -98,11 +98,12 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 title="Tự động nâng cấp tất cả kỹ năng và vũ khí phù hợp với số vàng hiện có"
               >
                 <Zap className="w-4 h-4 fill-neutral-950" />
-                <span>NÂNG CẤP NHANH</span>
+                <span className="hidden sm:inline">NÂNG CẤP NHANH</span>
+                <span className="sm:hidden">NHANH</span>
               </button>
             )}
 
-            <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500/50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl text-amber-300 font-bold text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500/50 px-2.5 sm:px-3.5 py-1 sm:py-2 rounded-2xl text-amber-300 font-bold text-xs sm:text-sm">
               <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
               <span className="font-mono text-sm sm:text-base font-black text-white">{player.gold}</span>
               <span className="text-[9px] sm:text-xs text-amber-400">VÀNG</span>
@@ -113,7 +114,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 soundManager.playEmptyClick();
                 onClose();
               }}
-              className="p-2 sm:p-2.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all active:scale-95"
+              className="p-1.5 sm:p-2.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
@@ -121,61 +122,61 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         </div>
 
         {/* TABS */}
-        <div className="flex border-b border-neutral-800 bg-neutral-950/40 p-2 gap-2 overflow-x-auto">
+        <div className="flex border-b border-neutral-800 bg-neutral-950/40 p-1.5 sm:p-2 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setTab('weapons')}
-            className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 min-w-[100px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'weapons' 
                 ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
             }`}
           >
             <Crosshair className="w-4 h-4" />
-            Kho Súng ({(Object.values(weapons) as Weapon[]).filter(w => w.unlocked).length}/{Object.keys(weapons).length})
+            <span>Súng ({(Object.values(weapons) as Weapon[]).filter(w => w.unlocked).length}/{Object.keys(weapons).length})</span>
           </button>
           <button
             onClick={() => setTab('drones')}
-            className={`flex-1 min-w-[135px] py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 min-w-[100px] sm:min-w-[135px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'drones' 
                 ? 'bg-cyan-400 text-neutral-950 shadow-lg shadow-cyan-400/20 font-black' 
                 : 'text-cyan-400/80 hover:text-cyan-300 hover:bg-cyan-950/30'
             }`}
           >
             <Bot className="w-4 h-4" />
-            Robo Hỗ Trợ ({drones.filter(d => d.unlocked).length}/{drones.length})
+            <span>Drone ({drones.filter(d => d.unlocked).length}/{drones.length})</span>
           </button>
           <button
             onClick={() => setTab('warriors')}
-            className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 min-w-[100px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'warriors' 
                 ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            Chiến Binh ({WARRIOR_CLASSES.length})
+            <span>Chiến Binh ({WARRIOR_CLASSES.length})</span>
           </button>
           <button
             onClick={() => setTab('upgrades')}
-            className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 min-w-[90px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'upgrades' 
                 ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            Kỹ Năng
+            <span>Kỹ Năng</span>
           </button>
           <button
             onClick={() => setTab('supplies')}
-            className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 min-w-[90px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'supplies' 
                 ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
             }`}
           >
             <Bomb className="w-4 h-4" />
-            Tiếp Tế
+            <span>Tiếp Tế</span>
           </button>
         </div>
 

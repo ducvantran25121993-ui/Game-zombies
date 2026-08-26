@@ -92,11 +92,11 @@ export const HUD: React.FC<HUDProps> = ({
         <div className="absolute inset-0 border-4 sm:border-8 border-red-600/40 animate-pulse pointer-events-none shadow-[inset_0_0_60px_rgba(239,68,68,0.5)]" />
       )}
 
-      {/* TOP HEADER: Clean Responsive 2-Row Container (Zero overflow on mobile) */}
-      <div className="flex flex-col gap-1 w-full max-w-7xl mx-auto pointer-events-auto">
+      {/* TOP HEADER: Clean Responsive Container (Adapts seamlessly in portrait & landscape) */}
+      <div className="flex flex-col landscape:flex-row landscape:items-center landscape:justify-between gap-1 w-full max-w-7xl mx-auto pointer-events-auto">
         
-        {/* ROW 1: Main Status Strip (Player Health, Wave Count, Gold/Score) */}
-        <div className="flex items-center justify-between gap-1 w-full">
+        {/* ROW 1 (or Left Group in Landscape): Player Stats & Warrior Info */}
+        <div className="flex items-center justify-between landscape:justify-start gap-1.5 w-full landscape:w-auto">
           
           {/* Left: Warrior Avatar & Health, Armor */}
           <div className="flex items-center gap-1.5 bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md">
@@ -104,7 +104,7 @@ export const HUD: React.FC<HUDProps> = ({
             {(() => {
               const currentWarrior = WARRIOR_CLASSES.find(w => w.id === (player.warriorSkin || 'commando')) || WARRIOR_CLASSES[0];
               return (
-                <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-amber-500/80 shrink-0 bg-neutral-900">
+                <div className="relative w-6 h-6 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-amber-500/80 shrink-0 bg-neutral-900">
                   <img 
                     src={currentWarrior.avatar} 
                     alt={currentWarrior.nameVi}
@@ -118,7 +118,7 @@ export const HUD: React.FC<HUDProps> = ({
               );
             })()}
 
-            <div className="flex flex-col gap-0.5 min-w-[68px] sm:min-w-[85px]">
+            <div className="flex flex-col gap-0.5 min-w-[65px] sm:min-w-[85px] landscape:min-w-[75px]">
               {/* Health */}
               <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-bold leading-none">
                 <span className="flex items-center gap-0.5 text-red-400">
@@ -148,7 +148,7 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Center: Wave Indicator */}
+          {/* Wave Indicator (Inline in Landscape or Center in Portrait) */}
           <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800 shadow-md flex items-center gap-1">
             <Skull className="w-3 h-3 text-amber-500 shrink-0" />
             <div className="flex flex-col items-center leading-none">
@@ -157,8 +157,8 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Right: Gold & Score */}
-          <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1.5">
+          {/* Gold & Score in Portrait ROW 1 (Hidden here in Landscape, moved to Right Group) */}
+          <div className="landscape:hidden bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1.5">
             <div className="flex items-center gap-0.5 text-amber-400 font-black text-[9px] sm:text-xs">
               <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
               <span className="font-mono">{player.gold}</span>
@@ -171,13 +171,13 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* ROW 2: Sub Toolbar (Boss Bar or Map Badge + Quick Action Controls) */}
-        <div className="flex items-center justify-between gap-1 w-full">
+        {/* ROW 2 (or Center/Right Group in Landscape): Boss/Map Info & Tactical Controls */}
+        <div className="flex items-center justify-between landscape:justify-end gap-1.5 w-full landscape:w-auto">
           {/* Boss Bar or Map Name */}
           {bossHp ? (
-            <div className="flex-1 bg-red-950/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-red-500/80 shadow-md animate-pulse">
+            <div className="flex-1 landscape:flex-none landscape:min-w-[140px] bg-red-950/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-red-500/80 shadow-md animate-pulse">
               <div className="flex items-center justify-between text-[8px] sm:text-[9px] font-black text-red-200 uppercase tracking-wider mb-0.5">
-                <span className="flex items-center gap-1 text-red-400 truncate max-w-[120px] sm:max-w-none">
+                <span className="flex items-center gap-1 text-red-400 truncate max-w-[110px] sm:max-w-none">
                   <ShieldAlert className="w-2.5 h-2.5 text-red-400 shrink-0" />
                   {bossHp.name}
                 </span>
@@ -192,7 +192,7 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           ) : (
             <div 
-              className="text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm"
+              className="text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
               style={{ color: currentMap.accentColor }}
             >
               <MapPin className="w-2.5 h-2.5" />
@@ -200,8 +200,21 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           )}
 
+          {/* Gold & Score in Landscape */}
+          <div className="hidden landscape:flex bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[9px] sm:text-xs">
+              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
+              <span className="font-mono">{player.gold}</span>
+            </div>
+            <div className="h-2.5 w-[1px] bg-neutral-800" />
+            <div className="flex items-center gap-0.5 text-white font-bold text-[8px] sm:text-[10px]">
+              <Award className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+              <span className="font-mono">{player.score}</span>
+            </div>
+          </div>
+
           {/* Quick Tactical Controls (Zoom, Auto-Aim, Sound, Pause) */}
-          <div className="flex items-center gap-1 ml-auto shrink-0">
+          <div className="flex items-center gap-1 ml-auto landscape:ml-0 shrink-0">
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
