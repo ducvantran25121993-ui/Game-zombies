@@ -12,6 +12,8 @@ import { renderZombie } from '../utils/renderZombie';
 import { renderMapEnvironment } from '../utils/renderMapEnvironment';
 import { renderObstacles } from '../utils/renderObstacles';
 import { renderDrops } from '../utils/renderDrops';
+import { CompanionDroneConfig, ActiveDroneState } from '../data/drones';
+import { renderCompanionDrone } from '../utils/renderCompanionDrone';
 
 interface GameCanvasProps {
   player: PlayerStats;
@@ -19,6 +21,7 @@ interface GameCanvasProps {
   currentWeapon: Weapon;
   weapons: Record<string, Weapon>;
   setWeapons: React.Dispatch<React.SetStateAction<Record<string, Weapon>>>;
+  drones?: CompanionDroneConfig[];
   wave: number;
   setWave: React.Dispatch<React.SetStateAction<number>>;
   totalZombiesInWave: number;
@@ -50,6 +53,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   currentWeapon,
   weapons,
   setWeapons,
+  drones = [],
   wave,
   setWave,
   totalZombiesInWave,
@@ -80,6 +84,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     player: PlayerStats;
     currentWeapon: Weapon;
     weapons: Record<string, Weapon>;
+    activeDrones: ActiveDroneState[];
+    laserBeams: Array<{ x1: number; y1: number; x2: number; y2: number; color: string; alpha: number }>;
     zombies: Zombie[];
     bullets: Bullet[];
     particles: Particle[];
@@ -107,6 +113,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     player: { ...player },
     currentWeapon: { ...currentWeapon },
     weapons: { ...weapons },
+    activeDrones: [],
+    laserBeams: [],
     zombies: [],
     bullets: [],
     particles: [],
@@ -156,6 +164,37 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     stateRef.current.activeBuffs = { ...activeBuffs };
   }, [activeBuffs]);
+
+  // Sync unlocked Companion Drones
+  useEffect(() => {
+    if (!drones) return;
+    const currentActive = stateRef.current.activeDrones;
+    const unlockedConfigs = drones.filter(d => d.unlocked);
+
+    const updatedActive: ActiveDroneState[] = unlockedConfigs.map(cfg => {
+      const existing = currentActive.find(a => a.id === cfg.id);
+      if (existing) {
+        return existing;
+      }
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        id: cfg.id,
+        type: cfg.type,
+        x: player.x + Math.cos(angle) * 45,
+        y: player.y + Math.sin(angle) * 45,
+        vx: 0,
+        vy: 0,
+        angle: 0,
+        turretAngle: 0,
+        tilt: 0,
+        hoverOffset: Math.random() * Math.PI * 2,
+        lastShotTime: 0,
+        targetId: null
+      };
+    });
+
+    stateRef.current.activeDrones = updatedActive;
+  }, [drones, player.x, player.y]);
 
   // Initialize Map-Specific Obstacles, Vehicles, Trees & Barrels
   useEffect(() => {
@@ -892,6 +931,183 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
       state.turrets = state.turrets.filter(t => t.duration > 0);
 
+      // 5.5 UPDATE COMPANION DRONES (Follow formation + autonomous combat AI)
+      const unlockedConfigs = (drones || []).filter(d => d.unlocked);
+      const activeDrones = state.activeDrones;
+      const droneCount = activeDrones.length;
+
+      activeDrones.forEach((drone, idx) => {
+        const config = unlockedConfigs.find(c => c.id === drone.id);
+        if (!config) return;
+
+        // Formation offset around player based on count and index
+        let formationAngle = p.angle;
+        const formationDist = 54;
+        if (droneCount === 1) {
+          formationAngle += Math.PI * 0.75;
+        } else if (droneCount === 2) {
+          formationAngle += idx === 0 ? -Math.PI * 0.7 : Math.PI * 0.7;
+        } else if (droneCount === 3) {
+          if (idx === 0) formationAngle -= Math.PI * 0.65;
+          else if (idx === 1) formationAngle += Math.PI * 0.65;
+          else formationAngle += Math.PI;
+        } else {
+          if (idx === 0) formationAngle -= Math.PI * 0.65;
+          else if (idx === 1) formationAngle += Math.PI * 0.65;
+          else if (idx === 2) formationAngle -= Math.PI * 0.25;
+          else formationAngle += Math.PI;
+        }
+
+        const targetX = p.x + Math.cos(formationAngle) * formationDist;
+        const targetY = p.y + Math.sin(formationAngle) * formationDist;
+
+        // Smooth spring physics follower with inertia
+        const dx = targetX - drone.x;
+        const dy = targetY - drone.y;
+        drone.vx = drone.vx * 0.84 + dx * 0.08;
+        drone.vy = drone.vy * 0.84 + dy * 0.08;
+        drone.x += drone.vx;
+        drone.y += drone.vy;
+
+        // Banking tilt when accelerating
+        drone.tilt = Math.max(-0.4, Math.min(0.4, drone.vx * 0.05));
+        drone.angle = Math.atan2(drone.vy, drone.vx);
+
+        // Gold Magnet Scout ability (for Laser Aegis drone pulling dropped loot)
+        if (config.type === 'laser') {
+          state.drops.forEach(item => {
+            const dropDist = Math.hypot(drone.x - item.x, drone.y - item.y);
+            if (dropDist < 200) {
+              const pullAngle = Math.atan2(p.y - item.y, p.x - item.x);
+              item.x += Math.cos(pullAngle) * 5.2;
+              item.y += Math.sin(pullAngle) * 5.2;
+            }
+          });
+        }
+
+        // Autonomous Target Acquisition
+        let bestTarget: Zombie | null = null;
+        let bestDist = config.range;
+
+        state.zombies.forEach(z => {
+          const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
+          if (distToDrone < bestDist) {
+            bestDist = distToDrone;
+            bestTarget = z;
+          }
+        });
+
+        if (bestTarget) {
+          const aimAngle = Math.atan2((bestTarget as Zombie).y - drone.y, (bestTarget as Zombie).x - drone.x);
+          drone.turretAngle = aimAngle;
+          drone.targetId = (bestTarget as Zombie).id;
+
+          const actualFireRate = Math.max(90, config.fireRate - (config.level - 1) * 20);
+          const actualDmg = config.damage + (config.level - 1) * 10;
+
+          if (currentTime - drone.lastShotTime >= actualFireRate) {
+            drone.lastShotTime = currentTime;
+
+            if (config.type === 'gatling') {
+              soundManager.playDroneGatling();
+              // Twin rapid energy bullets
+              [-4, 4].forEach(offset => {
+                const perpAngle = aimAngle + Math.PI / 2;
+                const bx = drone.x + Math.cos(aimAngle) * 16 + Math.cos(perpAngle) * offset;
+                const by = drone.y + Math.sin(aimAngle) * 16 + Math.sin(perpAngle) * offset;
+
+                state.bullets.push({
+                  id: Math.random().toString(),
+                  x: bx,
+                  y: by,
+                  vx: Math.cos(aimAngle) * config.bulletSpeed,
+                  vy: Math.sin(aimAngle) * config.bulletSpeed,
+                  damage: actualDmg,
+                  pierceLeft: 1,
+                  rangeLeft: config.range,
+                  radius: 3.5,
+                  color: config.glowColor,
+                  knockback: 2
+                });
+              });
+            } else if (config.type === 'plasma') {
+              soundManager.playDronePlasma();
+              state.bullets.push({
+                id: Math.random().toString(),
+                x: drone.x + Math.cos(aimAngle) * 18,
+                y: drone.y + Math.sin(aimAngle) * 18,
+                vx: Math.cos(aimAngle) * config.bulletSpeed,
+                vy: Math.sin(aimAngle) * config.bulletSpeed,
+                damage: actualDmg,
+                pierceLeft: 2,
+                rangeLeft: config.range,
+                radius: 6,
+                color: config.glowColor,
+                isPlasma: true,
+                knockback: 5
+              });
+            } else if (config.type === 'laser') {
+              soundManager.playDroneLaser();
+              const laserEndDist = Math.min(config.range, Math.hypot((bestTarget as Zombie).x - drone.x, (bestTarget as Zombie).y - drone.y));
+              const tx = drone.x + Math.cos(aimAngle) * laserEndDist;
+              const ty = drone.y + Math.sin(aimAngle) * laserEndDist;
+
+              state.laserBeams.push({
+                x1: drone.x,
+                y1: drone.y,
+                x2: tx,
+                y2: ty,
+                color: config.glowColor,
+                alpha: 1
+              });
+
+              (bestTarget as Zombie).hp -= actualDmg;
+              soundManager.playZombieHit();
+
+              for (let sp = 0; sp < 3; sp++) {
+                state.particles.push({
+                  x: tx,
+                  y: ty,
+                  vx: (Math.random() - 0.5) * 6,
+                  vy: (Math.random() - 0.5) * 6,
+                  radius: 2,
+                  color: config.glowColor,
+                  alpha: 1,
+                  life: 0,
+                  maxLife: 10,
+                  decay: 0.1,
+                  shape: 'spark'
+                });
+              }
+            } else if (config.type === 'missile') {
+              soundManager.playDroneGatling();
+              state.bullets.push({
+                id: Math.random().toString(),
+                x: drone.x + Math.cos(aimAngle) * 18,
+                y: drone.y + Math.sin(aimAngle) * 18,
+                vx: Math.cos(aimAngle) * config.bulletSpeed,
+                vy: Math.sin(aimAngle) * config.bulletSpeed,
+                damage: actualDmg,
+                pierceLeft: 1,
+                rangeLeft: config.range,
+                radius: 5.5,
+                color: config.glowColor,
+                isExplosive: true,
+                knockback: 6
+              });
+            }
+          }
+        }
+      });
+
+      // Update laser beams decay
+      for (let lb = state.laserBeams.length - 1; lb >= 0; lb--) {
+        state.laserBeams[lb].alpha -= 0.18;
+        if (state.laserBeams[lb].alpha <= 0) {
+          state.laserBeams.splice(lb, 1);
+        }
+      }
+
       // 6. UPDATE BULLETS
       for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
@@ -1501,6 +1717,28 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       });
 
+      // Render Laser Beams
+      state.laserBeams.forEach(beam => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, beam.alpha);
+        ctx.strokeStyle = beam.color;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = beam.color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(beam.x1, beam.y1);
+        ctx.lineTo(beam.x2, beam.y2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(beam.x1, beam.y1);
+        ctx.lineTo(beam.x2, beam.y2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
       // Render Bullets
       state.bullets.forEach(b => {
         ctx.save();
@@ -1523,6 +1761,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         isFiring: isFiring && (currentTime - lastShotTime < 70),
         obstacles: state.obstacles,
         zombies: state.zombies
+      });
+
+      // Render Active Companion Drones (Hovering robotic allies flanking warrior)
+      state.activeDrones.forEach(droneState => {
+        const cfg = (drones || []).find(d => d.id === droneState.id);
+        if (cfg) {
+          renderCompanionDrone({
+            ctx,
+            droneState,
+            config: cfg,
+            time: currentTime
+          });
+        }
       });
 
       // Render Particles

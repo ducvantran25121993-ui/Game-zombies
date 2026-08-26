@@ -6,6 +6,7 @@ import {
 import { INITIAL_WEAPONS, MAP_SIZE, UPGRADES_CONFIG } from './utils/constants';
 import { soundManager } from './utils/audio';
 import { WARRIOR_CLASSES } from './data/warriors';
+import { INITIAL_DRONES, CompanionDroneConfig } from './data/drones';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
 import { ShopModal } from './components/ShopModal';
@@ -68,6 +69,9 @@ export const App: React.FC = () => {
   // Weapons Arsenal State
   const [weapons, setWeapons] = useState<Record<string, Weapon>>({ ...INITIAL_WEAPONS });
   const [currentWeaponId, setCurrentWeaponId] = useState<WeaponType>('pistol');
+
+  // Companion Drones State
+  const [drones, setDrones] = useState<CompanionDroneConfig[]>(INITIAL_DRONES);
 
   // Wave & Boss State
   const [wave, setWave] = useState(1);
@@ -313,6 +317,39 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleUnlockDrone = (droneId: string) => {
+    const target = drones.find(d => d.id === droneId);
+    if (!target || target.unlocked || player.gold < target.cost) return;
+
+    soundManager.playDroneDeploy();
+    setPlayer(prev => ({ ...prev, gold: prev.gold - target.cost }));
+    setDrones(prev => prev.map(d => d.id === droneId ? { ...d, unlocked: true } : d));
+  };
+
+  const handleUpgradeDrone = (droneId: string) => {
+    const target = drones.find(d => d.id === droneId);
+    if (!target || !target.unlocked || target.level >= target.maxLevel) return;
+
+    const cost = Math.round(target.cost * 0.7 * Math.pow(1.5, target.level));
+    if (player.gold < cost) return;
+
+    soundManager.playPowerUp();
+    setPlayer(prev => ({ ...prev, gold: prev.gold - cost }));
+    setDrones(prev => prev.map(d => {
+      if (d.id === droneId) {
+        const nextLevel = d.level + 1;
+        return {
+          ...d,
+          level: nextLevel,
+          damage: d.damage + 10,
+          fireRate: Math.max(90, d.fireRate - 25),
+          range: d.range + 35
+        };
+      }
+      return d;
+    }));
+  };
+
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-neutral-950 select-none">
       
@@ -341,6 +378,7 @@ export const App: React.FC = () => {
             currentWeapon={weapons[currentWeaponId] || weapons.pistol}
             weapons={weapons}
             setWeapons={setWeapons}
+            drones={drones}
             wave={wave}
             setWave={setWave}
             totalZombiesInWave={totalZombiesInWave}
@@ -429,6 +467,9 @@ export const App: React.FC = () => {
             onBuyAmmo={handleBuyAmmo}
             onBuyPerk={handleBuyPerk}
             onBuySupply={handleBuySupply}
+            drones={drones}
+            onUnlockDrone={handleUnlockDrone}
+            onUpgradeDrone={handleUpgradeDrone}
             onSelectWarriorSkin={(id) => {
               setSelectedWarriorId(id);
               setPlayer(p => ({ ...p, warriorSkin: id }));
