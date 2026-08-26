@@ -58,6 +58,7 @@ interface GameCanvasProps {
   // External inputs from VirtualControls
   touchMoveInput: { dx: number; dy: number };
   touchAimInput: { angle: number; isShooting: boolean };
+  autoAimEnabled?: boolean;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -89,7 +90,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   isShopOpen,
   onGameOver,
   touchMoveInput,
-  touchAimInput
+  touchAimInput,
+  autoAimEnabled = true
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -126,6 +128,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     screenShake: number;
     waveTransitionTimer: number;
     isWaveEnding: boolean;
+    autoAimTargetId: string | null;
   }>({
     player: { ...player },
     currentWeapon: { ...currentWeapon },
@@ -157,7 +160,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     lastTime: performance.now(),
     screenShake: 0,
     waveTransitionTimer: 0,
-    isWaveEnding: false
+    isWaveEnding: false,
+    autoAimTargetId: null
   });
 
   // Sync props to stateRef when weapons/player change from Shop or UI
@@ -1007,17 +1011,47 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (canMoveY) p.y = nextY;
       }
 
-      // Player Aim Angle (Mouse or Right Touch Stick)
+      // Player Aim Angle (Smart Auto-Aim assist, Right Touch Stick, or Mouse)
+      let closestZombie: Zombie | null = null;
+      let closestDist = 620;
+
+      if (autoAimEnabled) {
+        // Priority 1: Bosses within range
+        for (const z of state.zombies) {
+          if (z.hp <= 0) continue;
+          const d = Math.hypot(z.x - p.x, z.y - p.y);
+          if (z.isBoss && d < 700) {
+            closestZombie = z;
+            closestDist = d;
+            break;
+          }
+          if (d < closestDist) {
+            closestDist = d;
+            closestZombie = z;
+          }
+        }
+      }
+
       if (touchAimInput.isShooting || touchAimInput.angle !== 0) {
         p.angle = touchAimInput.angle;
+        state.autoAimTargetId = null;
+      } else if (autoAimEnabled && closestZombie) {
+        state.autoAimTargetId = closestZombie.id;
+        p.angle = Math.atan2(closestZombie.y - p.y, closestZombie.x - p.x);
       } else {
-        const screenCenterX = canvas.width / 2;
-        const screenCenterY = canvas.height / 2;
-        p.angle = Math.atan2(state.mousePos.y - screenCenterY, state.mousePos.x - screenCenterX);
+        state.autoAimTargetId = null;
+        if (touchMoveInput.dx !== 0 || touchMoveInput.dy !== 0) {
+          p.angle = Math.atan2(touchMoveInput.dy, touchMoveInput.dx);
+        } else {
+          const screenCenterX = canvas.width / 2;
+          const screenCenterY = canvas.height / 2;
+          p.angle = Math.atan2(state.mousePos.y - screenCenterY, state.mousePos.x - screenCenterX);
+        }
       }
 
       // 3. WEAPON SHOOTING
-      const isFiring = state.isMouseDown || touchAimInput.isShooting;
+      const isAutoFiring = Boolean(autoAimEnabled && closestZombie && !state.isReloading);
+      const isFiring = state.isMouseDown || touchAimInput.isShooting || isAutoFiring;
       if (isFiring && !state.isReloading) {
         if (currentTime - lastShotTime >= wep.fireRate) {
           if (wep.currentMag > 0) {
@@ -1888,8 +1922,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         setBossHp(null);
       }
 
-      // 8. UPDATE DROPS & MAGNET (Player runs over to pick up gold and items)
-      const magnetRange = 75 + (p.upgrades.magnetRadiusLevel || 0) * 45;
+      // 8. UPDATE DROPS & MAGNET (Smooth Magnetic Suction for effortless mobile play)
+      const magnetRange = 135 + (p.upgrades.magnetRadiusLevel || 0) * 55;
       for (let i = state.drops.length - 1; i >= 0; i--) {
         const item = state.drops[i];
         item.pulse += 0.08;
@@ -2222,6 +2256,38 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.fillRect(z.x - barW / 2, z.y - z.radius - 11, barW, 4);
           ctx.fillStyle = z.isBoss ? '#f59e0b' : '#ef4444';
           ctx.fillRect(z.x - barW / 2, z.y - z.radius - 11, barW * (z.hp / z.maxHp), 4);
+        }
+
+        // Auto-Aim Lock Reticle
+        if (state.autoAimTargetId === z.id && autoAimEnabled) {
+          ctx.save();
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#34d399';
+          ctx.shadowBlur = 10;
+          const rot = (currentTime / 300);
+          const r = z.radius + 10;
+
+          // 4 Rotating Target Brackets
+          ctx.beginPath();
+          ctx.arc(z.x, z.y, r, rot, rot + Math.PI * 0.4);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(z.x, z.y, r, rot + Math.PI * 0.5, rot + Math.PI * 0.9);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(z.x, z.y, r, rot + Math.PI, rot + Math.PI * 1.4);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(z.x, z.y, r, rot + Math.PI * 1.5, rot + Math.PI * 1.9);
+          ctx.stroke();
+
+          // Center target dot
+          ctx.fillStyle = '#34d399';
+          ctx.beginPath();
+          ctx.arc(z.x, z.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
         }
       });
 

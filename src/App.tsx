@@ -91,6 +91,9 @@ export const App: React.FC = () => {
   const [isReloading, setIsReloading] = useState(false);
   const [reloadProgress, setReloadProgress] = useState(0);
 
+  // Auto-Aim Assist (Default on for mobile convenience)
+  const [autoAimEnabled, setAutoAimEnabled] = useState(true);
+
   // Touch Virtual Inputs
   const [touchMoveInput, setTouchMoveInput] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const [touchAimInput, setTouchAimInput] = useState<{ angle: number; isShooting: boolean }>({ angle: 0, isShooting: false });
@@ -350,6 +353,79 @@ export const App: React.FC = () => {
     }));
   };
 
+  const handleQuickUpgradeAll = () => {
+    let curGold = player.gold;
+    if (curGold < 50) return;
+
+    let upgradedAny = false;
+    const nextUpgrades = { ...player.upgrades };
+    const nextWeapons = { ...weapons };
+    let nextDrones = [...drones];
+
+    // 1. Upgrade unlocked weapons
+    for (const key of Object.keys(nextWeapons) as WeaponType[]) {
+      const wep = nextWeapons[key];
+      if (wep.unlocked && wep.level < 10) {
+        const upCost = Math.round(wep.cost * 0.6 * wep.level) + 120;
+        if (curGold >= upCost) {
+          curGold -= upCost;
+          wep.level += 1;
+          wep.damage = Math.round(wep.damage * 1.25);
+          wep.magSize = Math.round(wep.magSize * 1.15);
+          wep.fireRate = Math.max(40, Math.round(wep.fireRate * 0.92));
+          upgradedAny = true;
+        }
+      }
+    }
+
+    // 2. Upgrade passive perks
+    for (const perk of UPGRADES_CONFIG) {
+      const curLvl = (nextUpgrades as any)[`${perk.id}Level`] || (nextUpgrades as any)[perk.id] || 0;
+      if (curLvl < perk.maxLevel) {
+        const cost = Math.round(perk.baseCost * Math.pow(perk.costMultiplier, curLvl));
+        if (curGold >= cost) {
+          curGold -= cost;
+          (nextUpgrades as any)[perk.id] = curLvl + 1;
+          (nextUpgrades as any)[`${perk.id}Level`] = curLvl + 1;
+          upgradedAny = true;
+        }
+      }
+    }
+
+    // 3. Upgrade active companion drones
+    nextDrones = nextDrones.map(d => {
+      if (d.unlocked && d.level < d.maxLevel) {
+        const cost = Math.round(d.cost * 0.7 * Math.pow(1.5, d.level));
+        if (curGold >= cost) {
+          curGold -= cost;
+          upgradedAny = true;
+          return {
+            ...d,
+            level: d.level + 1,
+            damage: d.damage + 10,
+            fireRate: Math.max(90, d.fireRate - 25),
+            range: d.range + 35
+          };
+        }
+      }
+      return d;
+    });
+
+    if (upgradedAny) {
+      soundManager.playPowerUp();
+      setPlayer(prev => ({
+        ...prev,
+        gold: curGold,
+        upgrades: nextUpgrades,
+        maxHp: 100 + ((nextUpgrades.maxHpLevel || 0) * 25),
+        maxArmor: 50 + ((nextUpgrades.armorLevel || 0) * 20),
+        speed: 3.6 + ((nextUpgrades.speedLevel || 0) * 0.35)
+      }));
+      setWeapons(nextWeapons);
+      setDrones(nextDrones);
+    }
+  };
+
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-neutral-950 select-none">
       
@@ -402,6 +478,7 @@ export const App: React.FC = () => {
             onGameOver={() => setGameState('gameover')}
             touchMoveInput={touchMoveInput}
             touchAimInput={touchAimInput}
+            autoAimEnabled={autoAimEnabled}
           />
 
           {/* Top & Bottom HUD Display */}
@@ -450,11 +527,18 @@ export const App: React.FC = () => {
             }}
             onNextWeapon={handleNextWeapon}
             onPrevWeapon={handlePrevWeapon}
+            onSelectWeapon={(id) => setCurrentWeaponId(id)}
             weapons={weapons}
             currentWeaponId={currentWeaponId}
             grenadesLeft={player.grenadeCount}
             onOpenShop={() => setIsShopOpen(true)}
             canAffordShop={(Object.values(weapons) as Weapon[]).some(w => (!w.unlocked && player.gold >= w.cost) || (w.unlocked && player.gold >= Math.round(w.cost * 0.6 * w.level) + 120))}
+            autoAimEnabled={autoAimEnabled}
+            onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
+            isReloading={isReloading}
+            reloadProgress={reloadProgress}
+            playerStamina={player.stamina}
+            maxStamina={player.maxStamina}
           />
 
           {/* Shop / Armory Modal */}
@@ -472,6 +556,7 @@ export const App: React.FC = () => {
             drones={drones}
             onUnlockDrone={handleUnlockDrone}
             onUpgradeDrone={handleUpgradeDrone}
+            onQuickUpgradeAll={handleQuickUpgradeAll}
             onSelectWarriorSkin={(id) => {
               setSelectedWarriorId(id);
               setPlayer(p => ({ ...p, warriorSkin: id }));

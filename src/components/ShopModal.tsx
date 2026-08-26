@@ -28,6 +28,7 @@ interface ShopModalProps {
   drones?: CompanionDroneConfig[];
   onUnlockDrone?: (droneId: string) => void;
   onUpgradeDrone?: (droneId: string) => void;
+  onQuickUpgradeAll?: () => void;
 }
 
 export const ShopModal: React.FC<ShopModalProps> = ({
@@ -46,7 +47,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onUnlockWarrior,
   drones = [],
   onUnlockDrone,
-  onUpgradeDrone
+  onUpgradeDrone,
+  onQuickUpgradeAll
 }) => {
   const [tab, setTab] = useState<'weapons' | 'drones' | 'warriors' | 'upgrades' | 'supplies'>('weapons');
 
@@ -63,36 +65,55 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-neutral-950/80 backdrop-blur-md select-none">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-neutral-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-neutral-950/85 backdrop-blur-md select-none">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-4xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden text-neutral-200">
         
         {/* HEADER */}
-        <div className="p-4 md:p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/60">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
-              <ShoppingCart className="w-6 h-6" />
+        <div className="p-3.5 sm:p-5 border-b border-neutral-800 flex flex-wrap items-center justify-between bg-neutral-950/70 gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-lg md:text-2xl font-black text-white tracking-wider flex items-center gap-2">
-                KHO VŨ KHÍ & CHIẾN BINH TÁC CHIẾN
+              <h2 className="text-base sm:text-2xl font-black text-white tracking-wider flex items-center gap-2">
+                KHO VŨ KHÍ & NÂNG CẤP
               </h2>
-              <p className="text-xs text-neutral-400">Nâng cấp trang bị & đổi đặc nhiệm để gia tăng cơ hội sống sót</p>
+              <p className="text-[11px] sm:text-xs text-neutral-400">Tối ưu trang bị, mua drone & nâng cấp toàn diện</p>
             </div>
           </div>
 
-          {/* Current Gold & Close Button */}
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500/50 px-3 md:px-4 py-2 rounded-2xl text-amber-300 font-bold text-xs md:text-base">
-              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
-              <span className="font-mono text-base md:text-lg font-black text-white">{player.gold}</span>
-              <span className="text-[10px] md:text-xs text-amber-400">VÀNG</span>
+          {/* Current Gold, Quick Upgrade Button & Close */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {onQuickUpgradeAll && (
+              <button
+                onClick={() => {
+                  onQuickUpgradeAll();
+                }}
+                disabled={player.gold < 80}
+                className={`px-3 py-2 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
+                  player.gold >= 80
+                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-neutral-950 shadow-amber-500/30 animate-pulse'
+                    : 'bg-neutral-800 text-neutral-500 opacity-60 cursor-not-allowed'
+                }`}
+                title="Tự động nâng cấp tất cả kỹ năng và vũ khí phù hợp với số vàng hiện có"
+              >
+                <Zap className="w-4 h-4 fill-neutral-950" />
+                <span>NÂNG CẤP NHANH</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-1.5 bg-amber-950/80 border border-amber-500/50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl text-amber-300 font-bold text-xs sm:text-sm">
+              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span className="font-mono text-sm sm:text-base font-black text-white">{player.gold}</span>
+              <span className="text-[9px] sm:text-xs text-amber-400">VÀNG</span>
             </div>
+
             <button
               onClick={() => {
                 soundManager.playEmptyClick();
                 onClose();
               }}
-              className="p-2.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all"
+              className="p-2 sm:p-2.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
