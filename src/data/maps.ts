@@ -1,4 +1,15 @@
 import { MapEnvironment } from '../types/game';
+import rooftopImg from '../assets/images/map_rooftop_thumb_1787739591407.jpg';
+import streetImg from '../assets/images/map_street_thumb_1787739610872.jpg';
+import bunkerImg from '../assets/images/map_bunker_thumb_1787739628103.jpg';
+import hospitalImg from '../assets/images/map_hospital_thumb_1787739645829.jpg';
+import graveyardImg from '../assets/images/map_graveyard_thumb_1787739670457.jpg';
+import desertImg from '../assets/images/map_desert_thumb_1787739729372.jpg';
+import cyberImg from '../assets/images/map_cyber_thumb_1787739750277.jpg';
+import volcanoImg from '../assets/images/map_volcano_thumb_1787739763618.jpg';
+import bgApocalypseImg from '../assets/images/game_bg_apocalypse_1787739687633.jpg';
+
+export const BG_APOCALYPSE_IMAGE = bgApocalypseImg;
 
 export const MAP_ENVIRONMENTS: MapEnvironment[] = [
   {
@@ -12,7 +23,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#38bdf8',
     ambientLight: 'rgba(14, 165, 233, 0.08)',
     fogColor: '#030712',
-    hazardsVi: 'Không có vật che chắn tự nhiên, quái tràn ra từ cầu thang thoát hiểm'
+    hazardsVi: 'Không có vật che chắn tự nhiên, quái tràn ra từ cầu thang thoát hiểm',
+    image: rooftopImg
   },
   {
     id: 'street',
@@ -25,7 +37,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#fbbf24',
     ambientLight: 'rgba(245, 158, 11, 0.07)',
     fogColor: '#0a0a0a',
-    hazardsVi: 'Xe cảnh sát cháy nổ lan, cống rãnh bốc khói che tầm nhìn'
+    hazardsVi: 'Xe cảnh sát cháy nổ lan, cống rãnh bốc khói che tầm nhìn',
+    image: streetImg
   },
   {
     id: 'bunker',
@@ -38,7 +51,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#34d399',
     ambientLight: 'rgba(16, 185, 129, 0.09)',
     fogColor: '#022c22',
-    hazardsVi: 'Hóa chất độc hại ăn mòn, đèn neon nhấp nháy hạn chế tầm nhìn'
+    hazardsVi: 'Hóa chất độc hại ăn mòn, đèn neon nhấp nháy hạn chế tầm nhìn',
+    image: bunkerImg
   },
   {
     id: 'hospital',
@@ -51,7 +65,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#f87171',
     ambientLight: 'rgba(239, 68, 68, 0.1)',
     fogColor: '#1a0505',
-    hazardsVi: 'Nhiều góc khuất và xác bệnh nhân đột biến bất ngờ'
+    hazardsVi: 'Nhiều góc khuất và xác bệnh nhân đột biến bất ngờ',
+    image: hospitalImg
   },
   {
     id: 'graveyard',
@@ -64,7 +79,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#c084fc',
     ambientLight: 'rgba(168, 85, 247, 0.12)',
     fogColor: '#1e1035',
-    hazardsVi: 'Bẫy ma thuật tà ác, sương mù tử khí che lấp bước chân zombie'
+    hazardsVi: 'Bẫy ma thuật tà ác, sương mù tử khí che lấp bước chân zombie',
+    image: graveyardImg
   },
   {
     id: 'desert_outpost',
@@ -77,7 +93,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#fde047',
     ambientLight: 'rgba(234, 179, 8, 0.08)',
     fogColor: '#291804',
-    hazardsVi: 'Gió cát giảm tầm nhìn, thùng dầu rò rỉ dễ bắt lửa bốc cháy dữ dội'
+    hazardsVi: 'Gió cát giảm tầm nhìn, thùng dầu rò rỉ dễ bắt lửa bốc cháy dữ dội',
+    image: desertImg
   },
   {
     id: 'cyber_facility',
@@ -90,7 +107,8 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#22d3ee',
     ambientLight: 'rgba(6, 182, 212, 0.14)',
     fogColor: '#042f2e',
-    hazardsVi: 'Dòng điện cao thế rò rỉ, trường lực phản xạ đạn năng lượng'
+    hazardsVi: 'Dòng điện cao thế rò rỉ, trường lực phản xạ đạn năng lượng',
+    image: cyberImg
   },
   {
     id: 'volcanic_core',
@@ -103,6 +121,7 @@ export const MAP_ENVIRONMENTS: MapEnvironment[] = [
     accentColor: '#fb923c',
     ambientLight: 'rgba(249, 115, 22, 0.16)',
     fogColor: '#270a04',
-    hazardsVi: 'Dung nham nóng chảy gây sát thương bỏng liên tục, tro lửa mù mịt'
+    hazardsVi: 'Dung nham nóng chảy gây sát thương bỏng liên tục, tro lửa mù mịt',
+    image: volcanoImg
   }
 ];

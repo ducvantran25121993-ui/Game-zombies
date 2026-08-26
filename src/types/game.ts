@@ -274,6 +274,7 @@ export interface MapEnvironment {
   ambientLight: string;
   fogColor: string;
   hazardsVi: string;
+  image?: string;
 }
 
 export interface HighScoreRecord {
