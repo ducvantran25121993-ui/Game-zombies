@@ -1,0 +1,6 @@
+{
+  "name": "Zombie Apocalypse: Survival Strike",
+  "description": "Game bắn súng sinh tồn diệt Zombie 2D góc nhìn từ trên xuống với các bối cảnh linh hoạt (Sân thượng Helipad, Đường phố hoang tàn, Hầm ngầm Bio-lab, Bệnh viện ma ám), hệ thống zombie đồ họa kinh dị chi tiết và kho vũ khí nâng cấp đa dạng.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
