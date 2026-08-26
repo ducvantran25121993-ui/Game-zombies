@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { PlayerStats, Weapon, WeaponType, ActiveBuffs } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
-  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart
+  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin
 } from 'lucide-react';
 import { WARRIOR_CLASSES } from '../data/warriors';
+import { MAP_ENVIRONMENTS } from '../data/maps';
 
 interface HUDProps {
   player: PlayerStats;
@@ -17,6 +18,7 @@ interface HUDProps {
   zombiesRemaining: number;
   bossHp?: { current: number; max: number; name: string } | null;
   activeBuffs: ActiveBuffs;
+  currentMapId?: MapEnvironmentId;
   isReloading: boolean;
   reloadProgress: number;
   onOpenShop: () => void;
@@ -37,6 +39,7 @@ export const HUD: React.FC<HUDProps> = ({
   zombiesRemaining,
   bossHp,
   activeBuffs,
+  currentMapId = 'rooftop',
   isReloading,
   reloadProgress,
   onOpenShop,
@@ -52,6 +55,10 @@ export const HUD: React.FC<HUDProps> = ({
   const waveProgress = totalZombiesInWave > 0 
     ? Math.max(0, Math.min(100, ((totalZombiesInWave - zombiesRemaining) / totalZombiesInWave) * 100))
     : 0;
+
+  const currentMap = useMemo(() => {
+    return MAP_ENVIRONMENTS.find(m => m.id === currentMapId) || MAP_ENVIRONMENTS[0];
+  }, [currentMapId]);
 
   const isLowHp = player.hp < player.maxHp * 0.3;
 
@@ -180,17 +187,31 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           )}
 
-          {/* Wave Banner */}
-          <div className="bg-neutral-950/85 backdrop-blur-md px-5 py-2 rounded-2xl border border-neutral-800 shadow-xl flex flex-col items-center min-w-[170px]">
-            <div className="text-amber-400 text-xs font-black tracking-widest uppercase flex items-center gap-1.5">
-              <Skull className="w-4 h-4 text-amber-500" />
-              ĐỢT TẤN CÔNG {wave}
+          {/* Wave & Sector Banner */}
+          <div className="bg-neutral-950/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-neutral-800 shadow-xl flex flex-col items-center min-w-[200px] gap-1">
+            <div className="flex items-center gap-2">
+              <div className="text-amber-400 text-xs font-black tracking-widest uppercase flex items-center gap-1">
+                <Skull className="w-3.5 h-3.5 text-amber-500" />
+                ĐỢT {wave}
+              </div>
+              <span className="text-neutral-600 text-xs">•</span>
+              <div 
+                className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-neutral-700 bg-neutral-900/90 flex items-center gap-1 shadow-sm"
+                style={{ color: currentMap.accentColor, borderColor: `${currentMap.themeColor}55` }}
+              >
+                <MapPin className="w-3 h-3" />
+                {currentMap.nameVi}
+              </div>
             </div>
-            <div className="text-[11px] text-neutral-300 font-medium mt-0.5">
-              Còn lại: <span className="text-red-400 font-bold font-mono">{zombiesRemaining}</span> quái
+
+            <div className="text-[10px] text-neutral-400 font-medium flex items-center gap-2">
+              <span>Còn lại: <strong className="text-red-400 font-mono text-xs">{zombiesRemaining}</strong> quái</span>
+              <span className="text-neutral-600">|</span>
+              <span className="text-amber-400/80 font-mono text-[9px] uppercase tracking-wider">{currentMap.badge}</span>
             </div>
+
             {/* Wave progress bar */}
-            <div className="h-1.5 w-32 bg-neutral-800 rounded-full overflow-hidden mt-1.5">
+            <div className="h-1.5 w-36 bg-neutral-800 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-300"
                 style={{ width: `${waveProgress}%` }}

@@ -455,6 +455,165 @@ export const renderObstacles = ({ ctx, obstacles, time }: RenderObstaclesParams)
         break;
       }
 
+      // ---------------------------------------------------------------------
+      // J. ANCIENT TOMBSTONES (BIA MỘ ĐÁ CỔ NGHĨA ĐỊA)
+      // ---------------------------------------------------------------------
+      case 'tombstone': {
+        // Stone curved arch headstone
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(-halfW + 4, halfH);
+        ctx.lineTo(-halfW + 4, -halfH + 8);
+        ctx.quadraticCurveTo(0, -halfH - 6, halfW - 4, -halfH + 8);
+        ctx.lineTo(halfW - 4, halfH);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Carved Cross on Headstone
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-2, -halfH + 6, 4, 14);
+        ctx.fillRect(-7, -halfH + 10, 14, 4);
+
+        // RIP Text
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 9px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('R.I.P', 0, halfH - 6);
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // K. GOTHIC STONE CRYPTS (LĂNG MỘ ĐÁ HOÀNG GIA)
+      // ---------------------------------------------------------------------
+      case 'crypt': {
+        // Heavy Stone Sarcophagus
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-halfW, -halfH, w, h);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(-halfW, -halfH, w, h);
+
+        // Stone Lid with Engraving
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-halfW + 4, -halfH + 4, w - 8, h - 8);
+
+        // Mystic Purple Glowing Inscription
+        ctx.fillStyle = '#c084fc';
+        ctx.shadowColor = '#a855f7';
+        ctx.shadowBlur = 8;
+        ctx.font = 'bold 12px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✝ VAULT ✝', 0, 0);
+        ctx.shadowBlur = 0;
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // L. VOLCANIC MAGMA ROCKS (ĐÁ DUNG NHAM NÚI LỬA)
+      // ---------------------------------------------------------------------
+      case 'magma_rock': {
+        // Dark Obsidian Boulder
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.arc(0, 0, halfW, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#44403c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Glowing Magma Veins
+        ctx.save();
+        ctx.strokeStyle = '#f97316';
+        ctx.shadowColor = '#ea580c';
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-halfW + 6, -4);
+        ctx.lineTo(0, 2);
+        ctx.lineTo(halfW - 6, -2);
+        ctx.moveTo(2, -halfH + 6);
+        ctx.lineTo(0, 2);
+        ctx.lineTo(-2, halfH - 6);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // M. CYBER ENERGY BARRIER (TRỤ TRƯỜNG LỰC NĂNG LƯỢNG)
+      // ---------------------------------------------------------------------
+      case 'barrier': {
+        // Metallic Hex Base
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, halfW * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Glowing Neon Core
+        const barrierPulse = Math.sin(time * 0.008) * 3;
+        ctx.fillStyle = '#22d3ee';
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(0, 0, 6 + barrierPulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // N. MILITARY SATELLITE DISH (ĂNG-TEN VỆ TINH SA MẠC)
+      // ---------------------------------------------------------------------
+      case 'satellite': {
+        // Base Pylon
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-halfW * 0.4, -halfH * 0.4, w * 0.4, h * 0.4);
+
+        // Satellite Dish
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, halfW * 0.8, halfH * 0.5, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Feed Horn & Transmitter LED
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(4, -4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // O. DESERT CACTUS (XƯƠNG RỒNG SA MẠC)
+      // ---------------------------------------------------------------------
+      case 'cactus': {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, halfW * 0.5, halfH * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#166534';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Arms
+        ctx.fillRect(-halfW * 0.85, -4, halfW * 0.5, 8);
+        ctx.fillRect(-halfW * 0.85, -12, 6, 12);
+        ctx.fillRect(halfW * 0.35, 2, halfW * 0.5, 8);
+        ctx.fillRect(halfW * 0.7, -6, 6, 12);
+        break;
+      }
+
       default:
         ctx.fillStyle = '#475569';
         ctx.fillRect(-halfW, -halfH, w, h);

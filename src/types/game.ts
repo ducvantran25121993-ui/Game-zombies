@@ -180,7 +180,13 @@ export type ObstacleType =
   | 'hvac' 
   | 'server' 
   | 'gurney' 
-  | 'streetlight';
+  | 'streetlight'
+  | 'tombstone'
+  | 'crypt'
+  | 'magma_rock'
+  | 'barrier'
+  | 'satellite'
+  | 'cactus';
 
 export interface Obstacle {
   id: string;
@@ -246,7 +252,15 @@ export interface ActiveBuffs {
 export type GameDifficulty = 'easy' | 'normal' | 'hard' | 'nightmare';
 export type GameMode = 'survival' | 'endless';
 
-export type MapEnvironmentId = 'rooftop' | 'street' | 'bunker' | 'hospital';
+export type MapEnvironmentId = 
+  | 'rooftop' 
+  | 'street' 
+  | 'bunker' 
+  | 'hospital'
+  | 'graveyard'
+  | 'desert_outpost'
+  | 'cyber_facility'
+  | 'volcanic_core';
 
 export interface MapEnvironment {
   id: MapEnvironmentId;

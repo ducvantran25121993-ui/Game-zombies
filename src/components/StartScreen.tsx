@@ -4,7 +4,7 @@ import {
   Skull, Play, Trophy, Shield, Zap, Crosshair, 
   Flame, HelpCircle, Radio, Award, ChevronRight, Check,
   UserCheck, Sparkles, Heart, Footprints, MapPin, Building2,
-  Biohazard, AlertTriangle
+  Biohazard, AlertTriangle, Ghost, SunMedium, Cpu, Layers
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WARRIOR_HERO_BANNER, WarriorClass } from '../data/warriors';
@@ -355,9 +355,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <div className="w-full space-y-4">
             <div className="text-center mb-2">
               <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center justify-center gap-2">
-                <MapPin className="w-5 h-5 text-sky-400" /> BỐI CẢNH CHIẾN TRƯỜNG & KHÔNG GIAN
+                <MapPin className="w-5 h-5 text-sky-400" /> 8 BỐI CẢNH CHIẾN TRƯỜNG & KHÔNG GIAN
               </h3>
-              <p className="text-xs text-neutral-400">Chọn địa hình tác chiến và không gian sinh tồn chống zombie</p>
+              <p className="text-xs text-neutral-400">Chọn bối cảnh xuất phát điểm — qua mỗi vòng bối cảnh sẽ tự động chuyển đổi sang vùng đất mới!</p>
+            </div>
+
+            {/* Dynamic Map Rotation Announcement Banner */}
+            <div className="p-3 rounded-2xl bg-sky-950/40 border border-sky-500/30 flex items-center gap-3 text-xs text-sky-200">
+              <div className="p-2 rounded-xl bg-sky-900/60 border border-sky-400/40 text-sky-300 shrink-0">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-sky-300 font-bold block">TỰ ĐỘNG CHUYỂN ĐỔI BỐI CẢNH MỖI VÒNG:</strong>
+                Sau khi vượt qua mỗi đợt sóng Zombie & Boss, toàn bộ không gian bản đồ và chướng ngại vật sẽ xoay vòng sang bối cảnh tiếp theo theo chu trình 8 chiến trường!
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -377,18 +388,28 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       {/* Map Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-700">
+                          <div 
+                            className="p-2.5 rounded-xl bg-neutral-900 border"
+                            style={{ borderColor: `${map.themeColor}60` }}
+                          >
                             {map.id === 'rooftop' && <Building2 className="w-6 h-6 text-sky-400" />}
                             {map.id === 'street' && <Crosshair className="w-6 h-6 text-amber-400" />}
                             {map.id === 'bunker' && <Biohazard className="w-6 h-6 text-emerald-400" />}
                             {map.id === 'hospital' && <Skull className="w-6 h-6 text-rose-400" />}
+                            {map.id === 'graveyard' && <Ghost className="w-6 h-6 text-purple-400" />}
+                            {map.id === 'desert_outpost' && <SunMedium className="w-6 h-6 text-yellow-400" />}
+                            {map.id === 'cyber_facility' && <Cpu className="w-6 h-6 text-cyan-400" />}
+                            {map.id === 'volcanic_core' && <Flame className="w-6 h-6 text-red-500" />}
                           </div>
                           <div>
                             <h4 className="font-bold text-white text-base">{map.nameVi}</h4>
                             <span className="text-[10px] text-sky-400 font-mono font-bold">{map.codename}</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-neutral-900 text-[10px] font-bold text-sky-300 border border-sky-500/30">
+                        <span 
+                          className="px-2 py-0.5 rounded-full bg-neutral-900 text-[10px] font-bold border"
+                          style={{ color: map.accentColor, borderColor: `${map.themeColor}50` }}
+                        >
                           {map.badge}
                         </span>
                       </div>

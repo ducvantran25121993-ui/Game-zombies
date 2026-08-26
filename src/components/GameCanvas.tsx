@@ -14,6 +14,18 @@ import { renderObstacles } from '../utils/renderObstacles';
 import { renderDrops } from '../utils/renderDrops';
 import { CompanionDroneConfig, ActiveDroneState } from '../data/drones';
 import { renderCompanionDrone } from '../utils/renderCompanionDrone';
+import { MAP_ENVIRONMENTS } from '../data/maps';
+
+const MAP_SEQUENCE: MapEnvironmentId[] = [
+  'rooftop',
+  'street',
+  'bunker',
+  'hospital',
+  'graveyard',
+  'desert_outpost',
+  'cyber_facility',
+  'volcanic_core'
+];
 
 interface GameCanvasProps {
   player: PlayerStats;
@@ -39,6 +51,7 @@ interface GameCanvasProps {
   difficulty: GameDifficulty;
   mode: GameMode;
   selectedMapId?: MapEnvironmentId;
+  onMapChange?: (newMapId: MapEnvironmentId) => void;
   isPaused: boolean;
   isShopOpen: boolean;
   onGameOver: () => void;
@@ -71,6 +84,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   difficulty,
   mode,
   selectedMapId = 'rooftop',
+  onMapChange,
   isPaused,
   isShopOpen,
   onGameOver,
@@ -84,6 +98,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     player: PlayerStats;
     currentWeapon: Weapon;
     weapons: Record<string, Weapon>;
+    currentMapId: MapEnvironmentId;
     activeDrones: ActiveDroneState[];
     laserBeams: Array<{ x1: number; y1: number; x2: number; y2: number; color: string; alpha: number }>;
     zombies: Zombie[];
@@ -115,6 +130,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     player: { ...player },
     currentWeapon: { ...currentWeapon },
     weapons: { ...weapons },
+    currentMapId: (selectedMapId as MapEnvironmentId) || 'rooftop',
     activeDrones: [],
     laserBeams: [],
     zombies: [],
@@ -200,13 +216,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     stateRef.current.activeDrones = updatedActive;
   }, [drones, player.x, player.y]);
 
-  // Initialize Map-Specific Obstacles, Vehicles, Trees & Barrels
-  useEffect(() => {
+  // Helper to generate rich dynamic obstacles tailored to each of the 8 unique map environments
+  const generateObstaclesForMap = (mapId: MapEnvironmentId): Obstacle[] => {
     const obs: Obstacle[] = [];
-    const mapId = (selectedMapId as MapEnvironmentId) || 'rooftop';
 
     if (mapId === 'street') {
-      // 1. Abandoned Vehicles (Police cars, Taxis, Civilian SUVs)
+      // 1. Street: Abandoned Police cars, Taxis, Civilian SUVs, Trees, Sandbags & Barrels
       const vehicleConfigs = [
         { variant: 'police', color: '#18181b', x: 380, y: 340, angle: 0.25, width: 92, height: 50, hp: 350 },
         { variant: 'taxi', color: '#eab308', x: 860, y: 560, angle: -0.18, width: 88, height: 48, hp: 300 },
@@ -231,7 +246,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       });
 
-      // 2. Street Trees (Lush green foliage & dead apocalyptic trees)
+      // Street Trees
       const treeConfigs = [
         { x: 260, y: 220, variant: 'green', size: 70 },
         { x: 540, y: 180, variant: 'dead', size: 58 },
@@ -256,7 +271,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       });
 
-      // 3. Sandbags, Streetlights & Explosive Barrels
+      // Sandbags, Streetlights & Explosive Barrels
       for (let i = 0; i < 14; i++) {
         const isBarrel = Math.random() > 0.4;
         obs.push({
@@ -271,7 +286,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       }
     } else if (mapId === 'rooftop') {
-      // Rooftop: Heavy HVAC units with spinning fans, potted trees, crates, explosive tanks
+      // 2. Rooftop: Heavy HVAC units with spinning fans, potted terrace shrubs, crates, explosive tanks
       const hvacUnits = [
         { x: 340, y: 340, w: 76, h: 76 },
         { x: 1380, y: 340, w: 76, h: 76 },
@@ -306,7 +321,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       }
     } else if (mapId === 'bunker') {
-      // Bunker: Server racks, toxic barrels, sandbag bastions
+      // 3. Bunker: Server racks, toxic biohazard barrels, sandbags
       const serverRacks = [
         { x: 420, y: 330, w: 90, h: 42 },
         { x: 720, y: 330, w: 90, h: 42 },
@@ -340,8 +355,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           isExplosive: true
         });
       }
-    } else {
-      // Hospital: Ambulances, Gurneys, Crates, Oxygen Barrels
+    } else if (mapId === 'hospital') {
+      // 4. Hospital: Ambulances, Gurneys, Crates, Oxygen Barrels
       obs.push({
         id: 'amb_1',
         x: 400,
@@ -385,7 +400,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           width: 56,
           height: 30,
           type: 'gurney',
-          angle: (idx * 0.45),
+          angle: idx * 0.45,
           hp: 180,
           maxHp: 180
         });
@@ -404,9 +419,205 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           isExplosive: isBarrel
         });
       }
+    } else if (mapId === 'graveyard') {
+      // 5. Graveyard: Ancient Headstones, Gothic Crypts, Dead Spooky Trees, Cursed Urns
+      const cryptConfigs = [
+        { x: 380, y: 360, w: 84, h: 64 },
+        { x: 1340, y: 360, w: 84, h: 64 },
+        { x: 380, y: 940, w: 84, h: 64 },
+        { x: 1340, y: 940, w: 84, h: 64 }
+      ];
+      cryptConfigs.forEach((c, idx) => {
+        obs.push({
+          id: `crypt_${idx}`,
+          x: c.x,
+          y: c.y,
+          width: c.w,
+          height: c.h,
+          type: 'crypt',
+          hp: 600,
+          maxHp: 600
+        });
+      });
+
+      // Ancient Tombstones
+      for (let i = 0; i < 16; i++) {
+        obs.push({
+          id: `tomb_${i}`,
+          x: 260 + Math.random() * (MAP_SIZE.width - 520),
+          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          width: 44,
+          height: 52,
+          type: 'tombstone',
+          hp: 240,
+          maxHp: 240
+        });
+      }
+
+      // Spooky dead trees & explosive urns
+      for (let i = 0; i < 10; i++) {
+        const isBarrel = i % 2 === 0;
+        obs.push({
+          id: `grave_prop_${i}`,
+          x: 280 + Math.random() * (MAP_SIZE.width - 560),
+          y: 280 + Math.random() * (MAP_SIZE.height - 560),
+          width: isBarrel ? 36 : 60,
+          height: isBarrel ? 36 : 60,
+          type: isBarrel ? 'barrel' : 'tree',
+          variant: 'dead',
+          hp: isBarrel ? 30 : 350,
+          isExplosive: isBarrel
+        });
+      }
+    } else if (mapId === 'desert_outpost') {
+      // 6. Desert Outpost: Satellite Comms Dishes, Saguaro Cacti, Sandbags & Fuel Drums
+      const sats = [
+        { x: 420, y: 380 },
+        { x: 1300, y: 380 },
+        { x: 860, y: 920 }
+      ];
+      sats.forEach((s, idx) => {
+        obs.push({
+          id: `sat_${idx}`,
+          x: s.x,
+          y: s.y,
+          width: 70,
+          height: 70,
+          type: 'satellite',
+          hp: 450,
+          maxHp: 450
+        });
+      });
+
+      // Desert Cacti
+      for (let i = 0; i < 12; i++) {
+        obs.push({
+          id: `cactus_${i}`,
+          x: 260 + Math.random() * (MAP_SIZE.width - 520),
+          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          width: 48,
+          height: 64,
+          type: 'cactus',
+          hp: 180,
+          maxHp: 180
+        });
+      }
+
+      // Sandbags & Fuel Barrels
+      for (let i = 0; i < 16; i++) {
+        const isBarrel = Math.random() > 0.45;
+        obs.push({
+          id: `desert_prop_${i}`,
+          x: 250 + Math.random() * (MAP_SIZE.width - 500),
+          y: 250 + Math.random() * (MAP_SIZE.height - 500),
+          width: isBarrel ? 36 : 52,
+          height: isBarrel ? 36 : 52,
+          type: isBarrel ? 'barrel' : 'sandbag',
+          hp: isBarrel ? 30 : 300,
+          isExplosive: isBarrel
+        });
+      }
+    } else if (mapId === 'cyber_facility') {
+      // 7. Cyber Facility: Quantum Server Racks, Glowing Energy Barrier Pylons, Plasma Barrels
+      const cyberServers = [
+        { x: 440, y: 350, w: 90, h: 44 },
+        { x: 1280, y: 350, w: 90, h: 44 },
+        { x: 440, y: 950, w: 90, h: 44 },
+        { x: 1280, y: 950, w: 90, h: 44 }
+      ];
+      cyberServers.forEach((cs, idx) => {
+        obs.push({
+          id: `csrv_${idx}`,
+          x: cs.x,
+          y: cs.y,
+          width: cs.w,
+          height: cs.h,
+          type: 'server',
+          hp: 550,
+          maxHp: 550
+        });
+      });
+
+      // Energy Barrier Pylons
+      const barriers = [
+        { x: 620, y: 640 },
+        { x: 1100, y: 640 },
+        { x: 860, y: 380 },
+        { x: 860, y: 900 }
+      ];
+      barriers.forEach((b, idx) => {
+        obs.push({
+          id: `barrier_${idx}`,
+          x: b.x,
+          y: b.y,
+          width: 50,
+          height: 50,
+          type: 'barrier',
+          hp: 400,
+          maxHp: 400
+        });
+      });
+
+      // Plasma explosive barrels & tech crates
+      for (let i = 0; i < 14; i++) {
+        const isBarrel = i % 2 === 0;
+        obs.push({
+          id: `cyber_prop_${i}`,
+          x: 260 + Math.random() * (MAP_SIZE.width - 520),
+          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          width: isBarrel ? 36 : 46,
+          height: isBarrel ? 36 : 46,
+          type: isBarrel ? 'barrel' : 'crate',
+          hp: isBarrel ? 30 : 280,
+          isExplosive: isBarrel
+        });
+      }
+    } else if (mapId === 'volcanic_core') {
+      // 8. Volcanic Magma Core: Magma obsidian boulders, fiery explosive barrels
+      const magmaRocks = [
+        { x: 380, y: 360, size: 68 },
+        { x: 1340, y: 360, size: 74 },
+        { x: 380, y: 940, size: 70 },
+        { x: 1340, y: 940, size: 76 },
+        { x: 860, y: 340, size: 64 },
+        { x: 860, y: 960, size: 64 }
+      ];
+      magmaRocks.forEach((mr, idx) => {
+        obs.push({
+          id: `magma_${idx}`,
+          x: mr.x,
+          y: mr.y,
+          width: mr.size,
+          height: mr.size,
+          type: 'magma_rock',
+          hp: 550,
+          maxHp: 550
+        });
+      });
+
+      for (let i = 0; i < 18; i++) {
+        const isBarrel = Math.random() > 0.4;
+        obs.push({
+          id: `volc_prop_${i}`,
+          x: 260 + Math.random() * (MAP_SIZE.width - 520),
+          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          width: isBarrel ? 36 : 56,
+          height: isBarrel ? 36 : 56,
+          type: isBarrel ? 'barrel' : 'magma_rock',
+          hp: isBarrel ? 30 : 400,
+          isExplosive: isBarrel
+        });
+      }
     }
 
-    stateRef.current.obstacles = obs;
+    return obs;
+  };
+
+  // Initialize Game & Start First Wave with selected map
+  useEffect(() => {
+    const initialMapId = (selectedMapId as MapEnvironmentId) || 'rooftop';
+    stateRef.current.currentMapId = initialMapId;
+    stateRef.current.obstacles = generateObstaclesForMap(initialMapId);
     startWave(1);
   }, [selectedMapId]);
 
@@ -414,6 +625,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const state = stateRef.current;
     state.wave = waveNum;
     setWave(waveNum);
+
+    // DYNAMIC MAP ROTATION: Every wave changes the background environment!
+    const baseIndex = MAP_SEQUENCE.indexOf((selectedMapId as MapEnvironmentId) || 'rooftop');
+    const safeBaseIndex = baseIndex >= 0 ? baseIndex : 0;
+    const currentMapIndex = (safeBaseIndex + waveNum - 1) % MAP_SEQUENCE.length;
+    const nextMapId = MAP_SEQUENCE[currentMapIndex];
+
+    state.currentMapId = nextMapId;
+    state.obstacles = generateObstaclesForMap(nextMapId);
+
+    // Sync active map back to parent application & HUD
+    if (onMapChange) {
+      onMapChange(nextMapId);
+    }
+
+    const mapMeta = MAP_ENVIRONMENTS.find(m => m.id === nextMapId) || MAP_ENVIRONMENTS[0];
 
     const diffMult = difficulty === 'easy' ? 0.7 : difficulty === 'hard' ? 1.3 : difficulty === 'nightmare' ? 1.8 : 1.0;
     const baseCount = Math.floor((12 + waveNum * 6) * diffMult);
@@ -428,15 +655,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     soundManager.playBossAlarm();
 
-    // Visual wave banner
+    // Visual map change & wave announcement banner
     state.floatingTexts.push({
       id: Math.random().toString(),
       x: state.player.x,
-      y: state.player.y - 45,
-      text: `⚠️ VÒNG ${waveNum}: CÓ ${waveNum} TRÙM TỬ THẦN!`,
+      y: state.player.y - 75,
+      text: `🗺️ BỐI CẢNH MỚI: ${mapMeta.nameVi.toUpperCase()} [${mapMeta.badge}]`,
+      color: mapMeta.accentColor,
+      alpha: 1,
+      life: 120,
+      isCrit: true
+    });
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x: state.player.x,
+      y: state.player.y - 40,
+      text: `⚠️ ĐỢT ${waveNum}: XUẤT HIỆN ${waveNum} BOSS ĐỘT BIẾN!`,
       color: '#ef4444',
       alpha: 1,
-      life: 90,
+      life: 100,
       isCrit: true
     });
   };
@@ -1911,10 +2149,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.scale(zoom, zoom);
       ctx.translate(-state.camera.x, -state.camera.y);
 
-      // Render Selected Flexible Map Environment (Helipad Rooftop, City Street, Biohazard Bunker, Hospital)
+      // Render Selected Flexible Map Environment (Rotates dynamically every wave!)
       renderMapEnvironment({
         ctx,
-        mapId: (selectedMapId as MapEnvironmentId) || 'rooftop',
+        mapId: state.currentMapId || (selectedMapId as MapEnvironmentId) || 'rooftop',
         mapSize: MAP_SIZE,
         canvasWidth: canvas.width,
         canvasHeight: canvas.height,

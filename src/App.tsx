@@ -396,6 +396,7 @@ export const App: React.FC = () => {
             difficulty={difficulty}
             mode={mode}
             selectedMapId={selectedMapId}
+            onMapChange={setSelectedMapId}
             isPaused={isPaused}
             isShopOpen={isShopOpen}
             onGameOver={() => setGameState('gameover')}
@@ -414,6 +415,7 @@ export const App: React.FC = () => {
             zombiesRemaining={zombiesRemaining}
             bossHp={bossHp}
             activeBuffs={activeBuffs}
+            currentMapId={selectedMapId}
             isReloading={isReloading}
             reloadProgress={reloadProgress}
             onOpenShop={() => setIsShopOpen(true)}
