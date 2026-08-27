@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-[100dvh] bg-neutral-950 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6 overflow-y-auto text-neutral-200 select-none pb-24">
+    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-36 overscroll-y-contain">
       
       {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">

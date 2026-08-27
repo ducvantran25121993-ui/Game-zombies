@@ -438,7 +438,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-neutral-950 select-none">
+    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-screen h-screen overflow-hidden select-none' : 'min-h-screen bg-neutral-950'}`}>
       
       {/* 1. START SCREEN */}
       {gameState === 'start' && (
