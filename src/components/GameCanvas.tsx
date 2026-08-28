@@ -104,6 +104,43 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Synchronized refs for props to ensure the high-frequency animation loop is never restarted on re-render
+  const touchMoveInputRef = useRef(touchMoveInput);
+  touchMoveInputRef.current = touchMoveInput;
+
+  const touchAimInputRef = useRef(touchAimInput);
+  touchAimInputRef.current = touchAimInput;
+
+  const isPausedRef = useRef(isPaused);
+  isPausedRef.current = isPaused;
+
+  const isShopOpenRef = useRef(isShopOpen);
+  isShopOpenRef.current = isShopOpen;
+
+  const autoAimEnabledRef = useRef(autoAimEnabled);
+  autoAimEnabledRef.current = autoAimEnabled;
+
+  const cameraZoomModeRef = useRef(cameraZoomMode);
+  cameraZoomModeRef.current = cameraZoomMode;
+
+  const difficultyRef = useRef(difficulty);
+  difficultyRef.current = difficulty;
+
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+
+  const onGameOverRef = useRef(onGameOver);
+  onGameOverRef.current = onGameOver;
+
+  const dronesRef = useRef(drones);
+  dronesRef.current = drones;
+
+  const selectedMapIdRef = useRef(selectedMapId);
+  selectedMapIdRef.current = selectedMapId;
+
+  const onMapChangeRef = useRef(onMapChange);
+  onMapChangeRef.current = onMapChange;
+
   // Mutable Game State in Ref to achieve steady 60 FPS without React re-render lag
   const stateRef = useRef<{
     player: PlayerStats;
@@ -643,21 +680,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return obs;
   };
 
-  // Initialize Game & Start First Wave with selected map
-  useEffect(() => {
-    const initialMapId = (selectedMapId as MapEnvironmentId) || 'rooftop';
-    stateRef.current.currentMapId = initialMapId;
-    stateRef.current.obstacles = generateObstaclesForMap(initialMapId);
-    startWave(1);
-  }, [selectedMapId]);
-
-  const startWave = (waveNum: number) => {
+  const startWave = useCallback((waveNum: number) => {
     const state = stateRef.current;
     state.wave = waveNum;
     setWave(waveNum);
 
     // DYNAMIC MAP ROTATION: Every wave changes the background environment!
-    const baseIndex = MAP_SEQUENCE.indexOf((selectedMapId as MapEnvironmentId) || 'rooftop');
+    const baseMap = (selectedMapIdRef.current as MapEnvironmentId) || 'rooftop';
+    const baseIndex = MAP_SEQUENCE.indexOf(baseMap);
     const safeBaseIndex = baseIndex >= 0 ? baseIndex : 0;
     const currentMapIndex = (safeBaseIndex + waveNum - 1) % MAP_SEQUENCE.length;
     const nextMapId = MAP_SEQUENCE[currentMapIndex];
@@ -666,13 +696,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     state.obstacles = generateObstaclesForMap(nextMapId);
 
     // Sync active map back to parent application & HUD
-    if (onMapChange) {
-      onMapChange(nextMapId);
+    if (onMapChangeRef.current) {
+      onMapChangeRef.current(nextMapId);
     }
 
-    const mapMeta = MAP_ENVIRONMENTS.find(m => m.id === nextMapId) || MAP_ENVIRONMENTS[0];
-
-    const diffMult = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.35 : difficulty === 'nightmare' ? 1.85 : 1.0;
+    const currentDifficulty = difficultyRef.current;
+    const diffMult = currentDifficulty === 'easy' ? 0.8 : currentDifficulty === 'hard' ? 1.35 : currentDifficulty === 'nightmare' ? 1.85 : 1.0;
     // Dramatically increased zombie hordes per wave: Wave 1 = ~40, Wave 2 = ~66, Wave 3 = ~96, Wave 4 = ~127, Wave 5 = ~160+
     const baseCount = Math.floor((18 + waveNum * 16 + Math.floor(Math.pow(waveNum, 1.45) * 6)) * diffMult);
     
@@ -704,7 +733,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     soundManager.playBossAlarm();
-  };
+  }, [setWave, setTotalZombiesInWave, setZombiesRemaining]);
+
+  // Initialize Game & Start First Wave only on initial component mount
+  useEffect(() => {
+    const initialMapId = (selectedMapIdRef.current as MapEnvironmentId) || 'rooftop';
+    stateRef.current.currentMapId = initialMapId;
+    stateRef.current.obstacles = generateObstaclesForMap(initialMapId);
+    startWave(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keyboard Listeners
   useEffect(() => {
@@ -871,10 +909,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     let animationId: number;
 
     const resizeCanvas = () => {
-      const w = canvas.parentElement?.clientWidth || window.innerWidth;
-      const h = canvas.parentElement?.clientHeight || window.innerHeight;
-      canvas.width = Math.max(300, w);
-      canvas.height = Math.max(300, h);
+      const targetW = Math.max(300, Math.floor(canvas.parentElement?.clientWidth || window.innerWidth || 390));
+      const targetH = Math.max(300, Math.floor(canvas.parentElement?.clientHeight || window.innerHeight || 844));
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -892,7 +932,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         const dt = Math.min(100, currentTime - state.lastTime);
         state.lastTime = currentTime;
 
-        if (isPaused || isShopOpen) return;
+        if (isPausedRef.current || isShopOpenRef.current) return;
 
       const p = state.player;
       const wep = state.currentWeapon;
@@ -982,9 +1022,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (state.keysDown['d'] || state.keysDown['arrowright']) moveX += 1;
 
       // Add touch input
-      if (touchMoveInput.dx !== 0 || touchMoveInput.dy !== 0) {
-        moveX += touchMoveInput.dx;
-        moveY += touchMoveInput.dy;
+      const touchMove = touchMoveInputRef.current;
+      if (touchMove.dx !== 0 || touchMove.dy !== 0) {
+        moveX += touchMove.dx;
+        moveY += touchMove.dy;
       }
 
       const moveDist = Math.hypot(moveX, moveY);
@@ -1038,10 +1079,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       // Player Aim Angle (Smart Auto-Aim assist, Right Touch Stick, or Mouse)
+      const autoAim = autoAimEnabledRef.current;
+      const touchAim = touchAimInputRef.current;
       let closestZombie: Zombie | null = null;
       let closestDist = 620;
 
-      if (autoAimEnabled) {
+      if (autoAim) {
         // Priority 1: Bosses within range
         for (const z of state.zombies) {
           if (z.hp <= 0) continue;
@@ -1058,16 +1101,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      if (touchAimInput.isShooting || touchAimInput.angle !== 0) {
-        p.angle = touchAimInput.angle;
+      if (touchAim.isShooting || touchAim.angle !== 0) {
+        p.angle = touchAim.angle;
         state.autoAimTargetId = null;
-      } else if (autoAimEnabled && closestZombie) {
+      } else if (autoAim && closestZombie) {
         state.autoAimTargetId = closestZombie.id;
         p.angle = Math.atan2(closestZombie.y - p.y, closestZombie.x - p.x);
       } else {
         state.autoAimTargetId = null;
-        if (touchMoveInput.dx !== 0 || touchMoveInput.dy !== 0) {
-          p.angle = Math.atan2(touchMoveInput.dy, touchMoveInput.dx);
+        if (touchMove.dx !== 0 || touchMove.dy !== 0) {
+          p.angle = Math.atan2(touchMove.dy, touchMove.dx);
         } else {
           const screenCenterX = canvas.width / 2;
           const screenCenterY = canvas.height / 2;
@@ -1076,8 +1119,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       // 3. WEAPON SHOOTING
-      const isAutoFiring = Boolean(autoAimEnabled && closestZombie && !state.isReloading);
-      const isFiring = state.isMouseDown || touchAimInput.isShooting || isAutoFiring;
+      const isAutoFiring = Boolean(autoAim && closestZombie && !state.isReloading);
+      const isFiring = state.isMouseDown || touchAim.isShooting || isAutoFiring;
       if (isFiring && !state.isReloading) {
         if (currentTime - lastShotTime >= wep.fireRate) {
           if (wep.currentMag > 0) {
@@ -1181,8 +1224,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         else { spawnX = 50; spawnY = Math.random() * MAP_SIZE.height; }
 
         const isEnraged = state.wave >= 6;
-        const hpScale = (1 + (state.wave - 1) * 0.38) * (difficulty === 'nightmare' ? 1.5 : difficulty === 'hard' ? 1.25 : 1.0);
-        const diffBossSpeedMult = difficulty === 'nightmare' ? 1.15 : difficulty === 'hard' ? 1.08 : 1.0;
+        const currentDiff = difficultyRef.current;
+        const hpScale = (1 + (state.wave - 1) * 0.38) * (currentDiff === 'nightmare' ? 1.5 : currentDiff === 'hard' ? 1.25 : 1.0);
+        const diffBossSpeedMult = currentDiff === 'nightmare' ? 1.15 : currentDiff === 'hard' ? 1.08 : 1.0;
         const bossSpeedScale = (1 + (state.wave - 1) * 0.04) * diffBossSpeedMult;
         const newBoss: Zombie = {
           id: `boss_${Math.random().toString()}`,
@@ -1236,7 +1280,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       // 4b. SPAWN REGULAR ZOMBIE LOGIC (Dynamic fast swarms & packs)
-      const spawnInterval = Math.max(160, (mode === 'endless' ? 300 : 520) - Math.min(320, (state.wave - 1) * 50));
+      const currentMode = modeRef.current;
+      const spawnInterval = Math.max(160, (currentMode === 'endless' ? 300 : 520) - Math.min(320, (state.wave - 1) * 50));
       if (state.zombiesToSpawn > 0 && currentTime - state.lastSpawnTime > spawnInterval) {
         state.lastSpawnTime = currentTime;
         
@@ -1270,8 +1315,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           else if (spawnSide === 2) { spawnX = Math.random() * MAP_SIZE.width; spawnY = MAP_SIZE.height - 50 + jitter; }
           else { spawnX = 50 + jitter; spawnY = Math.random() * MAP_SIZE.height; }
 
-          const hpScale = (1 + (state.wave - 1) * 0.26) * (difficulty === 'nightmare' ? 1.4 : difficulty === 'hard' ? 1.2 : 1.0);
-          const diffSpeedMult = difficulty === 'nightmare' ? 1.15 : difficulty === 'hard' ? 1.08 : 1.0;
+          const regDiff = difficultyRef.current;
+          const hpScale = (1 + (state.wave - 1) * 0.26) * (regDiff === 'nightmare' ? 1.4 : regDiff === 'hard' ? 1.2 : 1.0);
+          const diffSpeedMult = regDiff === 'nightmare' ? 1.15 : regDiff === 'hard' ? 1.08 : 1.0;
           const speedScale = Math.min(1.45, (1 + (state.wave - 1) * 0.04) * diffSpeedMult);
 
           const newZombie: Zombie = {
@@ -2080,13 +2126,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           }
 
           state.zombies.splice(i, 1);
-          setZombiesRemaining(state.zombies.length + state.zombiesToSpawn);
+          const remainingZombies = state.zombies.length + state.zombiesToSpawn;
+          setZombiesRemaining(prev => prev === remainingZombies ? prev : remainingZombies);
           continue;
-        }
-
-        // Update Boss HP bar
-        if (z.isBoss) {
-          setBossHp({ current: z.hp, max: z.maxHp, name: ZOMBIE_TEMPLATES[z.type].nameVi });
         }
 
         // Movement towards player & Combat AI
@@ -2144,14 +2186,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               triggerExplosion
             );
 
-            // Sync updated Boss HP and current active skill to HUD
+            // Sync updated Boss HP and current active skill to HUD only when changed
             const meta = BOSS_SKILL_DATABASE[z.type];
-            setBossHp({ 
-              current: z.hp, 
-              max: z.maxHp, 
-              name: ZOMBIE_TEMPLATES[z.type]?.nameVi || 'TRÙM',
-              badge: meta?.badge,
-              currentSkill: z.currentSkillName
+            const bossTitle = ZOMBIE_TEMPLATES[z.type]?.nameVi || 'TRÙM';
+            setBossHp(prev => {
+              if (
+                prev &&
+                prev.current === z.hp &&
+                prev.max === z.maxHp &&
+                prev.name === bossTitle &&
+                prev.currentSkill === z.currentSkillName
+              ) {
+                return prev;
+              }
+              return { 
+                current: z.hp, 
+                max: z.maxHp, 
+                name: bossTitle,
+                badge: meta?.badge,
+                currentSkill: z.currentSkillName
+              };
             });
           }
 
@@ -2178,7 +2232,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               if (p.hp <= 0) {
                 p.hp = 0;
                 soundManager.stopMusic();
-                onGameOver();
+                onGameOverRef.current();
                 return;
               }
             }
@@ -2187,8 +2241,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       // Check Boss cleared
-      if (!state.zombies.some(z => z.isBoss) && bossHp) {
-        setBossHp(null);
+      if (!state.zombies.some(z => z.isBoss)) {
+        setBossHp(prev => prev ? null : prev);
       }
 
       // Helper for player taking damage from boss hazards / lasers / hooks
@@ -2208,7 +2262,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (p.hp <= 0) {
             p.hp = 0;
             soundManager.stopMusic();
-            onGameOver();
+            onGameOverRef.current();
           }
         }
       };
@@ -2447,9 +2501,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // 10. WIDE TACTICAL CAMERA TRACKING & OPTIMIZED PERSPECTIVE
       // Wide FOV view on mobile to see surrounding hordes and battlefield clearly
+      const currentZoomMode = cameraZoomModeRef.current;
       let baseZoom = canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
-      if (cameraZoomMode === 'ultrawide') baseZoom *= 0.80;
-      else if (cameraZoomMode === 'normal') baseZoom *= 1.25;
+      if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
+      else if (currentZoomMode === 'normal') baseZoom *= 1.25;
       const zoom = baseZoom;
 
       const viewHalfW = (canvas.width / 2) / zoom;
@@ -2489,28 +2544,30 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // ==========================================
       // 11. RENDERING FRAME (CANVAS GRAPHICS)
       // ==========================================
-      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Apply screen shake
-      const shakeX = (Math.random() - 0.5) * state.screenShake;
-      const shakeY = (Math.random() - 0.5) * state.screenShake;
+      ctx.save();
+      try {
+        // Apply screen shake
+        const shakeX = (Math.random() - 0.5) * state.screenShake;
+        const shakeY = (Math.random() - 0.5) * state.screenShake;
 
-      // Apply Zoom & Camera Transform
-      ctx.translate(canvas.width / 2 + shakeX, canvas.height / 2 + shakeY);
-      ctx.scale(zoom, zoom);
-      ctx.translate(-state.camera.x, -state.camera.y);
+        // Apply Zoom & Camera Transform
+        ctx.translate(canvas.width / 2 + shakeX, canvas.height / 2 + shakeY);
+        ctx.scale(zoom, zoom);
+        ctx.translate(-state.camera.x, -state.camera.y);
 
-      // Render Selected Flexible Map Environment (Rotates dynamically every wave!)
-      renderMapEnvironment({
-        ctx,
-        mapId: state.currentMapId || (selectedMapId as MapEnvironmentId) || 'rooftop',
-        mapSize: MAP_SIZE,
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        camera: state.camera,
-        time: currentTime
-      });
+        // Render Selected Flexible Map Environment (Rotates dynamically every wave!)
+        renderMapEnvironment({
+          ctx,
+          mapId: state.currentMapId || selectedMapIdRef.current || 'rooftop',
+          mapSize: MAP_SIZE,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          camera: state.camera,
+          time: currentTime
+        });
 
       // Render Decals (Blood / Blast marks)
       state.decals.forEach(decal => {
@@ -2586,7 +2643,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
 
         // Auto-Aim Lock Reticle
-        if (state.autoAimTargetId === z.id && autoAimEnabled) {
+        if (state.autoAimTargetId === z.id && autoAimEnabledRef.current) {
           ctx.save();
           ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 2;
@@ -2673,7 +2730,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Render Active Companion Drones (Hovering robotic allies flanking warrior)
       state.activeDrones.forEach(droneState => {
-        const cfg = (drones || []).find(d => d.id === droneState.id);
+        const cfg = (dronesRef.current || []).find(d => d.id === droneState.id);
         if (cfg) {
           renderCompanionDrone({
             ctx,
@@ -2727,7 +2784,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.restore();
       }
 
-      ctx.restore(); // Restore camera transform
+      } finally {
+        ctx.restore(); // Restore camera transform
+      }
       } catch (loopError) {
         console.error("Game loop error handled:", loopError);
       }
@@ -2739,7 +2798,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('resize', resizeCanvas);
       ro.disconnect();
     };
-  }, [difficulty, mode, selectedMapId, isPaused, isShopOpen, onGameOver, touchMoveInput, touchAimInput, autoAimEnabled, cameraZoomMode]);
+  }, []);
 
   // Mouse Handlers
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {

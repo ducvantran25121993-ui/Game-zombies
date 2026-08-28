@@ -150,6 +150,14 @@ export const App: React.FC = () => {
     };
   }, [gameState]);
 
+  const handleGameOver = useCallback(() => {
+    setGameState('gameover');
+  }, []);
+
+  const handleMapChange = useCallback((newMapId: MapEnvironmentId) => {
+    setSelectedMapId(newMapId);
+  }, []);
+
   // Start new game
   const handleStartGame = (
     chosenDiff: GameDifficulty, 
@@ -530,10 +538,10 @@ export const App: React.FC = () => {
             difficulty={difficulty}
             mode={mode}
             selectedMapId={selectedMapId}
-            onMapChange={setSelectedMapId}
+            onMapChange={handleMapChange}
             isPaused={isPaused}
             isShopOpen={isShopOpen}
-            onGameOver={() => setGameState('gameover')}
+            onGameOver={handleGameOver}
             touchMoveInput={touchMoveInput}
             touchAimInput={touchAimInput}
             autoAimEnabled={autoAimEnabled}

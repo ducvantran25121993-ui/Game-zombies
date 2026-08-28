@@ -200,12 +200,12 @@ export const renderMapEnvironment = ({
   ctx.save();
 
   if (mapId === 'rooftop') {
-    // Concrete industrial rooftop
-    ctx.fillStyle = '#111827';
+    // Concrete industrial rooftop - brightened slate for high visibility
+    ctx.fillStyle = '#1e293b';
     ctx.fillRect(0, 0, mW, mH);
 
     // Concrete Slab Tile Grid
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2;
     const slabSize = 120;
     for (let x = 0; x < mW; x += slabSize) {
@@ -225,6 +225,16 @@ export const renderMapEnvironment = ({
     const cx = mW / 2;
     const cy = mH / 2;
     const heliRadius = 260;
+
+    // Helipad ambient landing light glow
+    const heliGlow = ctx.createRadialGradient(cx, cy, 30, cx, cy, heliRadius + 140);
+    heliGlow.addColorStop(0, 'rgba(234, 179, 8, 0.16)');
+    heliGlow.addColorStop(0.7, 'rgba(234, 179, 8, 0.05)');
+    heliGlow.addColorStop(1, 'rgba(234, 179, 8, 0)');
+    ctx.fillStyle = heliGlow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, heliRadius + 140, 0, Math.PI * 2);
+    ctx.fill();
 
     // Helipad outer yellow circle
     ctx.strokeStyle = '#eab308';

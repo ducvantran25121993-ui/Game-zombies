@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-32 sm:pb-40 touch-pan-y">
+    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-12 sm:pb-16 touch-pan-y">
       
       {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -785,36 +785,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           </div>
         )}
 
-      </div>
-
-      {/* STICKY BOTTOM FLOATING PLAY BAR (Desktop & Tablet only, hidden on mobile) */}
-      <div className="hidden md:flex fixed bottom-0 left-0 right-0 z-30 p-2.5 sm:p-3 bg-neutral-950/90 backdrop-blur-xl border-t border-red-500/30 items-center justify-center shadow-2xl">
-        <div className="w-full max-w-4xl flex items-center justify-between gap-3 px-2">
-          <div className="flex items-center gap-2.5 truncate">
-            <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-400 shrink-0 bg-neutral-900 hidden xs:block">
-              <img src={activeWarrior.avatar} alt={activeWarrior.nameVi} className="w-full h-full object-cover" />
-            </div>
-            <div className="truncate">
-              <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                <span>{activeWarrior.nameVi}</span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-red-600 text-white font-bold uppercase">
-                  {difficulty.toUpperCase()}
-                </span>
-              </div>
-              <div className="text-[10px] text-neutral-400 truncate">
-                {activeMap.nameVi} • {mode === 'survival' ? 'Waves' : 'Endless'}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLaunchGame}
-            className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-xl shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300 shrink-0 animate-pulse"
-          >
-            <Play className="w-4 h-4 fill-white" />
-            <span>BẮT ĐẦU CHƠI NGAY</span>
-          </button>
-        </div>
       </div>
 
     </div>
