@@ -40,6 +40,7 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
   if (isBoss) {
     ctx.save();
     const pulse = Math.sin(time * 0.005) * 6;
+    const auraColor = z.color || '#dc2626';
     const auraGrad = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r + 24 + pulse);
     auraGrad.addColorStop(0, 'rgba(220, 38, 38, 0.28)');
     auraGrad.addColorStop(0.5, 'rgba(153, 27, 27, 0.15)');
@@ -48,7 +49,53 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     ctx.beginPath();
     ctx.arc(0, 0, r + 24 + pulse, 0, Math.PI * 2);
     ctx.fill();
+
+    // RUSH CHARGE FLAMES / SPEED STREAKS
+    if (z.bossSpecialState === 'charging') {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 15;
+      for (let s = 0; s < 5; s++) {
+        const streakY = (s - 2) * (r * 0.35);
+        ctx.beginPath();
+        ctx.moveTo(-r * 1.5, streakY);
+        ctx.lineTo(-r * 0.6, streakY);
+        ctx.stroke();
+      }
+    }
+
+    // SHIELD BUBBLE (Cyber Mecha Barrier)
+    if (z.shieldTimer && z.shieldTimer > 0) {
+      const shieldPulse = Math.sin(time * 0.01) * 3;
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 14 + shieldPulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // CLONE DISTORTION
+    if (z.isClone) {
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     ctx.restore();
+  }
+
+  // Handle Stealth / Shadow Blink
+  if (z.bossSpecialState === 'invisible') {
+    ctx.globalAlpha = 0.15;
   }
 
   // 4. MAIN TORSO & FLESH RENDERING ACCORDING TO TYPE

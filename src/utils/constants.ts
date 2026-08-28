@@ -283,6 +283,91 @@ export const ZOMBIE_TEMPLATES: Record<ZombieType, {
   }
 };
 
+export interface BossSkillInfo {
+  nameVi: string;
+  icon: string;
+  descVi: string;
+  tag: string;
+}
+
+export interface BossMetaInfo {
+  type: string;
+  nameVi: string;
+  titleVi: string;
+  signatureWave: number;
+  badge: string;
+  themeColor: string;
+  skills: BossSkillInfo[];
+}
+
+export const BOSS_SKILL_DATABASE: Record<string, BossMetaInfo> = {
+  boss_mutant: {
+    type: 'boss_mutant',
+    nameVi: 'TRÙM ĐỘT BIẾN HUỶ DIỆT',
+    titleVi: 'VÒNG 1: QUÁI ĐỘT BIẾN ĐỊA CHẤN',
+    signatureWave: 1,
+    badge: 'ĐỘC TỐ & ĐỊA CHẤN',
+    themeColor: '#e11d48',
+    skills: [
+      { nameVi: 'ĐỊA CHẤN TÀN PHÁ', icon: '💥', tag: 'SLAM', descVi: 'Dộng đất 360° đẩy lùi người chơi & sinh 4 bãi axit sôi sùng sục ăn mòn' },
+      { nameVi: 'LAO HÚC TÀN BẠO', icon: '⚡', tag: 'CHARGE', descVi: 'Gầm rú lao tốc biến cực đại nghiền nát vật cản và húc văng mục tiêu' },
+      { nameVi: 'PHÁO AXIT TAM HƯỚNG', icon: '☣️', tag: 'ACID', descVi: 'Nã 3 bọc bùn axit màu xanh lục huỳnh quang gây sát thương diện rộng' }
+    ]
+  },
+  boss_abomination: {
+    type: 'boss_abomination',
+    nameVi: 'CHÚA TỂ HỖN MANG',
+    titleVi: 'VÒNG 2: CHÚA TỂ BÓNG TỐI HỖN MANG',
+    signatureWave: 2,
+    badge: 'HẮC ÁM & DỊCH CHUYỂN',
+    themeColor: '#a855f7',
+    skills: [
+      { nameVi: 'DỊCH CHUYỂN BÓNG TỐI', icon: '🌌', tag: 'BLINK', descVi: 'Hóa bóng ma vô hình rồi bất ngờ xuất hiện sau lưng chém quét bất ngờ' },
+      { nameVi: 'XÚC TU HẮC ÁM', icon: '🕸️', tag: 'PULL', descVi: 'Phóng xúc tu vươn dài kéo giật người chơi về phía trùm và làm chậm' },
+      { nameVi: 'CẦU HỖN MANG PHÂN TỬ', icon: '🔮', tag: 'SPLIT', descVi: 'Quả cầu hắc ám khổng lồ bay chậm rồi phát nổ vỡ thành 8 quả cầu gai tỏa tròn' }
+    ]
+  },
+  boss_cyber_behemoth: {
+    type: 'boss_cyber_behemoth',
+    nameVi: 'QUÁI VẬT CYBER MECHA',
+    titleVi: 'VÒNG 3: QUÁI THÚ CƠ GIỚI MECHA',
+    signatureWave: 3,
+    badge: 'LASER & TÊN LỬA TẦM NHIỆT',
+    themeColor: '#06b6d4',
+    skills: [
+      { nameVi: 'TIA QUÉT LASER TỬ THẦN', icon: '🔴', tag: 'LASER', descVi: 'Tụ năng lượng quét tia laser đỏ rực khổng lồ góc 70 độ cắt ngang bản đồ' },
+      { nameVi: 'LOẠT TÊN LỬA TẦM NHIỆT', icon: '🚀', tag: 'HOMING', descVi: 'Phóng 3 tên lửa đuôi khói lửa tự động uốn lượn rượt đuổi người chơi' },
+      { nameVi: 'KHIÊN ĐIỆN TỪ HẤP THỤ', icon: '🛡️', tag: 'SHIELD', descVi: 'Bật lá chắn vòm cyan giảm 50% sát thương nhận và xả xung điện EMP' }
+    ]
+  },
+  boss_inferno_titan: {
+    type: 'boss_inferno_titan',
+    nameVi: 'BẠO CHÚA LỬA ĐỊA NGỤC',
+    titleVi: 'VÒNG 4: BẠO CHÚA LỬA ĐỊA NGỤC',
+    signatureWave: 4,
+    badge: 'THIÊN THẠCH & BIỂN LỬA',
+    themeColor: '#f97316',
+    skills: [
+      { nameVi: 'MƯA THIÊN THẠCH DUNG NHAM', icon: '☄️', tag: 'METEOR', descVi: 'Khóa 3 hồng tâm lửa trước khi giáng thiên thạch khổng lồ nổ tung thành biển dung nham' },
+      { nameVi: 'BÃO LỬA LUÂN HỒI', icon: '🌀', tag: 'SPIRAL', descVi: 'Xoay tròn xả 12 quả cầu lửa đạn mạc xoắn ốc tỏa kín mọi hướng' },
+      { nameVi: 'VẾT CHÂN DUNG NHAM', icon: '🔥', tag: 'LAVA', descVi: 'Di chuyển để lại các vũng nham thạch sôi sục thiêu đốt mặt đất' }
+    ]
+  },
+  boss_void_reaper: {
+    type: 'boss_void_reaper',
+    nameVi: 'TỬ THẦN HƯ VÔ TỐI THƯỢNG',
+    titleVi: 'VÒNG 5+: TỬ THẦN HƯ VÔ TỐI THƯỢNG',
+    signatureWave: 5,
+    badge: 'HỐ ĐEN & TRẢM KÍCH HƯ VÔ',
+    themeColor: '#6366f1',
+    skills: [
+      { nameVi: 'HỐ ĐEN TRỌNG LỰC HƯ VÔ', icon: '🕳️', tag: 'BLACK_HOLE', descVi: 'Đặt lỗ đen xoáy tím khổng lồ hút người chơi và uốn cong đường đạn' },
+      { nameVi: 'TRẢM KÍCH HƯ VÔ TAM ĐOẠN', icon: '⚔️', tag: 'SLASH', descVi: 'Chém 3 làn sóng hình trăng khuyết khổng lồ bay xuyên qua mọi vật cản' },
+      { nameVi: 'ẢO ẢNH PHÂN THÂN BÓNG MA', icon: '👥', tag: 'CLONE', descVi: 'Phân tách tạo ảo ảnh chiến đấu song song gia tăng áp lực cực đại' }
+    ]
+  }
+};
+
 export const UPGRADES_CONFIG = [
   {
     id: 'maxHpLevel',

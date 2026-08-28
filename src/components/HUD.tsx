@@ -16,7 +16,7 @@ interface HUDProps {
   wave: number;
   totalZombiesInWave: number;
   zombiesRemaining: number;
-  bossHp?: { current: number; max: number; name: string } | null;
+  bossHp?: { current: number; max: number; name: string; badge?: string; currentSkill?: string } | null;
   activeBuffs: ActiveBuffs;
   currentMapId?: MapEnvironmentId;
   isReloading: boolean;
@@ -175,13 +175,18 @@ export const HUD: React.FC<HUDProps> = ({
         <div className="flex items-center justify-between landscape:justify-end gap-1.5 w-full landscape:w-auto">
           {/* Boss Bar or Map Name */}
           {bossHp ? (
-            <div className="flex-1 landscape:flex-none landscape:min-w-[140px] bg-red-950/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-red-500/80 shadow-md animate-pulse">
+            <div className="flex-1 landscape:flex-none landscape:min-w-[170px] bg-red-950/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-red-500/80 shadow-md">
               <div className="flex items-center justify-between text-[8px] sm:text-[9px] font-black text-red-200 uppercase tracking-wider mb-0.5">
-                <span className="flex items-center gap-1 text-red-400 truncate max-w-[110px] sm:max-w-none">
-                  <ShieldAlert className="w-2.5 h-2.5 text-red-400 shrink-0" />
-                  {bossHp.name}
+                <span className="flex items-center gap-1 text-red-400 truncate max-w-[130px] sm:max-w-none">
+                  <ShieldAlert className="w-2.5 h-2.5 text-red-400 shrink-0 animate-pulse" />
+                  {bossHp.badge && (
+                    <span className="px-1 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40 text-[7px] shrink-0">
+                      {bossHp.badge}
+                    </span>
+                  )}
+                  <span className="truncate">{bossHp.name}</span>
                 </span>
-                <span className="font-mono">{Math.ceil(bossHp.current)}/{bossHp.max}</span>
+                <span className="font-mono text-white ml-1">{Math.ceil(bossHp.current)}/{bossHp.max}</span>
               </div>
               <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-red-800">
                 <div 
@@ -189,6 +194,12 @@ export const HUD: React.FC<HUDProps> = ({
                   style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
                 />
               </div>
+              {bossHp.currentSkill && (
+                <div className="text-[7px] text-amber-200/90 truncate font-mono mt-0.5 tracking-tight flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span className="truncate font-semibold">{bossHp.currentSkill}</span>
+                </div>
+              )}
             </div>
           ) : (
             <div 

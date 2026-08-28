@@ -77,7 +77,7 @@ export const App: React.FC = () => {
   const [wave, setWave] = useState(1);
   const [totalZombiesInWave, setTotalZombiesInWave] = useState(12);
   const [zombiesRemaining, setZombiesRemaining] = useState(12);
-  const [bossHp, setBossHp] = useState<{ current: number; max: number; name: string } | null>(null);
+  const [bossHp, setBossHp] = useState<{ current: number; max: number; name: string; badge?: string; currentSkill?: string } | null>(null);
 
   // Active Power-Up Buffs
   const [activeBuffs, setActiveBuffs] = useState<ActiveBuffs>({

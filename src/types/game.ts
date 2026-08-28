@@ -69,8 +69,61 @@ export interface Zombie {
   isBoss?: boolean;
   bossPhase?: number;
   bossAttackTimer?: number;
-  bossSpecialState?: 'idle' | 'charging' | 'slamming' | 'spawning';
+  bossSpecialState?: 'idle' | 'charging' | 'slamming' | 'spawning' | 'invisible' | 'shielded' | 'laser';
   chargeTarget?: { x: number; y: number };
+  invisibleTimer?: number;
+  shieldTimer?: number;
+  laserAngle?: number;
+  hasSpawnedClone?: boolean;
+  isClone?: boolean;
+  currentSkillName?: string;
+  signatureWave?: number;
+}
+
+export interface BossHazard {
+  id: string;
+  type: 'toxic_pool' | 'lava_pool' | 'meteor_target' | 'black_hole';
+  x: number;
+  y: number;
+  radius: number;
+  timer: number;
+  maxTimer: number;
+  damage: number;
+  color: string;
+  dpsInterval?: number;
+  lastDpsTime?: number;
+  pullRadius?: number;
+  pullForce?: number;
+}
+
+export interface SweepingLaser {
+  id: string;
+  bossId: string;
+  x: number;
+  y: number;
+  currentAngle: number;
+  startAngle: number;
+  endAngle: number;
+  range: number;
+  width: number;
+  state: 'charging' | 'firing';
+  timer: number;
+  maxTimer: number;
+  damage: number;
+}
+
+export interface TentacleHook {
+  id: string;
+  bossId: string;
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+  targetX: number;
+  targetY: number;
+  retracting: boolean;
+  timer: number;
+  color: string;
 }
 
 export interface Bullet {
@@ -88,6 +141,13 @@ export interface Bullet {
   isPlasma?: boolean;
   isFire?: boolean;
   isEnemyBullet?: boolean;
+  isHoming?: boolean;
+  homingSpeed?: number;
+  homingTurnRate?: number;
+  splitOnDeath?: boolean;
+  splitCount?: number;
+  isVoidWave?: boolean;
+  waveWidth?: number;
   knockback: number;
 }
 
