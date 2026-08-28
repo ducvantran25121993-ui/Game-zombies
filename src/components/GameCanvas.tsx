@@ -325,13 +325,24 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       });
 
-      // Potted terrace shrubs & red barrels
-      for (let i = 0; i < 18; i++) {
+      // Potted terrace shrubs & red barrels (keep central helipad circle clear)
+      const heliCenterX = MAP_SIZE.width / 2;
+      const heliCenterY = MAP_SIZE.height / 2;
+      for (let i = 0; i < 16; i++) {
         const isBarrel = i % 2 === 0;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 260 + Math.random() * (MAP_SIZE.width - 520);
+          ry = 260 + Math.random() * (MAP_SIZE.height - 520);
+          attempts++;
+        } while (Math.hypot(rx - heliCenterX, ry - heliCenterY) < 300 && attempts < 20);
+
         obs.push({
           id: `roof_prop_${i}`,
-          x: 260 + Math.random() * (MAP_SIZE.width - 520),
-          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 48,
           height: isBarrel ? 36 : 48,
           type: isBarrel ? 'barrel' : 'tree',
@@ -687,18 +698,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         text: `⚔️ ${waveMeta.titleVi}!`,
         color: waveMeta.themeColor,
         alpha: 1,
-        life: 120,
+        life: 100,
         isCrit: true
-      });
-      state.floatingTexts.push({
-        id: Math.random().toString(),
-        x: state.player.x,
-        y: state.player.y - 95,
-        text: `⚡ KỸ NĂNG: ${waveMeta.skills.map(s => `${s.icon} ${s.nameVi}`).join(' • ')}`,
-        color: '#fef08a',
-        alpha: 1,
-        life: 140,
-        isCrit: false
       });
     }
 
@@ -877,6 +878,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    const ro = new ResizeObserver(() => resizeCanvas());
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
 
     let lastShotTime = 0;
     let lastStateSync = 0;
@@ -1218,6 +1221,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           currentSkill: meta?.skills[0].nameVi
         });
 
+        // Floating boss alert
         state.floatingTexts.push({
           id: Math.random().toString(),
           x: spawnX,
@@ -1228,19 +1232,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           life: 100,
           isCrit: true
         });
-
-        if (meta) {
-          state.floatingTexts.push({
-            id: Math.random().toString(),
-            x: spawnX,
-            y: spawnY - 60,
-            text: `⚡ KỸ NĂNG: ${meta.skills.map(s => `${s.icon} ${s.nameVi}`).join(' • ')}`,
-            color: '#fef08a',
-            alpha: 1,
-            life: 120,
-            isCrit: false
-          });
-        }
       }
 
       // 4b. SPAWN REGULAR ZOMBIE LOGIC (Dynamic fast swarms & packs)
@@ -2737,6 +2728,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeCanvas);
+      ro.disconnect();
     };
   }, [difficulty, mode, selectedMapId, isPaused, isShopOpen, onGameOver, touchMoveInput, touchAimInput, autoAimEnabled, cameraZoomMode]);
 

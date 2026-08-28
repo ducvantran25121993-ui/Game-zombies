@@ -3,9 +3,32 @@ import { Weapon, WeaponType } from '../types/game';
 import { 
   Crosshair, RefreshCw, Zap, Bomb, ChevronRight, ChevronLeft, 
   ShoppingCart, Smartphone, Sparkles, Target, Flame, ShieldAlert,
-  Volume2, VolumeX, Eye, EyeOff
+  Volume2, VolumeX, Eye, EyeOff, Activity, Radio
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+
+const getWeaponDisplay = (wep: Weapon) => {
+  switch (wep.id) {
+    case 'pistol':
+      return { shortName: 'M1911', iconNode: <Crosshair className="w-3.5 h-3.5 text-amber-400 shrink-0" /> };
+    case 'shotgun':
+      return { shortName: 'SHOTGUN', iconNode: <Flame className="w-3.5 h-3.5 text-orange-400 shrink-0" /> };
+    case 'ak47':
+      return { shortName: 'AK-47', iconNode: <Zap className="w-3.5 h-3.5 text-red-400 shrink-0" /> };
+    case 'sniper':
+      return { shortName: 'SNIPER', iconNode: <Target className="w-3.5 h-3.5 text-sky-400 shrink-0" /> };
+    case 'minigun':
+      return { shortName: 'GATLING', iconNode: <Radio className="w-3.5 h-3.5 text-yellow-400 shrink-0" /> };
+    case 'rpg':
+      return { shortName: 'RPG-7', iconNode: <Bomb className="w-3.5 h-3.5 text-purple-400 shrink-0" /> };
+    case 'plasma':
+      return { shortName: 'PLASMA', iconNode: <Activity className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> };
+    case 'flamethrower':
+      return { shortName: 'HOẢ TIỄN', iconNode: <Flame className="w-3.5 h-3.5 text-rose-500 shrink-0" /> };
+    default:
+      return { shortName: wep.name.slice(0, 6).toUpperCase(), iconNode: <Crosshair className="w-3.5 h-3.5 text-amber-400 shrink-0" /> };
+  }
+};
 
 interface VirtualControlsProps {
   onMove: (dx: number, dy: number) => void;
@@ -232,9 +255,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
               style={{
                 width: 100,
                 height: 100,
-                left: leftStickActive ? leftStickOrigin.x - 50 : 25,
+                left: leftStickActive ? leftStickOrigin.x - 50 : 24,
                 top: leftStickActive ? leftStickOrigin.y - 50 : undefined,
-                bottom: leftStickActive ? undefined : 25,
+                bottom: leftStickActive ? undefined : 'max(36px, calc(env(safe-area-inset-bottom, 0px) + 26px))',
                 pointerEvents: 'none'
               }}
             >
@@ -276,9 +299,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                   width: 100,
                   height: 100,
                   left: rightStickActive ? rightStickOrigin.x - 50 : undefined,
-                  right: rightStickActive ? undefined : 25,
+                  right: rightStickActive ? undefined : 24,
                   top: rightStickActive ? rightStickOrigin.y - 50 : undefined,
-                  bottom: rightStickActive ? undefined : 25,
+                  bottom: rightStickActive ? undefined : 'max(36px, calc(env(safe-area-inset-bottom, 0px) + 26px))',
                   pointerEvents: 'none'
                 }}
               >
@@ -300,11 +323,12 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           {/* ===============================================================
               WEAPON BELT: Center Bottom in Landscape, Compact in Portrait
           ================================================================ */}
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 pointer-events-auto z-40 hidden landscape:flex max-w-[55vw] sm:max-w-none">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] pointer-events-auto z-40 hidden landscape:flex max-w-[55vw] sm:max-w-none">
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-2xl overflow-x-auto no-scrollbar">
               {unlockedWeaponList.map((wep) => {
                 const isSelected = wep.id === currentWeaponId;
                 const magPct = wep.magSize > 0 ? (wep.currentMag / wep.magSize) * 100 : 100;
+                const info = getWeaponDisplay(wep);
                 
                 return (
                   <button
@@ -318,15 +342,15 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                       soundManager.playEmptyClick();
                       if (onSelectWeapon) onSelectWeapon(wep.id);
                     }}
-                    className={`relative p-1.5 rounded-lg flex flex-col items-center min-w-[46px] transition-all active:scale-90 ${
+                    className={`relative p-1.5 rounded-lg flex flex-col items-center min-w-[48px] transition-all active:scale-90 ${
                       isSelected
                         ? 'bg-amber-500/30 border border-amber-400 text-white shadow-md'
                         : 'bg-neutral-900/80 border border-neutral-800/80 text-neutral-400 hover:border-neutral-700'
                     }`}
                   >
-                    <span className="text-base leading-none">{wep.icon}</span>
-                    <span className="text-[8.5px] font-bold font-mono truncate max-w-[40px] mt-0.5" style={{ color: wep.color }}>
-                      {wep.nameVi.split(' ')[0]}
+                    <div className="h-5 flex items-center justify-center">{info.iconNode}</div>
+                    <span className="text-[8px] font-black font-mono truncate max-w-[44px] mt-0.5" style={{ color: wep.color }}>
+                      {info.shortName}
                     </span>
 
                     {/* Micro Ammo Bar */}
@@ -350,13 +374,14 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           {/* ===============================================================
               RIGHT HAND ERGONOMIC COMBAT CLUSTER (Skills + Dash + Weapon Belt in Portrait)
           ================================================================ */}
-          <div className="absolute right-2.5 bottom-2.5 landscape:right-4 landscape:bottom-3 pointer-events-auto flex flex-col items-end gap-1.5 z-40 max-w-[260px] sm:max-w-none">
+          <div className="absolute right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[max(1.75rem,calc(env(safe-area-inset-bottom,0px)+1.25rem))] landscape:right-4 landscape:bottom-4 pointer-events-auto flex flex-col items-end gap-2 z-40 max-w-[280px] sm:max-w-none">
             
             {/* 1-Touch Compact Weapon Belt (Visible ONLY in Portrait Mode) */}
-            <div className="flex landscape:hidden items-center gap-1 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-lg overflow-x-auto max-w-[250px] no-scrollbar">
+            <div className="flex landscape:hidden items-center gap-1 p-1 rounded-xl bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-md shadow-lg overflow-x-auto max-w-[270px] no-scrollbar">
               {unlockedWeaponList.map((wep) => {
                 const isSelected = wep.id === currentWeaponId;
                 const magPct = wep.magSize > 0 ? (wep.currentMag / wep.magSize) * 100 : 100;
+                const info = getWeaponDisplay(wep);
                 
                 return (
                   <button
@@ -370,15 +395,15 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                       soundManager.playEmptyClick();
                       if (onSelectWeapon) onSelectWeapon(wep.id);
                     }}
-                    className={`relative p-1 rounded-lg flex flex-col items-center min-w-[40px] sm:min-w-[48px] transition-all active:scale-90 ${
+                    className={`relative p-1 rounded-lg flex flex-col items-center min-w-[44px] transition-all active:scale-90 ${
                       isSelected
                         ? 'bg-amber-500/30 border border-amber-400 text-white shadow-md'
                         : 'bg-neutral-900/80 border border-neutral-800/80 text-neutral-400 hover:border-neutral-700'
                     }`}
                   >
-                    <span className="text-sm leading-none">{wep.icon}</span>
-                    <span className="text-[7.5px] sm:text-[8.5px] font-bold font-mono truncate max-w-[36px] mt-0.5" style={{ color: wep.color }}>
-                      {wep.nameVi.split(' ')[0]}
+                    <div className="h-4 flex items-center justify-center">{info.iconNode}</div>
+                    <span className="text-[8px] font-black font-mono truncate max-w-[42px] mt-0.5" style={{ color: wep.color }}>
+                      {info.shortName}
                     </span>
 
                     {/* Micro Ammo Bar */}
@@ -404,31 +429,32 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
               <button
                 onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
                 onClick={onReload}
-                className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] landscape:text-[11px] backdrop-blur-md ${
+                className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 ${
                   isReloading
                     ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
-                    : 'bg-neutral-950/85 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
+                    : 'bg-neutral-950/95 border-amber-500/60 text-amber-400 hover:bg-neutral-900 active:bg-amber-950'
                 }`}
                 title="Nạp đạn (R)"
               >
-                <RefreshCw className={`w-3 h-3 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
                 <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
               </button>
 
-              {/* Quick Grenade Button */}
+              {/* Quick Grenade / Bomb Button */}
               <button
                 onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
                 onClick={onThrowGrenade}
                 disabled={grenadesLeft <= 0}
-                className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] landscape:text-[11px] backdrop-blur-md ${
+                className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 ${
                   grenadesLeft > 0
-                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
-                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 border-red-300 text-white shadow-red-500/30 ring-1 ring-red-400/50'
+                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-50'
                 }`}
                 title="Ném lựu đạn nổ diện rộng (G)"
               >
-                <Bomb className="w-3 h-3" />
-                <span className="font-mono">{grenadesLeft}</span>
+                <Bomb className="w-3.5 h-3.5" />
+                <span>BOM</span>
+                <span className="font-mono bg-black/40 px-1 py-0.2 rounded text-[10px] ml-0.5">{grenadesLeft}</span>
               </button>
 
               {/* Quick Shop Modal Button */}
@@ -436,17 +462,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                 <button
                   onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
                   onClick={onOpenShop}
-                  className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1 shadow-md transition-transform active:scale-90 font-black text-[10px] landscape:text-[11px] backdrop-blur-md relative ${
+                  className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 relative ${
                     canAffordShop
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/30'
-                      : 'bg-neutral-950/85 border-neutral-700 text-amber-400 hover:bg-neutral-900'
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/40 ring-1 ring-yellow-300/80'
+                      : 'bg-neutral-950/95 border-amber-500/60 text-amber-400 hover:bg-neutral-900 active:bg-amber-950'
                   }`}
                   title="Mở Cửa Hàng Nâng Cấp (B)"
                 >
-                  <ShoppingCart className="w-3 h-3" />
+                  <ShoppingCart className="w-3.5 h-3.5" />
                   <span>SHOP</span>
                   {canAffordShop && (
-                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1 border border-white" />
                   )}
                 </button>
               )}
@@ -457,19 +483,19 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
               onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
               onClick={onDash}
               disabled={!canDash}
-              className={`w-full py-2 landscape:py-2.5 px-3 landscape:px-4 rounded-xl border flex items-center justify-center gap-1.5 shadow-lg transition-transform active:scale-90 font-black text-[11px] landscape:text-xs backdrop-blur-md relative overflow-hidden ${
+              className={`w-full py-2.5 px-4 rounded-xl border flex items-center justify-center gap-2 shadow-xl transition-transform active:scale-90 font-black text-xs landscape:text-sm backdrop-blur-md relative overflow-hidden ${
                 canDash
                   ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
-                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-600 opacity-60'
+                  : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-50'
               }`}
               title="Lướt né đòn (Space)"
             >
-              <Zap className={`w-3.5 h-3.5 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
-              <span>LƯỚT [SPACE]</span>
+              <Zap className={`w-4 h-4 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
+              <span>LƯỚT NÉ ĐÒN</span>
 
               {/* Micro Stamina Progress */}
               <div 
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-300 transition-all"
+                className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-300 transition-all"
                 style={{ width: `${staminaPct}%` }}
               />
             </button>

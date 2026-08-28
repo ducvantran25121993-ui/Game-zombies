@@ -250,17 +250,28 @@ export const renderMapEnvironment = ({
     ctx.textBaseline = 'middle';
     ctx.fillText('H', cx, cy);
 
-    // Helipad Corner Beacon Lights
-    const beaconAlpha = 0.6 + Math.sin(time * 0.005) * 0.4;
+    // Helipad Corner Beacon Lights (Individual paths to prevent cross-fill hourglass glitch)
+    const beaconAlpha = 0.7 + Math.sin(time * 0.005) * 0.3;
     ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
     ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.arc(cx - heliRadius + 24, cy - heliRadius + 24, 10, 0, Math.PI * 2);
-    ctx.arc(cx + heliRadius - 24, cy - heliRadius + 24, 10, 0, Math.PI * 2);
-    ctx.arc(cx - heliRadius + 24, cy + heliRadius - 24, 10, 0, Math.PI * 2);
-    ctx.arc(cx + heliRadius - 24, cy + heliRadius - 24, 10, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.shadowBlur = 14;
+    const beacons = [
+      { x: cx - heliRadius + 24, y: cy - heliRadius + 24 },
+      { x: cx + heliRadius - 24, y: cy - heliRadius + 24 },
+      { x: cx - heliRadius + 24, y: cy + heliRadius - 24 },
+      { x: cx + heliRadius - 24, y: cy + heliRadius - 24 }
+    ];
+    beacons.forEach(b => {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      // Bright center LED
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
+    });
     ctx.shadowBlur = 0;
 
   } else if (mapId === 'street') {

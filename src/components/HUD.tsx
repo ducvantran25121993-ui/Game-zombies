@@ -86,17 +86,17 @@ export const HUD: React.FC<HUDProps> = ({
   const canAffordAnything = Boolean(affordableLockedWeapon || canUpgradeCurrent);
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-2 sm:p-4 md:p-6 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] px-[max(0.5rem,env(safe-area-inset-left,0px))] sm:p-4 md:p-6 overflow-hidden">
       {/* Red Low HP Vignette Warning */}
       {isLowHp && (
         <div className="absolute inset-0 border-4 sm:border-8 border-red-600/40 animate-pulse pointer-events-none shadow-[inset_0_0_60px_rgba(239,68,68,0.5)]" />
       )}
 
-      {/* TOP HEADER: Clean Responsive Container (Adapts seamlessly in portrait & landscape) */}
-      <div className="flex flex-col landscape:flex-row landscape:items-center landscape:justify-between gap-1 w-full max-w-7xl mx-auto pointer-events-auto">
+      {/* TOP HEADER: Balanced Responsive Container */}
+      <div className="flex flex-col gap-1.5 w-full max-w-7xl mx-auto pointer-events-auto">
         
-        {/* ROW 1 (or Left Group in Landscape): Player Stats & Warrior Info */}
-        <div className="flex items-center justify-between landscape:justify-start gap-1.5 w-full landscape:w-auto">
+        {/* ROW 1: Player Stats, Wave Indicator, Currency & Tactical Controls */}
+        <div className="flex items-center justify-between gap-1.5 w-full flex-wrap sm:flex-nowrap">
           
           {/* Left: Warrior Avatar & Health, Armor */}
           <div className="flex items-center gap-1.5 bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md">
@@ -118,7 +118,7 @@ export const HUD: React.FC<HUDProps> = ({
               );
             })()}
 
-            <div className="flex flex-col gap-0.5 min-w-[65px] sm:min-w-[85px] landscape:min-w-[75px]">
+            <div className="flex flex-col gap-0.5 min-w-[65px] sm:min-w-[85px]">
               {/* Health */}
               <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-bold leading-none">
                 <span className="flex items-center gap-0.5 text-red-400">
@@ -148,7 +148,7 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Wave Indicator (Inline in Landscape or Center in Portrait) */}
+          {/* Center: Wave Indicator */}
           <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800 shadow-md flex items-center gap-1">
             <Skull className="w-3 h-3 text-amber-500 shrink-0" />
             <div className="flex flex-col items-center leading-none">
@@ -157,62 +157,8 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Gold & Score in Portrait ROW 1 (Hidden here in Landscape, moved to Right Group) */}
-          <div className="landscape:hidden bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[9px] sm:text-xs">
-              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
-              <span className="font-mono">{player.gold}</span>
-            </div>
-            <div className="h-2.5 w-[1px] bg-neutral-800" />
-            <div className="flex items-center gap-0.5 text-white font-bold text-[8px] sm:text-[10px]">
-              <Award className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
-              <span className="font-mono">{player.score}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ROW 2 (or Center/Right Group in Landscape): Boss/Map Info & Tactical Controls */}
-        <div className="flex items-center justify-between landscape:justify-end gap-1.5 w-full landscape:w-auto">
-          {/* Boss Bar or Map Name */}
-          {bossHp ? (
-            <div className="flex-1 landscape:flex-none landscape:min-w-[170px] bg-red-950/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-red-500/80 shadow-md">
-              <div className="flex items-center justify-between text-[8px] sm:text-[9px] font-black text-red-200 uppercase tracking-wider mb-0.5">
-                <span className="flex items-center gap-1 text-red-400 truncate max-w-[130px] sm:max-w-none">
-                  <ShieldAlert className="w-2.5 h-2.5 text-red-400 shrink-0 animate-pulse" />
-                  {bossHp.badge && (
-                    <span className="px-1 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40 text-[7px] shrink-0">
-                      {bossHp.badge}
-                    </span>
-                  )}
-                  <span className="truncate">{bossHp.name}</span>
-                </span>
-                <span className="font-mono text-white ml-1">{Math.ceil(bossHp.current)}/{bossHp.max}</span>
-              </div>
-              <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-red-800">
-                <div 
-                  className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full"
-                  style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
-                />
-              </div>
-              {bossHp.currentSkill && (
-                <div className="text-[7px] text-amber-200/90 truncate font-mono mt-0.5 tracking-tight flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                  <span className="truncate font-semibold">{bossHp.currentSkill}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div 
-              className="text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
-              style={{ color: currentMap.accentColor }}
-            >
-              <MapPin className="w-2.5 h-2.5" />
-              <span>{currentMap.nameVi}</span>
-            </div>
-          )}
-
-          {/* Gold & Score in Landscape */}
-          <div className="hidden landscape:flex bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md items-center gap-1.5 shrink-0">
+          {/* Currency: Gold & Score */}
+          <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1.5">
             <div className="flex items-center gap-0.5 text-amber-400 font-black text-[9px] sm:text-xs">
               <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
               <span className="font-mono">{player.gold}</span>
@@ -224,13 +170,45 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Quick Tactical Controls (Zoom, Auto-Aim, Sound, Pause) */}
-          <div className="flex items-center gap-1 ml-auto landscape:ml-0 shrink-0">
+          {/* Quick Shop Button in Top Bar (100% accessible on any screen) */}
+          <button
+            onClick={onOpenShop}
+            className={`px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8.5px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto ${
+              canAffordAnything
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 border-amber-300 animate-pulse shadow-amber-500/40'
+                : 'bg-neutral-950/90 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
+            }`}
+            title="Mở Cửa Hàng Trang Bị / Nâng Cấp (Phím B)"
+          >
+            <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+            <span>SHOP</span>
+            {canAffordAnything && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-600 animate-ping border border-white" />
+            )}
+          </button>
+
+          {/* Quick Grenade Button in Top Bar */}
+          <button
+            onClick={onThrowGrenade}
+            disabled={player.grenadeCount <= 0}
+            className={`px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8.5px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto ${
+              player.grenadeCount > 0
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
+                : 'bg-neutral-950/70 border-neutral-800 text-neutral-600 opacity-60'
+            }`}
+            title="Ném Lựu đạn nổ diện rộng (Phím G hoặc E)"
+          >
+            <Bomb className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+            <span className="font-mono">x{player.grenadeCount}</span>
+          </button>
+
+          {/* Tactical Controls: Zoom, Auto-Aim, Sound, Pause */}
+          <div className="flex items-center gap-1 ml-auto sm:ml-0">
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
                 onClick={onToggleCameraZoom}
-                className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 text-[8px] sm:text-[10px] font-black text-cyan-300 backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-0.5"
+                className="px-1.5 py-1 rounded-lg bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 text-[8px] sm:text-[10px] font-black text-cyan-300 backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-0.5"
                 title="Thay đổi góc nhìn camera (Siêu rộng / Rộng / Chuẩn)"
               >
                 <span>🔍</span>
@@ -242,7 +220,7 @@ export const HUD: React.FC<HUDProps> = ({
             {onToggleAutoAim && (
               <button
                 onClick={onToggleAutoAim}
-                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-0.5 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
+                className={`px-1.5 py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-1 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
                   autoAimEnabled
                     ? 'bg-emerald-500/25 border-emerald-400/80 text-emerald-300'
                     : 'bg-neutral-900/90 border-neutral-700 text-neutral-400'
@@ -250,7 +228,7 @@ export const HUD: React.FC<HUDProps> = ({
                 title="Bật/Tắt Tự Động Khóa Quái Gần Nhất"
               >
                 <Crosshair className={`w-2.5 h-2.5 ${autoAimEnabled ? 'text-emerald-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '6s' }} />
-                <span>{autoAimEnabled ? 'TỰ NGẮM' : 'TẮT'}</span>
+                <span className="hidden sm:inline">{autoAimEnabled ? 'TỰ NGẮM' : 'TẮT'}</span>
               </button>
             )}
 
@@ -264,13 +242,57 @@ export const HUD: React.FC<HUDProps> = ({
 
             <button
               onClick={onPause}
-              className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto font-mono text-[8px] sm:text-[10px] font-bold"
+              className="px-2 py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto font-mono text-[9px] sm:text-[10px] font-bold"
               title="Tạm dừng game"
             >
               II
             </button>
           </div>
         </div>
+
+        {/* ROW 2: Dedicated Epic Boss Bar (Full width, no truncation) or Map Chip */}
+        {bossHp ? (
+          <div className="w-full bg-gradient-to-r from-red-950/95 via-neutral-950/95 to-red-950/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-red-500/80 shadow-lg shadow-red-950/50">
+            <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-black text-red-200 uppercase tracking-wider mb-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 animate-pulse" />
+                {bossHp.badge && (
+                  <span className="px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40 text-[7px] sm:text-[8px] shrink-0">
+                    {bossHp.badge}
+                  </span>
+                )}
+                <span className="font-black text-white tracking-wide truncate">{bossHp.name}</span>
+              </div>
+              <span className="font-mono text-red-100 shrink-0 ml-2 font-black text-[9px] sm:text-[10px]">
+                {Math.ceil(bossHp.current)} / {bossHp.max}
+              </span>
+            </div>
+            {/* Segmented HP Gauge */}
+            <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden border border-red-800 shadow-inner">
+              <div 
+                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full"
+                style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
+              />
+            </div>
+            {bossHp.currentSkill && (
+              <div className="text-[7.5px] sm:text-[9px] text-amber-200 truncate font-mono mt-0.5 tracking-tight flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                <span className="text-amber-400 font-bold uppercase text-[7px] sm:text-[8px]">ĐANG DÙNG CHIÊU:</span>
+                <span className="font-semibold text-amber-200">{bossHp.currentSkill}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between w-full">
+            <div 
+              className="text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
+              style={{ color: currentMap.accentColor }}
+            >
+              <MapPin className="w-2.5 h-2.5" />
+              <span>{currentMap.nameVi}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* FLOATING PROMPT WHEN AFFORDABLE WEAPON IS AVAILABLE */}

@@ -109,6 +109,29 @@ export const App: React.FC = () => {
   const [touchMoveInput, setTouchMoveInput] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const [touchAimInput, setTouchAimInput] = useState<{ angle: number; isShooting: boolean }>({ angle: 0, isShooting: false });
 
+  // Real Mobile Safari / Chrome Viewport Height Tracking
+  useEffect(() => {
+    const updateAppHeight = () => {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${vh}px`);
+    };
+    updateAppHeight();
+    window.addEventListener('resize', updateAppHeight);
+    window.addEventListener('orientationchange', updateAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateAppHeight);
+      window.visualViewport.addEventListener('scroll', updateAppHeight);
+    }
+    return () => {
+      window.removeEventListener('resize', updateAppHeight);
+      window.removeEventListener('orientationchange', updateAppHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateAppHeight);
+        window.visualViewport.removeEventListener('scroll', updateAppHeight);
+      }
+    };
+  }, []);
+
   // Start new game
   const handleStartGame = (
     chosenDiff: GameDifficulty, 
@@ -441,7 +464,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-screen h-screen overflow-hidden select-none' : 'min-h-screen bg-neutral-950'}`}>
+    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-full h-[var(--app-height,100dvh)] max-h-[var(--app-height,100dvh)] overflow-hidden select-none touch-none' : 'min-h-screen bg-neutral-950'}`}>
       
       {/* 1. START SCREEN */}
       {gameState === 'start' && (
