@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-36 overscroll-y-contain">
+    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-8 md:pb-32 overscroll-y-contain">
       
       {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -782,8 +782,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
       </div>
 
-      {/* STICKY BOTTOM FLOATING PLAY BAR (Always visible on any screen size) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-2.5 sm:p-3 bg-neutral-950/90 backdrop-blur-xl border-t border-red-500/30 flex items-center justify-center shadow-2xl">
+      {/* STICKY BOTTOM FLOATING PLAY BAR (Desktop & Tablet only, hidden on mobile) */}
+      <div className="hidden md:flex fixed bottom-0 left-0 right-0 z-30 p-2.5 sm:p-3 bg-neutral-950/90 backdrop-blur-xl border-t border-red-500/30 items-center justify-center shadow-2xl">
         <div className="w-full max-w-4xl flex items-center justify-between gap-3 px-2">
           <div className="flex items-center gap-2.5 truncate">
             <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-400 shrink-0 bg-neutral-900 hidden xs:block">
