@@ -82,9 +82,9 @@ export const ShopModal: React.FC<ShopModalProps> = ({
       <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-4xl max-h-[94vh] landscape:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-neutral-200">
         
         {/* HEADER */}
-        <div className="p-3 sm:p-5 landscape:p-2.5 border-b border-neutral-800 flex flex-wrap items-center justify-between bg-neutral-950/70 gap-2">
+        <div className="shrink-0 p-3 sm:p-4 landscape:p-2.5 border-b border-neutral-800 flex flex-wrap items-center justify-between bg-neutral-950/70 gap-2">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="p-2 sm:p-3 landscape:p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
+            <div className="p-2 sm:p-2.5 landscape:p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 landscape:w-4 landscape:h-4" />
             </div>
             <div>
@@ -134,81 +134,106 @@ export const ShopModal: React.FC<ShopModalProps> = ({
           </div>
         </div>
 
-        {/* TABS */}
-        <div className="flex border-b border-neutral-800 bg-neutral-950/40 p-1.5 sm:p-2 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+        {/* TABS BAR (Clean single-line pills, never wrapped or clipped) */}
+        <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 border-b border-neutral-800 bg-neutral-950/80 px-2 sm:px-4 py-2 sm:py-2.5 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => setTab('weapons')}
-            className={`flex-1 min-w-[100px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all select-none ${
               tab === 'weapons' 
-                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20 font-black' 
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 bg-neutral-900/40 border border-neutral-800/60'
             }`}
           >
-            <Crosshair className="w-4 h-4" />
-            <span>Súng ({(Object.values(weapons) as Weapon[]).filter(w => w.unlocked).length}/{Object.keys(weapons).length})</span>
+            <Crosshair className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Súng</span>
+            <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+              tab === 'weapons' ? 'bg-neutral-950/25 text-neutral-950' : 'bg-neutral-800 text-amber-400'
+            }`}>
+              {(Object.values(weapons) as Weapon[]).filter(w => w.unlocked).length}/{Object.keys(weapons).length}
+            </span>
           </button>
+
           <button
             onClick={() => setTab('equipment')}
-            className={`flex-1 min-w-[110px] sm:min-w-[135px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all relative ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all relative select-none ${
               tab === 'equipment' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-neutral-950 font-black shadow-lg shadow-emerald-500/20' 
-                : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/30'
+                : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/40 bg-neutral-900/40 border border-emerald-900/40'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Trang Bị ({ownedEquipmentCount}/{equipmentList.length})</span>
+            <Shield className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Trang Bị</span>
+            <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+              tab === 'equipment' ? 'bg-neutral-950/25 text-neutral-950' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+            }`}>
+              {ownedEquipmentCount}/{equipmentList.length}
+            </span>
             {canAffordAnyEquipment && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute top-1 right-1" />
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
             )}
           </button>
+
           <button
             onClick={() => setTab('drones')}
-            className={`flex-1 min-w-[100px] sm:min-w-[135px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all select-none ${
               tab === 'drones' 
                 ? 'bg-cyan-400 text-neutral-950 shadow-lg shadow-cyan-400/20 font-black' 
-                : 'text-cyan-400/80 hover:text-cyan-300 hover:bg-cyan-950/30'
+                : 'text-cyan-400/80 hover:text-cyan-300 hover:bg-cyan-950/40 bg-neutral-900/40 border border-cyan-900/40'
             }`}
           >
-            <Bot className="w-4 h-4" />
-            <span>Drone ({drones.filter(d => d.unlocked).length}/{drones.length})</span>
+            <Bot className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Drone</span>
+            <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+              tab === 'drones' ? 'bg-neutral-950/25 text-neutral-950' : 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/30'
+            }`}>
+              {drones.filter(d => d.unlocked).length}/{drones.length}
+            </span>
           </button>
+
           <button
             onClick={() => setTab('warriors')}
-            className={`flex-1 min-w-[100px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all select-none ${
               tab === 'warriors' 
-                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20 font-black' 
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 bg-neutral-900/40 border border-neutral-800/60'
             }`}
           >
-            <UserCheck className="w-4 h-4" />
-            <span>Chiến Binh ({WARRIOR_CLASSES.length})</span>
+            <UserCheck className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Chiến Binh</span>
+            <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+              tab === 'warriors' ? 'bg-neutral-950/25 text-neutral-950' : 'bg-neutral-800 text-amber-400'
+            }`}>
+              {WARRIOR_CLASSES.length}
+            </span>
           </button>
+
           <button
             onClick={() => setTab('upgrades')}
-            className={`flex-1 min-w-[90px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all select-none ${
               tab === 'upgrades' 
-                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20 font-black' 
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 bg-neutral-900/40 border border-neutral-800/60'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Kỹ Năng</span>
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Kỹ Năng</span>
           </button>
+
           <button
             onClick={() => setTab('supplies')}
-            className={`flex-1 min-w-[90px] sm:min-w-[110px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl font-bold text-xs uppercase tracking-wider inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-all select-none ${
               tab === 'supplies' 
-                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20' 
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                ? 'bg-amber-500 text-neutral-950 shadow-lg shadow-amber-500/20 font-black' 
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60 bg-neutral-900/40 border border-neutral-800/60'
             }`}
           >
-            <Bomb className="w-4 h-4" />
-            <span>Tiếp Tế</span>
+            <Bomb className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Tiếp Tế</span>
           </button>
         </div>
 
         {/* CONTENT BODY */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-3.5 sm:p-5 md:p-6 space-y-4">
           
           {/* TAB: EQUIPMENT / TRANG BỊ CHIẾN BINH */}
           {tab === 'equipment' && (
@@ -942,14 +967,15 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 border-t border-neutral-800 bg-neutral-950/60 flex items-center justify-between">
-          <span className="text-xs text-neutral-400">Nhấn <kbd className="px-2 py-0.5 bg-neutral-800 rounded font-mono text-neutral-200">ESC</kbd> hoặc nút Đóng để quay lại trận chiến</span>
+        <div className="shrink-0 p-3 sm:p-4 border-t border-neutral-800 bg-neutral-950/70 flex items-center justify-between gap-2">
+          <span className="text-xs text-neutral-400 hidden sm:inline">Nhấn <kbd className="px-2 py-0.5 bg-neutral-800 rounded font-mono text-neutral-200">ESC</kbd> hoặc nút Đóng để quay lại trận chiến</span>
+          <span className="text-xs text-neutral-400 sm:hidden">Nhấn để tiếp tục trận</span>
           <button
             onClick={() => {
               soundManager.playEmptyClick();
               onClose();
             }}
-            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+            className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all active:scale-95 whitespace-nowrap ml-auto"
           >
             QUAY LẠI TRẬN CHIẾN
           </button>

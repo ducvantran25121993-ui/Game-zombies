@@ -49,3 +49,12 @@ body.game-playing #root {
   touch-action: none !important;
 }
 
+/* Hide scrollbars but keep horizontal/vertical touch scrolling functional */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
