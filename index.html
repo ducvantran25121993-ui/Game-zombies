@@ -3,12 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>My Google AI Studio App</title>
-    <meta name="description" content="An application built with Google AI Studio." />
-    <meta property="og:title" content="My Google AI Studio App" />
-    <meta property="og:description" content="An application built with Google AI Studio." />
+    <title>Zombie Apocalypse: Survival Strike</title>
+    <meta name="description" content="Game bắn súng sinh tồn diệt Zombie 2D góc nhìn từ trên xuống với các bối cảnh linh hoạt, kho vũ khí, robot drone hộ vệ và hệ thống trang bị tác chiến phong phú." />
+    <meta property="og:title" content="Zombie Apocalypse: Survival Strike" />
+    <meta property="og:description" content="Game bắn súng sinh tồn diệt Zombie 2D góc nhìn từ trên xuống với các bối cảnh linh hoạt, kho vũ khí, robot drone hộ vệ và hệ thống trang bị tác chiến phong phú." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Dòng quan trọng nhất để ẩn thanh điền link, bật chế độ toàn màn hình trên iOS / iPhone -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <!-- Đổi màu thanh trạng thái (chỗ hiển thị pin và giờ) thành màu đen cho hợp với game -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Đặt tên cho biểu tượng hiển thị ngoài màn hình chính của điện thoại -->
+    <meta name="apple-mobile-web-app-title" content="Zombie Neon" />
+
+    <!-- Link dẫn tới ảnh làm Icon game ngoài màn hình (thay icon.png bằng ảnh Logo game) -->
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="icon" type="image/png" href="icon.png" />
+
+    <!-- Cấu hình chuẩn Android / Chrome PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="manifest" href="/manifest.json" />
   </head>
   <body>
     <div id="root"></div>
