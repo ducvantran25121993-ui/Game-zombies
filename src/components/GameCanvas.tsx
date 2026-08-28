@@ -229,8 +229,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       p.grenadeCount = player.grenadeCount;
       p.upgrades = { ...player.upgrades };
       p.warriorSkin = player.warriorSkin;
+      if (player.equipment) {
+        p.equipment = { ...player.equipment };
+      }
     }
-  }, [player.gold, player.hp, player.maxHp, player.armor, player.maxArmor, player.speed, player.grenadeCount, player.upgrades, player.warriorSkin]);
+  }, [player.gold, player.hp, player.maxHp, player.armor, player.maxArmor, player.speed, player.grenadeCount, player.upgrades, player.warriorSkin, player.equipment]);
 
   useEffect(() => {
     stateRef.current.currentWeapon = { ...currentWeapon };

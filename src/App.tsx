@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayerStats, Weapon, WeaponType, GameDifficulty, 
-  GameMode, ActiveBuffs, MapEnvironmentId 
+  GameMode, ActiveBuffs, MapEnvironmentId, EquipmentSlotId, EquipmentItem
 } from './types/game';
 import { INITIAL_WEAPONS, MAP_SIZE, UPGRADES_CONFIG } from './utils/constants';
 import { soundManager } from './utils/audio';
 import { WARRIOR_CLASSES } from './data/warriors';
 import { INITIAL_DRONES, CompanionDroneConfig } from './data/drones';
+import { INITIAL_EQUIPMENT } from './data/equipment';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
 import { ShopModal } from './components/ShopModal';
@@ -63,6 +64,14 @@ export const App: React.FC = () => {
       critChanceLevel: 0,
       magnetRadiusLevel: 0,
       bulletDamageLevel: 0
+    },
+    equipment: {
+      armor: 0,
+      boots: 0,
+      helmet: 0,
+      gloves: 0,
+      backpack: 0,
+      visor: 0
     }
   });
 
@@ -72,6 +81,9 @@ export const App: React.FC = () => {
 
   // Companion Drones State
   const [drones, setDrones] = useState<CompanionDroneConfig[]>(INITIAL_DRONES);
+
+  // Equipment Armory State
+  const [equipment, setEquipment] = useState<Record<EquipmentSlotId, EquipmentItem>>(INITIAL_EQUIPMENT);
 
   // Wave & Boss State
   const [wave, setWave] = useState(1);
@@ -213,6 +225,14 @@ export const App: React.FC = () => {
         critChanceLevel: 0,
         magnetRadiusLevel: 0,
         bulletDamageLevel: 0
+      },
+      equipment: {
+        armor: 0,
+        boots: 0,
+        helmet: 0,
+        gloves: 0,
+        backpack: 0,
+        visor: 0
       }
     });
 
@@ -220,6 +240,9 @@ export const App: React.FC = () => {
     const freshWeapons = JSON.parse(JSON.stringify(INITIAL_WEAPONS));
     setWeapons(freshWeapons);
     setCurrentWeaponId('pistol');
+
+    // Reset Equipment (Buy in shop with gold)
+    setEquipment(JSON.parse(JSON.stringify(INITIAL_EQUIPMENT)));
 
     // Reset Companion Drones (Must be purchased in armory shop with gold)
     setDrones(INITIAL_DRONES.map(d => ({ ...d, unlocked: false, level: 1 })));
@@ -419,6 +442,82 @@ export const App: React.FC = () => {
     }));
   };
 
+  const handleBuyEquipment = (slotId: EquipmentSlotId) => {
+    const currentItem = equipment[slotId];
+    if (!currentItem || currentItem.level >= currentItem.maxLevel) return;
+
+    const nextTier = currentItem.tiers[currentItem.level];
+    if (!nextTier || player.gold < nextTier.cost) return;
+
+    soundManager.playPowerUp();
+    const newLevel = currentItem.level + 1;
+    const cost = nextTier.cost;
+
+    setEquipment(prev => ({
+      ...prev,
+      [slotId]: {
+        ...prev[slotId],
+        level: newLevel
+      }
+    }));
+
+    setPlayer(prev => {
+      let newMaxHp = prev.maxHp;
+      let newHp = prev.hp;
+      let newMaxArmor = prev.maxArmor;
+      let newArmor = prev.armor;
+      let newSpeed = prev.speed;
+      let newGrenadeCount = prev.grenadeCount;
+
+      if (slotId === 'armor') {
+        const armorAdd = newLevel === 1 ? 40 : newLevel === 2 ? 50 : newLevel === 3 ? 70 : 90;
+        newMaxArmor += armorAdd;
+        newArmor = Math.min(newMaxArmor, newArmor + armorAdd);
+      } else if (slotId === 'boots') {
+        newSpeed += (newLevel === 1 ? 0.35 : newLevel === 2 ? 0.45 : newLevel === 3 ? 0.55 : 0.65);
+      } else if (slotId === 'helmet') {
+        const hpAdd = newLevel === 1 ? 30 : newLevel === 2 ? 40 : newLevel === 3 ? 55 : 75;
+        newMaxHp += hpAdd;
+        newHp = Math.min(newMaxHp, newHp + hpAdd);
+      } else if (slotId === 'backpack') {
+        newGrenadeCount += (newLevel === 1 ? 2 : newLevel === 2 ? 3 : newLevel === 3 ? 4 : 5);
+      }
+
+      const nextEquipRecord = {
+        ...(prev.equipment || { armor: 0, boots: 0, helmet: 0, gloves: 0, backpack: 0, visor: 0 }),
+        [slotId]: newLevel
+      };
+
+      return {
+        ...prev,
+        gold: prev.gold - cost,
+        hp: newHp,
+        maxHp: newMaxHp,
+        armor: newArmor,
+        maxArmor: newMaxArmor,
+        speed: Number(newSpeed.toFixed(2)),
+        grenadeCount: newGrenadeCount,
+        equipment: nextEquipRecord
+      };
+    });
+
+    if (slotId === 'backpack') {
+      setWeapons(prev => {
+        const updated = { ...prev };
+        for (const k in updated) {
+          const w = updated[k];
+          if (w.unlocked) {
+            updated[k] = {
+              ...w,
+              reserveAmmo: w.reserveAmmo + Math.round(w.magSize * 2.5)
+            };
+          }
+        }
+        return updated;
+      });
+    }
+  };
+
   const handleQuickUpgradeAll = () => {
     let curGold = player.gold;
     if (curGold < 50) return;
@@ -427,6 +526,8 @@ export const App: React.FC = () => {
     const nextUpgrades = { ...player.upgrades };
     const nextWeapons = { ...weapons };
     let nextDrones = [...drones];
+    const nextEquipment = { ...equipment };
+    let equipUpgraded = false;
 
     // 1. Upgrade unlocked weapons
     for (const key of Object.keys(nextWeapons) as WeaponType[]) {
@@ -477,15 +578,36 @@ export const App: React.FC = () => {
       return d;
     });
 
+    // 4. Upgrade Equipment
+    const playerEquip = { ...(player.equipment || { armor: 0, boots: 0, helmet: 0, gloves: 0, backpack: 0, visor: 0 }) };
+    for (const slotKey of Object.keys(nextEquipment) as EquipmentSlotId[]) {
+      const item = nextEquipment[slotKey];
+      if (item.level < item.maxLevel) {
+        const nextTier = item.tiers[item.level];
+        if (nextTier && curGold >= nextTier.cost) {
+          curGold -= nextTier.cost;
+          item.level += 1;
+          playerEquip[slotKey] = item.level;
+          upgradedAny = true;
+          equipUpgraded = true;
+        }
+      }
+    }
+
+    if (equipUpgraded) {
+      setEquipment(nextEquipment);
+    }
+
     if (upgradedAny) {
       soundManager.playPowerUp();
       setPlayer(prev => ({
         ...prev,
         gold: curGold,
         upgrades: nextUpgrades,
-        maxHp: 100 + ((nextUpgrades.maxHpLevel || 0) * 25),
-        maxArmor: 50 + ((nextUpgrades.armorLevel || 0) * 20),
-        speed: 3.6 + ((nextUpgrades.speedLevel || 0) * 0.35)
+        equipment: playerEquip,
+        maxHp: 100 + ((nextUpgrades.maxHpLevel || 0) * 25) + ((playerEquip.helmet || 0) * 35),
+        maxArmor: 50 + ((nextUpgrades.armorLevel || 0) * 20) + ((playerEquip.armor || 0) * 50),
+        speed: 3.6 + ((nextUpgrades.speedLevel || 0) * 0.35) + ((playerEquip.boots || 0) * 0.4)
       }));
       setWeapons(nextWeapons);
       setDrones(nextDrones);
@@ -603,7 +725,10 @@ export const App: React.FC = () => {
             currentWeaponId={currentWeaponId}
             grenadesLeft={player.grenadeCount}
             onOpenShop={() => setIsShopOpen(true)}
-            canAffordShop={(Object.values(weapons) as Weapon[]).some(w => (!w.unlocked && player.gold >= w.cost) || (w.unlocked && player.gold >= Math.round(w.cost * 0.6 * w.level) + 120))}
+            canAffordShop={
+              (Object.values(weapons) as Weapon[]).some(w => (!w.unlocked && player.gold >= w.cost) || (w.unlocked && player.gold >= Math.round(w.cost * 0.6 * w.level) + 120)) ||
+              (Object.values(equipment) as EquipmentItem[]).some(e => e.level < e.maxLevel && player.gold >= (e.tiers[e.level]?.cost || 9999))
+            }
             autoAimEnabled={autoAimEnabled}
             onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
             isReloading={isReloading}
@@ -616,6 +741,8 @@ export const App: React.FC = () => {
           <ShopModal
             player={player}
             weapons={weapons}
+            equipment={equipment}
+            onBuyEquipment={handleBuyEquipment}
             currentWeaponId={currentWeaponId}
             isOpen={isShopOpen}
             onClose={() => setIsShopOpen(false)}

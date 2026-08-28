@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { PlayerStats, Weapon, WeaponType } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, EquipmentSlotId, EquipmentItem } from '../types/game';
 import { UPGRADES_CONFIG } from '../utils/constants';
 import { 
   DollarSign, ShoppingCart, Crosshair, Heart, Shield, 
   Zap, RefreshCw, Target, Sword, Magnet, Bomb, Radio,
   Sparkles, Check, Lock, ChevronRight, X, UserCheck, Footprints,
-  Bot, Cpu, Star, Flame
+  Bot, Cpu, Star, Flame, HardHat, Package, Eye, ArrowUpRight
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WarriorClass } from '../data/warriors';
 import { CompanionDroneConfig } from '../data/drones';
+import { INITIAL_EQUIPMENT } from '../data/equipment';
 
 interface ShopModalProps {
   player: PlayerStats;
@@ -28,6 +29,8 @@ interface ShopModalProps {
   drones?: CompanionDroneConfig[];
   onUnlockDrone?: (droneId: string) => void;
   onUpgradeDrone?: (droneId: string) => void;
+  equipment?: Record<EquipmentSlotId, EquipmentItem>;
+  onBuyEquipment?: (slotId: EquipmentSlotId) => void;
   onQuickUpgradeAll?: () => void;
 }
 
@@ -48,9 +51,11 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   drones = [],
   onUnlockDrone,
   onUpgradeDrone,
+  equipment = INITIAL_EQUIPMENT,
+  onBuyEquipment,
   onQuickUpgradeAll
 }) => {
-  const [tab, setTab] = useState<'weapons' | 'drones' | 'warriors' | 'upgrades' | 'supplies'>('weapons');
+  const [tab, setTab] = useState<'weapons' | 'equipment' | 'drones' | 'warriors' | 'upgrades' | 'supplies'>('weapons');
 
   if (!isOpen) return null;
 
@@ -63,6 +68,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   const getDroneUpgradeCost = (drone: CompanionDroneConfig) => {
     return Math.round(drone.cost * 0.7 * Math.pow(1.5, drone.level));
   };
+
+  const equipmentList = Object.values(equipment || {});
+  const ownedEquipmentCount = equipmentList.filter(e => e.level > 0).length;
+  const canAffordAnyEquipment = equipmentList.some(e => {
+    if (e.level >= e.maxLevel) return false;
+    const nextTier = e.tiers[e.level];
+    return nextTier && player.gold >= nextTier.cost;
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-neutral-950/85 backdrop-blur-md select-none">
@@ -135,6 +148,20 @@ export const ShopModal: React.FC<ShopModalProps> = ({
             <span>Súng ({(Object.values(weapons) as Weapon[]).filter(w => w.unlocked).length}/{Object.keys(weapons).length})</span>
           </button>
           <button
+            onClick={() => setTab('equipment')}
+            className={`flex-1 min-w-[110px] sm:min-w-[135px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all relative ${
+              tab === 'equipment' 
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-neutral-950 font-black shadow-lg shadow-emerald-500/20' 
+                : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/30'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Trang Bị ({ownedEquipmentCount}/{equipmentList.length})</span>
+            {canAffordAnyEquipment && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute top-1 right-1" />
+            )}
+          </button>
+          <button
             onClick={() => setTab('drones')}
             className={`flex-1 min-w-[100px] sm:min-w-[135px] py-1.5 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               tab === 'drones' 
@@ -183,6 +210,224 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         {/* CONTENT BODY */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           
+          {/* TAB: EQUIPMENT / TRANG BỊ CHIẾN BINH */}
+          {tab === 'equipment' && (
+            <div className="space-y-4">
+              {/* Tactical Banner */}
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-emerald-950/70 via-neutral-900 to-teal-950/60 border border-emerald-500/30 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-400 shrink-0">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                      KHO TRANG BỊ TÁC CHIẾN CHIẾN BINH
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
+                        6 TRANG BỊ
+                      </span>
+                    </h4>
+                    <p className="text-xs text-neutral-300">
+                      Mua thêm giáp chống đạn, giầy phản lực, mũ tác chiến, găng tay xạ thủ, balo tiếp tế và kính ngắm laser khi có đủ tiền. Các chỉ số thưởng cộng dồn vĩnh viễn suốt trận đấu!
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 bg-neutral-950/80 px-3.5 py-1.5 rounded-2xl border border-neutral-800">
+                  <span className="text-xs text-neutral-400">Đã sở hữu:</span>
+                  <span className="font-mono font-black text-emerald-400 text-sm">
+                    {ownedEquipmentCount} / {equipmentList.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Equipment Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                {equipmentList.map(item => {
+                  const currentTier = item.level > 0 ? item.tiers[item.level - 1] : null;
+                  const nextTier = item.level < item.maxLevel ? item.tiers[item.level] : null;
+                  const canBuy = nextTier && player.gold >= nextTier.cost;
+                  const isMaxLevel = item.level >= item.maxLevel;
+                  const isUnowned = item.level === 0;
+
+                  // Render appropriate Lucide icon
+                  const renderIcon = () => {
+                    const iconProps = { className: "w-6 h-6", style: { color: item.color } };
+                    switch (item.id) {
+                      case 'armor': return <Shield {...iconProps} />;
+                      case 'boots': return <Footprints {...iconProps} />;
+                      case 'helmet': return <HardHat {...iconProps} />;
+                      case 'gloves': return <Sparkles {...iconProps} />;
+                      case 'backpack': return <Package {...iconProps} />;
+                      case 'visor': return <Eye {...iconProps} />;
+                      default: return <Shield {...iconProps} />;
+                    }
+                  };
+
+                  return (
+                    <div 
+                      key={item.id}
+                      className={`rounded-3xl p-4 border transition-all flex flex-col justify-between ${
+                        item.level > 0
+                          ? 'bg-neutral-900/90 border-neutral-700/80 hover:border-emerald-500/50 shadow-xl'
+                          : 'bg-neutral-950/60 border-neutral-800/80 opacity-90'
+                      }`}
+                    >
+                      <div>
+                        {/* Header: Icon, Name & Tiers */}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner shrink-0"
+                              style={{ 
+                                backgroundColor: `${item.color}15`,
+                                borderColor: `${item.color}55`
+                              }}
+                            >
+                              {renderIcon()}
+                            </div>
+                            <div>
+                              <h4 className="font-black text-sm sm:text-base text-white">{item.nameVi}</h4>
+                              <span 
+                                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md inline-block uppercase mt-0.5"
+                                style={{ 
+                                  backgroundColor: `${item.color}22`,
+                                  color: item.color,
+                                  border: `1px solid ${item.color}44`
+                                }}
+                              >
+                                {item.categoryVi}
+                              </span>
+                            </div>
+                          </div>
+
+                          {item.level > 0 && (
+                            <span className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-lg shrink-0">
+                              <Check className="w-3 h-3 stroke-[3]" /> ĐÃ DÙNG
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Stars Indicator */}
+                        <div className="flex items-center justify-between py-1.5 px-2.5 bg-neutral-950/70 rounded-xl border border-neutral-800/80 mb-3">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4].map(tierNum => (
+                              <Star 
+                                key={tierNum}
+                                className={`w-3.5 h-3.5 ${
+                                  tierNum <= item.level 
+                                    ? 'text-amber-400 fill-amber-400' 
+                                    : 'text-neutral-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-neutral-300">
+                            {isUnowned ? 'Chưa Mở Khóa' : isMaxLevel ? 'Tối Đa (Cấp 4/4)' : `Cấp ${item.level}/${item.maxLevel}`}
+                          </span>
+                        </div>
+
+                        {/* Current Tier Description & Stats */}
+                        {currentTier ? (
+                          <div className="mb-3 space-y-2">
+                            <div className="flex items-baseline justify-between">
+                              <span className="text-xs font-bold text-emerald-300">{currentTier.nameVi}</span>
+                              <span className="text-[10px] text-neutral-400">{currentTier.subtitleVi}</span>
+                            </div>
+                            <p className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/40 p-2 rounded-xl border border-neutral-800/50">
+                              {currentTier.descVi}
+                            </p>
+                            <div className="space-y-1">
+                              {currentTier.statsDescVi.map((st, i) => (
+                                <div key={i} className="flex items-center gap-1.5 text-[11px] text-neutral-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                  <span>{st}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-3">
+                            <p className="text-xs text-neutral-400 mb-2 leading-relaxed">
+                              {nextTier ? nextTier.descVi : 'Trang bị nâng cấp bổ trợ chiến binh.'}
+                            </p>
+                            {nextTier && (
+                              <div className="space-y-1 bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/70">
+                                <span className="text-[10px] font-bold uppercase text-neutral-400 block mb-1">Hiệu năng khi mua Cấp 1:</span>
+                                {nextTier.statsDescVi.map((st, i) => (
+                                  <div key={i} className="flex items-center gap-1.5 text-[11px] text-neutral-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                    <span>{st}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Next Tier Preview if not maxed and not unowned */}
+                        {!isUnowned && nextTier && (
+                          <div className="p-2.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 mb-3 text-xs">
+                            <div className="flex items-center justify-between text-amber-300 font-bold mb-1">
+                              <span className="flex items-center gap-1">
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                Nâng cấp Cấp {nextTier.tier}:
+                              </span>
+                              <span className="font-mono text-amber-400">{nextTier.cost} Vàng</span>
+                            </div>
+                            <span className="text-[11px] text-neutral-300 block mb-1 font-semibold">{nextTier.nameVi}</span>
+                            <div className="text-[10px] text-neutral-400 space-y-0.5">
+                              {nextTier.statsDescVi.map((st, i) => (
+                                <div key={i} className="truncate">• {st}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="pt-2 border-t border-neutral-800/80 mt-1">
+                        {isUnowned && nextTier ? (
+                          <button
+                            onClick={() => onBuyEquipment && onBuyEquipment(item.id)}
+                            disabled={!canBuy}
+                            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+                              canBuy
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-neutral-950 font-black shadow-lg shadow-emerald-500/20 active:scale-95'
+                                : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                            }`}
+                          >
+                            {canBuy ? <DollarSign className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                            {canBuy 
+                              ? `MUA TRANG BỊ (${nextTier.cost} VÀNG)` 
+                              : `CẦN ${nextTier.cost} VÀNG (THIẾU ${nextTier.cost - player.gold})`}
+                          </button>
+                        ) : !isMaxLevel && nextTier ? (
+                          <button
+                            onClick={() => onBuyEquipment && onBuyEquipment(item.id)}
+                            disabled={!canBuy}
+                            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+                              canBuy
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-neutral-950 font-black shadow-lg shadow-amber-500/20 active:scale-95'
+                                : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                            }`}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            {canBuy
+                              ? `NÂNG CẤP LÊN CẤP ${nextTier.tier} (${nextTier.cost} V)`
+                              : `CẦN ${nextTier.cost} VÀNG (THIẾU ${nextTier.cost - player.gold})`}
+                          </button>
+                        ) : (
+                          <div className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black text-center uppercase tracking-wider">
+                            ★ ĐÃ ĐẠT CẤP ĐỘ TỐI ĐA ★
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* TAB: DRONES COMPANIONS */}
           {tab === 'drones' && (
             <div className="space-y-4">

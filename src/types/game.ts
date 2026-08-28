@@ -300,6 +300,8 @@ export interface PlayerStats {
     magnetRadiusLevel: number;
     bulletDamageLevel: number;
   };
+  // Warrior Equipment Levels (0 = unowned, 1-4 = tier)
+  equipment?: Record<EquipmentSlotId, number>;
 }
 
 export interface ActiveBuffs {
@@ -346,3 +348,41 @@ export interface HighScoreRecord {
   difficulty: GameDifficulty;
   mapId?: MapEnvironmentId;
 }
+
+export type EquipmentSlotId = 'armor' | 'boots' | 'helmet' | 'gloves' | 'backpack' | 'visor';
+
+export interface EquipmentTierConfig {
+  tier: number;
+  nameVi: string;
+  subtitleVi: string;
+  cost: number;
+  descVi: string;
+  statsDescVi: string[];
+  maxArmorBonus?: number;
+  damageReduction?: number;
+  armorRegenPerSec?: number;
+  speedMultBonus?: number;
+  dashCooldownBonus?: number;
+  maxHpBonus?: number;
+  critChanceBonus?: number;
+  reloadSpeedBonus?: number;
+  damageBonus?: number;
+  reserveAmmoBonus?: number;
+  grenadeBonus?: number;
+  magnetBonus?: number;
+  bulletRangeBonus?: number;
+  headshotBonus?: number;
+  visualColor?: string;
+}
+
+export interface EquipmentItem {
+  id: EquipmentSlotId;
+  nameVi: string;
+  categoryVi: string;
+  icon: string;
+  color: string;
+  level: number; // 0 = unowned, 1-4 = tiers
+  maxLevel: number;
+  tiers: EquipmentTierConfig[];
+}
+
