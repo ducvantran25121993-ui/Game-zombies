@@ -1178,6 +1178,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         const isEnraged = state.wave >= 6;
         const hpScale = (1 + (state.wave - 1) * 0.38) * (difficulty === 'nightmare' ? 1.5 : difficulty === 'hard' ? 1.25 : 1.0);
+        const diffBossSpeedMult = difficulty === 'nightmare' ? 1.15 : difficulty === 'hard' ? 1.08 : 1.0;
+        const bossSpeedScale = (1 + (state.wave - 1) * 0.04) * diffBossSpeedMult;
         const newBoss: Zombie = {
           id: `boss_${Math.random().toString()}`,
           type: chosenBossType,
@@ -1186,8 +1188,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           radius: template.radius,
           hp: Math.round(template.hp * hpScale),
           maxHp: Math.round(template.hp * hpScale),
-          speed: template.speed * (1 + (state.wave - 1) * 0.035),
-          baseSpeed: template.speed * (1 + (state.wave - 1) * 0.035),
+          speed: template.speed * bossSpeedScale,
+          baseSpeed: template.speed * bossSpeedScale,
           damage: Math.round(template.damage * (1 + (state.wave - 1) * 0.15)),
           scoreValue: template.score,
           goldValue: template.gold,
@@ -1277,7 +1279,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           else { spawnX = 50 + jitter; spawnY = Math.random() * MAP_SIZE.height; }
 
           const hpScale = (1 + (state.wave - 1) * 0.26) * (difficulty === 'nightmare' ? 1.4 : difficulty === 'hard' ? 1.2 : 1.0);
-          const speedScale = Math.min(1.35, 1 + (state.wave - 1) * 0.035);
+          const diffSpeedMult = difficulty === 'nightmare' ? 1.15 : difficulty === 'hard' ? 1.08 : 1.0;
+          const speedScale = Math.min(1.45, (1 + (state.wave - 1) * 0.04) * diffSpeedMult);
 
           const newZombie: Zombie = {
             id: Math.random().toString(),
@@ -1783,7 +1786,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 7. UPDATE ZOMBIES
       for (let i = state.zombies.length - 1; i >= 0; i--) {
         const z = state.zombies[i];
-        z.animationFrame += 0.2;
+        z.animationFrame += 0.075 * Math.max(1.8, z.speed);
 
         // Death check
         if (z.hp <= 0) {
