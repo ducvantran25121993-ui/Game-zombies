@@ -172,6 +172,9 @@ export const App: React.FC = () => {
     setWeapons(freshWeapons);
     setCurrentWeaponId('pistol');
 
+    // Reset Companion Drones (Must be purchased in armory shop with gold)
+    setDrones(INITIAL_DRONES.map(d => ({ ...d, unlocked: false, level: 1 })));
+
     setWave(1);
     setGameState('playing');
     setIsPaused(false);

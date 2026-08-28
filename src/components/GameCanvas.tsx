@@ -648,8 +648,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const mapMeta = MAP_ENVIRONMENTS.find(m => m.id === nextMapId) || MAP_ENVIRONMENTS[0];
 
-    const diffMult = difficulty === 'easy' ? 0.7 : difficulty === 'hard' ? 1.3 : difficulty === 'nightmare' ? 1.8 : 1.0;
-    const baseCount = Math.floor((12 + waveNum * 6) * diffMult);
+    const diffMult = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.35 : difficulty === 'nightmare' ? 1.85 : 1.0;
+    // Dramatically increased zombie hordes per wave: Wave 1 = ~40, Wave 2 = ~66, Wave 3 = ~96, Wave 4 = ~127, Wave 5 = ~160+
+    const baseCount = Math.floor((18 + waveNum * 16 + Math.floor(Math.pow(waveNum, 1.45) * 6)) * diffMult);
     
     state.zombiesToSpawn = baseCount;
     // Every round adds 1 boss (Wave 1 = 1 boss, Wave 2 = 2 bosses, Wave 3 = 3 bosses, etc.)
@@ -1131,7 +1132,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         else if (spawnSide === 2) { spawnX = Math.random() * MAP_SIZE.width; spawnY = MAP_SIZE.height - 50; }
         else { spawnX = 50; spawnY = Math.random() * MAP_SIZE.height; }
 
-        const hpScale = 1 + (state.wave - 1) * 0.22;
+        const hpScale = (1 + (state.wave - 1) * 0.38) * (difficulty === 'nightmare' ? 1.5 : difficulty === 'hard' ? 1.25 : 1.0);
         const newBoss: Zombie = {
           id: `boss_${Math.random().toString()}`,
           type: chosenBossType,
@@ -1140,9 +1141,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           radius: template.radius,
           hp: Math.round(template.hp * hpScale),
           maxHp: Math.round(template.hp * hpScale),
-          speed: template.speed,
-          baseSpeed: template.speed,
-          damage: template.damage,
+          speed: template.speed * (1 + (state.wave - 1) * 0.035),
+          baseSpeed: template.speed * (1 + (state.wave - 1) * 0.035),
+          damage: Math.round(template.damage * (1 + (state.wave - 1) * 0.15)),
           scoreValue: template.score,
           goldValue: template.gold,
           color: template.color,
@@ -1154,7 +1155,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           attackCooldown: 0,
           isBoss: true,
           bossSpecialState: 'idle',
-          bossAttackTimer: 3000
+          bossAttackTimer: 2500 + Math.random() * 1000
         };
 
         state.zombies.push(newBoss);
@@ -1174,56 +1175,69 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         });
       }
 
-      // 4b. SPAWN REGULAR ZOMBIE LOGIC
-      if (state.zombiesToSpawn > 0 && currentTime - state.lastSpawnTime > (mode === 'endless' ? 450 : 800)) {
+      // 4b. SPAWN REGULAR ZOMBIE LOGIC (Dynamic fast swarms & packs)
+      const spawnInterval = Math.max(160, (mode === 'endless' ? 300 : 520) - Math.min(320, (state.wave - 1) * 50));
+      if (state.zombiesToSpawn > 0 && currentTime - state.lastSpawnTime > spawnInterval) {
         state.lastSpawnTime = currentTime;
-        state.zombiesToSpawn -= 1;
+        
+        // Spawn in swarming packs: Wave 1 = 1-2, Wave 2 = 2, Wave 3+ = 2-3, Wave 5+ = 2-4
+        const packSize = Math.min(
+          state.zombiesToSpawn,
+          state.wave >= 5 ? (Math.random() < 0.6 ? 3 : 4) : state.wave >= 3 ? (Math.random() < 0.5 ? 2 : 3) : state.wave >= 2 ? 2 : 1
+        );
 
-        // Choose zombie archetype based on wave
-        let chosenType: keyof typeof ZOMBIE_TEMPLATES = 'walker';
-        const rand = Math.random();
+        for (let sp = 0; sp < packSize; sp++) {
+          state.zombiesToSpawn -= 1;
 
-        if (state.wave >= 4 && rand < 0.22) chosenType = 'bomber';
-        else if (state.wave >= 3 && rand < 0.28) chosenType = 'spitter';
-        else if (state.wave >= 2 && rand < 0.35) chosenType = 'runner';
-        else if (state.wave >= 3 && rand < 0.20) chosenType = 'tank';
+          // Choose zombie archetype based on wave
+          let chosenType: keyof typeof ZOMBIE_TEMPLATES = 'walker';
+          const rand = Math.random();
 
-        const template = ZOMBIE_TEMPLATES[chosenType];
+          if (state.wave >= 4 && rand < 0.22) chosenType = 'bomber';
+          else if (state.wave >= 3 && rand < 0.28) chosenType = 'spitter';
+          else if (state.wave >= 2 && rand < 0.35) chosenType = 'runner';
+          else if (state.wave >= 3 && rand < 0.20) chosenType = 'tank';
 
-        // Spawn on map perimeter away from player
-        const spawnSide = Math.floor(Math.random() * 4);
-        let spawnX = 0;
-        let spawnY = 0;
-        if (spawnSide === 0) { spawnX = Math.random() * MAP_SIZE.width; spawnY = 50; }
-        else if (spawnSide === 1) { spawnX = MAP_SIZE.width - 50; spawnY = Math.random() * MAP_SIZE.height; }
-        else if (spawnSide === 2) { spawnX = Math.random() * MAP_SIZE.width; spawnY = MAP_SIZE.height - 50; }
-        else { spawnX = 50; spawnY = Math.random() * MAP_SIZE.height; }
+          const template = ZOMBIE_TEMPLATES[chosenType];
 
-        const hpScale = 1 + (state.wave - 1) * 0.18;
-        const newZombie: Zombie = {
-          id: Math.random().toString(),
-          type: chosenType,
-          x: spawnX,
-          y: spawnY,
-          radius: template.radius,
-          hp: Math.round(template.hp * hpScale),
-          maxHp: Math.round(template.hp * hpScale),
-          speed: template.speed,
-          baseSpeed: template.speed,
-          damage: template.damage,
-          scoreValue: template.score,
-          goldValue: template.gold,
-          color: template.color,
-          angle: 0,
-          animationFrame: Math.random() * 100,
-          frozenTimer: 0,
-          burnTimer: 0,
-          poisonTimer: 0,
-          attackCooldown: 0,
-          isBoss: false
-        };
+          // Spawn on map perimeter away from player with slight spread
+          const spawnSide = Math.floor(Math.random() * 4);
+          let spawnX = 0;
+          let spawnY = 0;
+          const jitter = (Math.random() - 0.5) * 50;
+          if (spawnSide === 0) { spawnX = Math.random() * MAP_SIZE.width; spawnY = 50 + jitter; }
+          else if (spawnSide === 1) { spawnX = MAP_SIZE.width - 50 + jitter; spawnY = Math.random() * MAP_SIZE.height; }
+          else if (spawnSide === 2) { spawnX = Math.random() * MAP_SIZE.width; spawnY = MAP_SIZE.height - 50 + jitter; }
+          else { spawnX = 50 + jitter; spawnY = Math.random() * MAP_SIZE.height; }
 
-        state.zombies.push(newZombie);
+          const hpScale = (1 + (state.wave - 1) * 0.26) * (difficulty === 'nightmare' ? 1.4 : difficulty === 'hard' ? 1.2 : 1.0);
+          const speedScale = Math.min(1.35, 1 + (state.wave - 1) * 0.035);
+
+          const newZombie: Zombie = {
+            id: Math.random().toString(),
+            type: chosenType,
+            x: Math.max(30, Math.min(MAP_SIZE.width - 30, spawnX)),
+            y: Math.max(30, Math.min(MAP_SIZE.height - 30, spawnY)),
+            radius: template.radius,
+            hp: Math.round(template.hp * hpScale),
+            maxHp: Math.round(template.hp * hpScale),
+            speed: template.speed * speedScale,
+            baseSpeed: template.speed * speedScale,
+            damage: Math.round(template.damage * (1 + (state.wave - 1) * 0.12)),
+            scoreValue: template.score,
+            goldValue: template.gold,
+            color: template.color,
+            angle: 0,
+            animationFrame: Math.random() * 100,
+            frozenTimer: 0,
+            burnTimer: 0,
+            poisonTimer: 0,
+            attackCooldown: 1500 + Math.random() * 1500,
+            isBoss: false
+          };
+
+          state.zombies.push(newZombie);
+        }
       }
 
       // 5. UPDATE TURRETS
@@ -1448,94 +1462,150 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         b.y += b.vy;
         b.rangeLeft -= Math.hypot(b.vx, b.vy);
 
-        // Check obstacle collision (Vehicles, Trees, Barrels, Crates)
-        state.obstacles.forEach(obs => {
-          if ((obs.hp || 0) > 0) {
-            if (b.x > obs.x && b.x < obs.x + obs.width && b.y > obs.y && b.y < obs.y + obs.height) {
-              obs.hp = (obs.hp || 0) - b.damage;
-              if (obs.isExplosive && obs.hp <= 0) {
-                const blastRad = obs.type === 'vehicle' ? 260 : 200;
-                const blastDmg = obs.type === 'vehicle' ? 450 : 350;
-                triggerExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2, blastRad, blastDmg);
+        // If this is an enemy / boss projectile, check collision with Player
+        if (b.isEnemyBullet) {
+          const distToPlayer = Math.hypot(b.x - p.x, b.y - p.y);
+          if (distToPlayer < p.radius + b.radius) {
+            if (p.invincibleTimer <= 0 && state.activeBuffs.shieldTimer <= 0) {
+              soundManager.playPlayerHurt();
+              state.screenShake = 12;
+              p.invincibleTimer = 400; // ms iframe
+
+              let dmg = b.damage;
+              if (p.armor > 0) {
+                const absorbed = Math.min(p.armor, dmg * 0.7);
+                p.armor -= absorbed;
+                dmg -= absorbed;
               }
-              // Impact sparks
-              for (let s = 0; s < 3; s++) {
-                state.particles.push({
-                  x: b.x,
-                  y: b.y,
-                  vx: (Math.random() - 0.5) * 5,
-                  vy: (Math.random() - 0.5) * 5,
-                  radius: 2,
-                  color: '#facc15',
-                  alpha: 1,
-                  life: 0,
-                  maxLife: 15,
-                  decay: 0.07,
-                  shape: 'spark'
-                });
+              p.hp -= dmg;
+
+              // Game Over check
+              if (p.hp <= 0) {
+                p.hp = 0;
+                soundManager.stopMusic();
+                onGameOver();
+                return;
               }
-              b.pierceLeft = 0;
             }
-          }
-        });
 
-        // Check zombie hit
-        for (let j = state.zombies.length - 1; j >= 0; j--) {
-          const z = state.zombies[j];
-          const dist = Math.hypot(z.x - b.x, z.y - b.y);
-
-          if (dist < z.radius + b.radius) {
-            soundManager.playZombieHit();
-
-            // Critical hit calculation
-            const critChance = (p.upgrades.critChanceLevel || 0) * 0.06;
-            const isCrit = Math.random() < critChance;
-            const finalDmg = isCrit ? Math.round(b.damage * 2.5) : b.damage;
-
-            z.hp -= finalDmg;
-            b.pierceLeft -= 1;
-
-            // Knockback
-            const knockAngle = Math.atan2(b.vy, b.vx);
-            z.x += Math.cos(knockAngle) * (z.isBoss ? b.knockback * 0.2 : b.knockback);
-            z.y += Math.sin(knockAngle) * (z.isBoss ? b.knockback * 0.2 : b.knockback);
-
-            // Blood particles
-            for (let k = 0; k < 6; k++) {
+            // Impact particles
+            for (let s = 0; s < 5; s++) {
               state.particles.push({
                 x: b.x,
                 y: b.y,
-                vx: (Math.random() - 0.5) * 6 + b.vx * 0.15,
-                vy: (Math.random() - 0.5) * 6 + b.vy * 0.15,
-                radius: 2 + Math.random() * 3,
-                color: '#dc2626',
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                radius: 2.5,
+                color: b.color,
                 alpha: 1,
                 life: 0,
-                maxLife: 20,
-                decay: 0.05,
-                shape: 'blood'
+                maxLife: 15,
+                decay: 0.08,
+                shape: 'spark'
               });
             }
 
-            // Floating combat text
-            state.floatingTexts.push({
-              id: Math.random().toString(),
-              x: z.x + (Math.random() - 0.5) * 20,
-              y: z.y - 15,
-              text: isCrit ? `CRIT ${finalDmg}!` : `${finalDmg}`,
-              color: isCrit ? '#f59e0b' : '#ffffff',
-              alpha: 1,
-              life: 30,
-              isCrit
-            });
-
-            // Explosive bullet
-            if (b.isExplosive) {
-              triggerExplosion(b.x, b.y, 160, b.damage);
-              b.pierceLeft = 0;
+            state.bullets.splice(i, 1);
+            continue;
+          }
+        } else {
+          // PLAYER & DRONE BULLETS: Check obstacle collision (Vehicles, Trees, Barrels, Crates)
+          state.obstacles.forEach(obs => {
+            if ((obs.hp || 0) > 0) {
+              if (b.x > obs.x && b.x < obs.x + obs.width && b.y > obs.y && b.y < obs.y + obs.height) {
+                obs.hp = (obs.hp || 0) - b.damage;
+                if (obs.isExplosive && obs.hp <= 0) {
+                  const blastRad = obs.type === 'vehicle' ? 260 : 200;
+                  const blastDmg = obs.type === 'vehicle' ? 450 : 350;
+                  triggerExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2, blastRad, blastDmg);
+                }
+                // Impact sparks
+                for (let s = 0; s < 3; s++) {
+                  state.particles.push({
+                    x: b.x,
+                    y: b.y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: 2,
+                    color: '#facc15',
+                    alpha: 1,
+                    life: 0,
+                    maxLife: 15,
+                    decay: 0.07,
+                    shape: 'spark'
+                  });
+                }
+                b.pierceLeft = 0;
+              }
             }
+          });
 
-            if (b.pierceLeft <= 0) break;
+          // Check zombie hit
+          for (let j = state.zombies.length - 1; j >= 0; j--) {
+            const z = state.zombies[j];
+            const dist = Math.hypot(z.x - b.x, z.y - b.y);
+
+            if (dist < z.radius + b.radius) {
+              soundManager.playZombieHit();
+
+              // Critical hit calculation
+              const critChance = (p.upgrades.critChanceLevel || 0) * 0.06;
+              const isCrit = Math.random() < critChance;
+              let rawDmg = isCrit ? Math.round(b.damage * 2.5) : b.damage;
+
+              // BOSS TANKINESS & HEAVY ARMOR
+              // Bosses possess reinforced carapaces, absorbing 28% of incoming damage ("trâu hơn")
+              if (z.isBoss) {
+                rawDmg = Math.max(1, Math.round(rawDmg * 0.72));
+              }
+              const finalDmg = rawDmg;
+
+              z.hp -= finalDmg;
+              b.pierceLeft -= 1;
+
+              // Knockback (Bosses barely flinch - 0.05x knockback)
+              const knockAngle = Math.atan2(b.vy, b.vx);
+              const knockMult = z.isBoss ? 0.05 : 1.0;
+              z.x += Math.cos(knockAngle) * (b.knockback * knockMult);
+              z.y += Math.sin(knockAngle) * (b.knockback * knockMult);
+
+              // Blood particles
+              for (let k = 0; k < 6; k++) {
+                state.particles.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: (Math.random() - 0.5) * 6 + b.vx * 0.15,
+                  vy: (Math.random() - 0.5) * 6 + b.vy * 0.15,
+                  radius: 2 + Math.random() * 3,
+                  color: z.isBoss ? '#b91c1c' : '#dc2626',
+                  alpha: 1,
+                  life: 0,
+                  maxLife: 20,
+                  decay: 0.05,
+                  shape: 'blood'
+                });
+              }
+
+              // Floating combat text
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: z.x + (Math.random() - 0.5) * 20,
+                y: z.y - 15,
+                text: isCrit ? `CRIT ${finalDmg}!` : `${finalDmg}`,
+                color: isCrit ? '#f59e0b' : '#ffffff',
+                alpha: 1,
+                life: 30,
+                isCrit
+              });
+
+              // Explosive bullet
+              if (b.isExplosive) {
+                triggerExplosion(b.x, b.y, 160, b.damage);
+                b.pierceLeft = 0;
+              }
+
+              if (b.pierceLeft <= 0) break;
+            }
           }
         }
 
@@ -1858,25 +1928,266 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           setBossHp({ current: z.hp, max: z.maxHp, name: ZOMBIE_TEMPLATES[z.type].nameVi });
         }
 
-        // Movement towards player
+        // Movement towards player & Combat AI
         const isFrozen = state.activeBuffs.freezeEnemiesTimer > 0;
         if (!isFrozen) {
           const zAngle = Math.atan2(p.y - z.y, p.x - z.x);
           z.angle = zAngle;
+          const distToPlayer = Math.hypot(p.x - z.x, p.y - z.y);
+
+          // ----------------------------------------------------
+          // A. SPITTER ACID SPIT ATTACK
+          // ----------------------------------------------------
+          if (z.type === 'spitter' && distToPlayer < 440 && distToPlayer > 75) {
+            z.attackCooldown = (z.attackCooldown || 2200) - dt;
+            if (z.attackCooldown <= 0) {
+              z.attackCooldown = 2200 + Math.random() * 800;
+              state.bullets.push({
+                id: Math.random().toString(),
+                x: z.x + Math.cos(zAngle) * (z.radius + 6),
+                y: z.y + Math.sin(zAngle) * (z.radius + 6),
+                vx: Math.cos(zAngle) * 6.2,
+                vy: Math.sin(zAngle) * 6.2,
+                damage: z.damage,
+                pierceLeft: 1,
+                rangeLeft: 440,
+                radius: 5.5,
+                color: '#84cc16',
+                knockback: 1,
+                isEnemyBullet: true
+              });
+            }
+          }
+
+          // ----------------------------------------------------
+          // B. BOSS ACTIVE COMBAT AI & DEADLY SKILLS ("mạnh hơn")
+          // ----------------------------------------------------
+          if (z.isBoss) {
+            // 1. Charging state update
+            if (z.bossSpecialState === 'charging') {
+              z.attackCooldown = (z.attackCooldown || 850) - dt;
+              // Charge smoke/flame trail
+              if (Math.random() < 0.6) {
+                state.particles.push({
+                  x: z.x + (Math.random() - 0.5) * z.radius,
+                  y: z.y + (Math.random() - 0.5) * z.radius,
+                  vx: -Math.cos(z.angle) * 3 + (Math.random() - 0.5) * 2,
+                  vy: -Math.sin(z.angle) * 3 + (Math.random() - 0.5) * 2,
+                  radius: 3.5,
+                  color: z.color || '#ef4444',
+                  alpha: 0.85,
+                  life: 0,
+                  maxLife: 14,
+                  decay: 0.07,
+                  shape: 'smoke'
+                });
+              }
+
+              if (z.attackCooldown <= 0) {
+                z.bossSpecialState = 'idle';
+                z.speed = z.baseSpeed;
+              }
+            } else {
+              // 2. Boss attack timer countdown
+              z.bossAttackTimer = (z.bossAttackTimer || 2800) - dt;
+
+              if (z.bossAttackTimer <= 0) {
+                z.bossAttackTimer = 3000 + Math.random() * 1500;
+
+                // Pick an attack based on boss archetype and battlefield situation
+                const attackChoice = Math.random();
+
+                if (attackChoice < 0.40 && distToPlayer > 120 && distToPlayer < 480) {
+                  // SKILL 1: RUSH CHARGE (Lao húc tốc độ cao)
+                  z.bossSpecialState = 'charging';
+                  z.attackCooldown = 850;
+                  z.speed = z.baseSpeed * 2.6;
+                  state.screenShake = 14;
+                  state.floatingTexts.push({
+                    id: Math.random().toString(),
+                    x: z.x,
+                    y: z.y - 35,
+                    text: '⚡ TRÙM LAO HÚC TỐC ĐỘ CAO!',
+                    color: '#f59e0b',
+                    alpha: 1,
+                    life: 45,
+                    isCrit: true
+                  });
+                } else if (attackChoice < 0.80) {
+                  // SKILL 2: RANGED BARRAGE / NOVA (Nã đạn hỏa lực trùm)
+                  if (z.type === 'boss_mutant' || z.type === 'boss_abomination') {
+                    // Toxic Corrosive Volley (3-way spread)
+                    [-0.25, 0, 0.25].forEach(spreadOffset => {
+                      const projAngle = zAngle + spreadOffset;
+                      state.bullets.push({
+                        id: Math.random().toString(),
+                        x: z.x + Math.cos(projAngle) * (z.radius + 8),
+                        y: z.y + Math.sin(projAngle) * (z.radius + 8),
+                        vx: Math.cos(projAngle) * 7.5,
+                        vy: Math.sin(projAngle) * 7.5,
+                        damage: Math.round(z.damage * 0.45),
+                        pierceLeft: 1,
+                        rangeLeft: 550,
+                        radius: 6.5,
+                        color: z.type === 'boss_mutant' ? '#f43f5e' : '#a855f7',
+                        knockback: 2,
+                        isEnemyBullet: true
+                      });
+                    });
+                    state.floatingTexts.push({
+                      id: Math.random().toString(),
+                      x: z.x,
+                      y: z.y - 30,
+                      text: '☣️ PHUN BÙN ĐỘC TỐC ĐỘ CAO!',
+                      color: '#a855f7',
+                      alpha: 1,
+                      life: 40
+                    });
+                  } else if (z.type === 'boss_inferno_titan') {
+                    // Magma Fireball Arc (4 fireballs)
+                    [-0.32, -0.1, 0.1, 0.32].forEach(spreadOffset => {
+                      const projAngle = zAngle + spreadOffset;
+                      state.bullets.push({
+                        id: Math.random().toString(),
+                        x: z.x + Math.cos(projAngle) * (z.radius + 8),
+                        y: z.y + Math.sin(projAngle) * (z.radius + 8),
+                        vx: Math.cos(projAngle) * 8.2,
+                        vy: Math.sin(projAngle) * 8.2,
+                        damage: Math.round(z.damage * 0.5),
+                        pierceLeft: 1,
+                        rangeLeft: 600,
+                        radius: 7.5,
+                        color: '#f97316',
+                        knockback: 3,
+                        isEnemyBullet: true
+                      });
+                    });
+                    state.floatingTexts.push({
+                      id: Math.random().toString(),
+                      x: z.x,
+                      y: z.y - 30,
+                      text: '🔥 NÃ CẦU LỬA ĐỊA NGỤC!',
+                      color: '#f97316',
+                      alpha: 1,
+                      life: 40
+                    });
+                  } else if (z.type === 'boss_cyber_behemoth') {
+                    // Dual Cyber Ion Blaster
+                    [-0.12, 0.12].forEach(spreadOffset => {
+                      const projAngle = zAngle + spreadOffset;
+                      state.bullets.push({
+                        id: Math.random().toString(),
+                        x: z.x + Math.cos(projAngle) * (z.radius + 8),
+                        y: z.y + Math.sin(projAngle) * (z.radius + 8),
+                        vx: Math.cos(projAngle) * 10,
+                        vy: Math.sin(projAngle) * 10,
+                        damage: Math.round(z.damage * 0.55),
+                        pierceLeft: 1,
+                        rangeLeft: 650,
+                        radius: 6,
+                        color: '#06b6d4',
+                        knockback: 2,
+                        isEnemyBullet: true
+                      });
+                    });
+                    state.floatingTexts.push({
+                      id: Math.random().toString(),
+                      x: z.x,
+                      y: z.y - 30,
+                      text: '⚡ NÃ TIA PHÁO PLASMA ION!',
+                      color: '#06b6d4',
+                      alpha: 1,
+                      life: 40
+                    });
+                  } else if (z.type === 'boss_void_reaper') {
+                    // 8-way 360 degree Void Nova Burst!
+                    for (let d = 0; d < 8; d++) {
+                      const novaAngle = (d / 8) * Math.PI * 2;
+                      state.bullets.push({
+                        id: Math.random().toString(),
+                        x: z.x + Math.cos(novaAngle) * (z.radius + 8),
+                        y: z.y + Math.sin(novaAngle) * (z.radius + 8),
+                        vx: Math.cos(novaAngle) * 7.0,
+                        vy: Math.sin(novaAngle) * 7.0,
+                        damage: Math.round(z.damage * 0.5),
+                        pierceLeft: 1,
+                        rangeLeft: 500,
+                        radius: 7,
+                        color: '#818cf8',
+                        knockback: 3,
+                        isEnemyBullet: true
+                      });
+                    }
+                    state.floatingTexts.push({
+                      id: Math.random().toString(),
+                      x: z.x,
+                      y: z.y - 30,
+                      text: '🔮 PHÁT NỔ TỬ VỌNG 360°!',
+                      color: '#818cf8',
+                      alpha: 1,
+                      life: 40,
+                      isCrit: true
+                    });
+                  }
+                } else {
+                  // SKILL 3: MINION SUMMON REINFORCEMENTS
+                  if (state.zombies.length < 40) {
+                    const summonCount = z.type === 'boss_void_reaper' ? 3 : 2;
+                    for (let sm = 0; sm < summonCount; sm++) {
+                      const mAngle = Math.random() * Math.PI * 2;
+                      const minionType = state.wave >= 3 ? 'runner' : 'walker';
+                      const tpl = ZOMBIE_TEMPLATES[minionType];
+                      state.zombies.push({
+                        id: Math.random().toString(),
+                        type: minionType,
+                        x: Math.max(30, Math.min(MAP_SIZE.width - 30, z.x + Math.cos(mAngle) * (z.radius + 25))),
+                        y: Math.max(30, Math.min(MAP_SIZE.height - 30, z.y + Math.sin(mAngle) * (z.radius + 25))),
+                        radius: tpl.radius,
+                        hp: Math.round(tpl.hp * (1 + (state.wave - 1) * 0.2)),
+                        maxHp: Math.round(tpl.hp * (1 + (state.wave - 1) * 0.2)),
+                        speed: tpl.speed * 1.1,
+                        baseSpeed: tpl.speed * 1.1,
+                        damage: tpl.damage,
+                        scoreValue: tpl.score,
+                        goldValue: tpl.gold,
+                        color: tpl.color,
+                        angle: 0,
+                        animationFrame: 0,
+                        frozenTimer: 0,
+                        burnTimer: 0,
+                        poisonTimer: 0,
+                        attackCooldown: 1000,
+                        isBoss: false
+                      });
+                    }
+                    state.floatingTexts.push({
+                      id: Math.random().toString(),
+                      x: z.x,
+                      y: z.y - 30,
+                      text: '⚠️ TRÙM GẦM RÚ TRIỆU HỒI QUÁI TIÊN PHONG!',
+                      color: '#ef4444',
+                      alpha: 1,
+                      life: 50,
+                      isCrit: true
+                    });
+                  }
+                }
+              }
+            }
+          }
 
           const zSpeed = z.speed;
           z.x += Math.cos(zAngle) * zSpeed;
           z.y += Math.sin(zAngle) * zSpeed;
 
           // Attack player on contact
-          const distToPlayer = Math.hypot(p.x - z.x, p.y - z.y);
           if (distToPlayer < p.radius + z.radius) {
             if (p.invincibleTimer <= 0 && state.activeBuffs.shieldTimer <= 0) {
               soundManager.playPlayerHurt();
-              state.screenShake = 12;
+              state.screenShake = z.isBoss ? 18 : 12;
               p.invincibleTimer = 450; // ms iframe
 
-              let dmg = z.damage;
+              let dmg = z.isBoss && z.bossSpecialState === 'charging' ? Math.round(z.damage * 1.4) : z.damage;
               if (p.armor > 0) {
                 const absorbed = Math.min(p.armor, dmg * 0.7);
                 p.armor -= absorbed;
@@ -2301,10 +2612,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.save();
         ctx.fillStyle = b.color;
         ctx.shadowColor = b.color;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = b.isEnemyBullet ? 14 : 8;
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
         ctx.fill();
+
+        if (b.isEnemyBullet) {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.radius * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
       });
 

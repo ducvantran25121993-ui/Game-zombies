@@ -192,12 +192,12 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                     <Cpu className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-cyan-200">ĐỘI HÌNH ROBO TÁC CHIẾN HỘ TỐNG</h4>
-                    <p className="text-xs text-neutral-400">Các Robo đã mở khóa sẽ tự động bay lơ lửng bọc hậu, hộ tống và xả đạn tiêu diệt quái vật bảo vệ chiến binh!</p>
+                    <h4 className="text-sm font-bold text-cyan-200">KHO ROBO TÁC CHIẾN HỘ TỐNG</h4>
+                    <p className="text-xs text-neutral-400">Mua Robo trong cửa hàng để đồng hành chiến đấu. Khi mua, Robo sẽ tự động bay lơ lửng bọc hậu, hộ tống và nã đạn bảo vệ bạn!</p>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-900/60 px-3 py-1.5 rounded-xl border border-cyan-500/40">
-                  {drones.filter(d => d.unlocked).length} ROBO SẴN SÀNG
+                <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-900/60 px-3 py-1.5 rounded-xl border border-cyan-500/40 shrink-0">
+                  {drones.filter(d => d.unlocked).length}/{drones.length} ĐÃ SỞ HỮU
                 </span>
               </div>
 
@@ -324,7 +324,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                             }`}
                           >
                             {canBuy ? <DollarSign className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                            MỞ KHÓA ROBO ({drone.cost} Vàng)
+                            {canBuy ? `MUA ROBO CHIẾN ĐẤU (${drone.cost} VÀNG)` : `CẦN ${drone.cost} VÀNG ĐỂ MUA`}
                           </button>
                         ) : isMaxLevel ? (
                           <div className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black text-center uppercase tracking-wider">

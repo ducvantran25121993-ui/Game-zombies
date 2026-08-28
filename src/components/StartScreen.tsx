@@ -775,7 +775,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             </div>
 
             <div className="pt-3 border-t border-neutral-800 text-neutral-300">
-              💡 <strong>MẸO SINH TỒN:</strong> Bắn vào các thùng phuy đỏ khi quái bám đông để kích nổ diện rộng! Thu thập các vật phẩm tiếp tế (Hòm đạn, Túi máu, Bom hạt nhân, Drone hỗ trợ) để sinh tồn qua các đợt bão quái!
+              💡 <strong>MẸO SINH TỒN:</strong> Bắn vào các thùng phuy đỏ khi quái bám đông để kích nổ diện rộng! Tích lũy Vàng mở khóa <strong>Robo tác chiến trong Cửa Hàng (Phím B)</strong> để được robot bay hộ tống nã đạn bảo vệ bạn trước những đợt bão Zombie đông đảo và Boss hung hãn!
             </div>
           </div>
         )}

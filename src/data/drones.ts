@@ -32,7 +32,7 @@ export const INITIAL_DRONES: CompanionDroneConfig[] = [
     descVi: 'Robo cơ động mini trang bị 2 nòng xoay siêu tốc, tự động khóa và nã đạn liên thanh vào mọi quái vật trong phạm vi.',
     type: 'gatling',
     cost: 400,
-    unlocked: true, // First one available/unlocked
+    unlocked: false, // Locked by default - must purchase in armory shop
     level: 1,
     maxLevel: 5,
     damage: 18,
