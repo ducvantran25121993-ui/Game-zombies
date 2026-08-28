@@ -132,6 +132,21 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Lock body scroll ONLY during active combat gameplay; allow free scrolling in lobby/menus
+  useEffect(() => {
+    if (gameState === 'playing') {
+      document.documentElement.classList.add('game-playing');
+      document.body.classList.add('game-playing');
+    } else {
+      document.documentElement.classList.remove('game-playing');
+      document.body.classList.remove('game-playing');
+    }
+    return () => {
+      document.documentElement.classList.remove('game-playing');
+      document.body.classList.remove('game-playing');
+    };
+  }, [gameState]);
+
   // Start new game
   const handleStartGame = (
     chosenDiff: GameDifficulty, 
@@ -464,7 +479,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-full h-[var(--app-height,100dvh)] max-h-[var(--app-height,100dvh)] overflow-hidden select-none touch-none' : 'min-h-screen bg-neutral-950'}`}>
+    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-full h-[var(--app-height,100dvh)] max-h-[var(--app-height,100dvh)] overflow-hidden select-none touch-none z-30' : 'min-h-screen bg-neutral-950 overflow-x-hidden touch-pan-y'}`}>
       
       {/* 1. START SCREEN */}
       {gameState === 'start' && (

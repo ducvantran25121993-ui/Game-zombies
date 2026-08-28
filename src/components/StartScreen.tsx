@@ -56,7 +56,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-8 md:pb-32 overscroll-y-contain">
+    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-32 sm:pb-40 touch-pan-y">
       
       {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -173,7 +173,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* NAVIGATION TABS (Fluid Horizontal Scroll for Mobile) */}
-        <div className="flex w-full border-b border-neutral-800 mb-3.5 sm:mb-5 gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar">
+        <div className="flex w-full border-b border-neutral-800 mb-3.5 sm:mb-5 gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar touch-pan-x">
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
             className={`flex-1 min-w-[110px] sm:min-w-[130px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
@@ -322,7 +322,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </div>
 
               {/* 8 MAP THUMBNAIL CARDS GRID */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 touch-pan-y">
                 {MAP_ENVIRONMENTS.map((map) => {
                   const isSelected = selectedMapId === map.id;
                   return (
@@ -333,7 +333,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         soundManager.playEmptyClick();
                         onSelectMap(map.id);
                       }}
-                      className={`group relative overflow-hidden rounded-2xl border text-left transition-all p-2 sm:p-2.5 flex flex-col justify-end min-h-[86px] sm:min-h-[96px] active:scale-95 ${
+                      className={`group relative overflow-hidden rounded-2xl border text-left transition-all p-2 sm:p-2.5 flex flex-col justify-end min-h-[86px] sm:min-h-[96px] active:scale-95 touch-pan-y ${
                         isSelected
                           ? 'border-sky-400 shadow-xl shadow-sky-500/25 ring-2 ring-sky-400/50'
                           : 'border-neutral-800/90 hover:border-neutral-600 bg-neutral-950/60'
@@ -352,7 +352,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       )}
                       
                       {/* Dark Gradient Overlay for Ultra-High Readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/30" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/30 pointer-events-none" />
 
                       {/* Map Badges & Selection Indicator */}
                       <div className="relative z-10 flex items-center justify-between w-full mb-1">
@@ -378,6 +378,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Mobile Friendly Scroll Down Hint */}
+              <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-neutral-400 sm:hidden">
+                <span>↓ Cuộn xuống để chọn Chế độ & Độ khó ↓</span>
               </div>
             </div>
 
