@@ -381,7 +381,11 @@ function renderBossChest(ctx: CanvasRenderingContext2D, item: DropItem, time: nu
   // Chest Base Body (Reinforced Dark Wood & Gold Inlay)
   ctx.fillStyle = '#451a03';
   ctx.beginPath();
-  ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+  if (ctx.roundRect) {
+    ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+  } else {
+    ctx.rect(-w / 2, -h / 2, w, h);
+  }
   ctx.fill();
 
   // Metallic Gold Corner Braces

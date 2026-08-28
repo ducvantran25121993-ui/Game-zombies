@@ -871,10 +871,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     let animationId: number;
 
     const resizeCanvas = () => {
-      if (canvas.parentElement) {
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
-      }
+      const w = canvas.parentElement?.clientWidth || window.innerWidth;
+      const h = canvas.parentElement?.clientHeight || window.innerHeight;
+      canvas.width = Math.max(300, w);
+      canvas.height = Math.max(300, h);
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -887,11 +887,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const loop = (currentTime: number) => {
       animationId = requestAnimationFrame(loop);
 
-      const state = stateRef.current;
-      const dt = Math.min(100, currentTime - state.lastTime);
-      state.lastTime = currentTime;
+      try {
+        const state = stateRef.current;
+        const dt = Math.min(100, currentTime - state.lastTime);
+        state.lastTime = currentTime;
 
-      if (isPaused || isShopOpen) return;
+        if (isPaused || isShopOpen) return;
 
       const p = state.player;
       const wep = state.currentWeapon;
@@ -2471,6 +2472,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         targetCamY = MAP_SIZE.height / 2;
       }
 
+      if (isNaN(state.camera.x) || !isFinite(state.camera.x)) state.camera.x = p.x || MAP_SIZE.width / 2;
+      if (isNaN(state.camera.y) || !isFinite(state.camera.y)) state.camera.y = p.y || MAP_SIZE.height / 2;
+      if (isNaN(targetCamX) || !isFinite(targetCamX)) targetCamX = state.camera.x;
+      if (isNaN(targetCamY) || !isFinite(targetCamY)) targetCamY = state.camera.y;
+
       state.camera.x += (targetCamX - state.camera.x) * 0.14;
       state.camera.y += (targetCamY - state.camera.y) * 0.14;
 
@@ -2722,6 +2728,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       ctx.restore(); // Restore camera transform
+      } catch (loopError) {
+        console.error("Game loop error handled:", loopError);
+      }
     };
 
     animationId = requestAnimationFrame(loop);
@@ -2758,7 +2767,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      className="w-full h-full block cursor-crosshair select-none bg-neutral-950 touch-none"
+      className="absolute inset-0 w-full h-full block cursor-crosshair select-none bg-neutral-950 touch-none"
     />
   );
 };

@@ -943,7 +943,7 @@ export function renderBossSpecialEffects(
       // Collapsing inner ring
       ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
       ctx.beginPath();
-      ctx.arc(hz.x, hz.y, hz.radius * progress, 0, Math.PI * 2);
+      ctx.arc(hz.x, hz.y, Math.max(1, hz.radius * Math.max(0, progress)), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
@@ -962,7 +962,8 @@ export function renderBossSpecialEffects(
       ctx.rotate(rot);
 
       // Outer accretion disk
-      const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, hz.radius * 1.6);
+      const gradRadius = Math.max(12, (hz.radius || 30) * 1.6);
+      const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, gradRadius);
       grad.addColorStop(0, '#000000');
       grad.addColorStop(0.4, '#4338ca');
       grad.addColorStop(0.8, '#818cf8');
@@ -970,7 +971,7 @@ export function renderBossSpecialEffects(
 
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(0, 0, hz.radius * 1.6, 0, Math.PI * 2);
+      ctx.arc(0, 0, gradRadius, 0, Math.PI * 2);
       ctx.fill();
 
       // Spiral arms
@@ -978,14 +979,14 @@ export function renderBossSpecialEffects(
       ctx.lineWidth = 2.5;
       for (let s = 0; s < 3; s++) {
         ctx.beginPath();
-        ctx.arc(0, 0, hz.radius * (0.5 + s * 0.3), s * 2, s * 2 + Math.PI);
+        ctx.arc(0, 0, Math.max(2, (hz.radius || 30) * (0.5 + s * 0.3)), s * 2, s * 2 + Math.PI);
         ctx.stroke();
       }
 
       // Event horizon black core
       ctx.fillStyle = '#000000';
       ctx.beginPath();
-      ctx.arc(0, 0, hz.radius * 0.45, 0, Math.PI * 2);
+      ctx.arc(0, 0, Math.max(2, (hz.radius || 30) * 0.45), 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

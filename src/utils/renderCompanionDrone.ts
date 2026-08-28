@@ -140,7 +140,11 @@ function renderVulcanGatlingChassis(
 
   ctx.fillStyle = bodyGrad;
   ctx.beginPath();
-  ctx.roundRect(-12, -12, 24, 24, 6);
+  if (ctx.roundRect) {
+    ctx.roundRect(-12, -12, 24, 24, 6);
+  } else {
+    ctx.rect(-12, -12, 24, 24);
+  }
   ctx.fill();
 
   // Cyan Tactical Armor Inset

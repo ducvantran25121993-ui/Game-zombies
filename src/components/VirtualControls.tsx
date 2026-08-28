@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Weapon, WeaponType } from '../types/game';
 import { 
-  Crosshair, RefreshCw, Zap, Bomb, ChevronRight, ChevronLeft, 
-  ShoppingCart, Smartphone, Sparkles, Target, Flame, ShieldAlert,
+  Crosshair, Zap, Bomb, ChevronRight, ChevronLeft, 
+  Smartphone, Sparkles, Target, Flame, ShieldAlert,
   Volume2, VolumeX, Eye, EyeOff, Activity, Radio
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
@@ -421,61 +421,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                   </button>
                 );
               })}
-            </div>
-
-            {/* Tactical Actions: Reload, Grenade, Shop */}
-            <div className="flex items-center gap-1.5 w-full justify-end">
-              {/* Quick Reload Button */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onReload(); }}
-                onClick={onReload}
-                className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 ${
-                  isReloading
-                    ? 'bg-amber-500/30 border-amber-400 text-amber-300 animate-pulse'
-                    : 'bg-neutral-950/95 border-amber-500/60 text-amber-400 hover:bg-neutral-900 active:bg-amber-950'
-                }`}
-                title="Nạp đạn (R)"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin text-amber-400' : ''}`} />
-                <span>{isReloading ? `${Math.round(reloadProgress * 100)}%` : 'NẠP'}</span>
-              </button>
-
-              {/* Quick Grenade / Bomb Button */}
-              <button
-                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
-                onClick={onThrowGrenade}
-                disabled={grenadesLeft <= 0}
-                className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 ${
-                  grenadesLeft > 0
-                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 border-red-300 text-white shadow-red-500/30 ring-1 ring-red-400/50'
-                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-50'
-                }`}
-                title="Ném lựu đạn nổ diện rộng (G)"
-              >
-                <Bomb className="w-3.5 h-3.5" />
-                <span>BOM</span>
-                <span className="font-mono bg-black/40 px-1 py-0.2 rounded text-[10px] ml-0.5">{grenadesLeft}</span>
-              </button>
-
-              {/* Quick Shop Modal Button */}
-              {onOpenShop && (
-                <button
-                  onTouchStart={(e) => { e.stopPropagation(); onOpenShop(); }}
-                  onClick={onOpenShop}
-                  className={`px-3 py-2 rounded-xl border flex items-center justify-center gap-1 shadow-lg transition-transform active:scale-90 font-black text-xs backdrop-blur-md flex-1 relative ${
-                    canAffordShop
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-200 text-neutral-950 animate-pulse shadow-yellow-500/40 ring-1 ring-yellow-300/80'
-                      : 'bg-neutral-950/95 border-amber-500/60 text-amber-400 hover:bg-neutral-900 active:bg-amber-950'
-                  }`}
-                  title="Mở Cửa Hàng Nâng Cấp (B)"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>SHOP</span>
-                  {canAffordShop && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping absolute -top-1 -right-1 border border-white" />
-                  )}
-                </button>
-              )}
             </div>
 
             {/* Prominent Dash Button */}

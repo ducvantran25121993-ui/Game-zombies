@@ -135,6 +135,9 @@ export const App: React.FC = () => {
   // Lock body scroll ONLY during active combat gameplay; allow free scrolling in lobby/menus
   useEffect(() => {
     if (gameState === 'playing') {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       document.documentElement.classList.add('game-playing');
       document.body.classList.add('game-playing');
     } else {
@@ -214,6 +217,9 @@ export const App: React.FC = () => {
     setDrones(INITIAL_DRONES.map(d => ({ ...d, unlocked: false, level: 1 })));
 
     setWave(1);
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
     setGameState('playing');
     setIsPaused(false);
     setIsShopOpen(false);
@@ -479,7 +485,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className={`relative w-full ${gameState === 'playing' ? 'fixed inset-0 w-full h-[var(--app-height,100dvh)] max-h-[var(--app-height,100dvh)] overflow-hidden select-none touch-none z-30' : 'min-h-screen bg-neutral-950 overflow-x-hidden touch-pan-y'}`}>
+    <main className={gameState === 'playing' ? 'fixed inset-0 w-full h-full max-h-[var(--app-height,100dvh)] overflow-hidden select-none touch-none z-10' : 'relative w-full min-h-screen bg-neutral-950 overflow-x-hidden touch-pan-y'}>
       
       {/* 1. START SCREEN */}
       {gameState === 'start' && (
