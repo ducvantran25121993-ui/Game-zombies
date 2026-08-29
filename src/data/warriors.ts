@@ -1,7 +1,7 @@
-import commandoImg from '../assets/images/warrior_avatar_portrait_1787653097044.jpg';
-import ghostImg from '../assets/images/warrior_ghost_skin_1787653148800.jpg';
-import cyberImg from '../assets/images/warrior_cyber_skin_1787653169311.jpg';
-import heroBannerImg from '../assets/images/warrior_hero_banner_1787653075087.jpg';
+import commandoImg from '../assets/images/warrior_commando_pro_1787999039198.jpg';
+import ghostImg from '../assets/images/warrior_ghost_pro_1787999054025.jpg';
+import cyberImg from '../assets/images/warrior_titan_pro_1787999069628.jpg';
+import heroBannerImg from '../assets/images/warrior_squad_banner_1787999086133.jpg';
 
 export interface WarriorClass {
   id: string;

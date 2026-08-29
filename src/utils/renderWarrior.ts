@@ -1,4 +1,4 @@
-import { PlayerStats, Weapon, ActiveBuffs, Obstacle, Zombie } from '../types/game';
+import { PlayerStats, Weapon, ActiveBuffs, Obstacle, Zombie, EquipmentSlotId } from '../types/game';
 import { WARRIOR_CLASSES } from '../data/warriors';
 
 interface RenderWarriorParams {
@@ -10,6 +10,35 @@ interface RenderWarriorParams {
   isFiring: boolean;
   obstacles: Obstacle[];
   zombies: Zombie[];
+}
+
+/**
+ * Utility to draw rounded rectangles safely across all browser canvas contexts
+ */
+function drawRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number = 3
+) {
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
 }
 
 export const renderWarrior = ({
@@ -25,9 +54,16 @@ export const renderWarrior = ({
   ctx.save();
   ctx.translate(p.x, p.y);
 
-  // Find Warrior Skin Config
+  // Find Warrior Skin Config & Equipment
   const warriorSkinId = p.warriorSkin || 'commando';
   const warriorConfig = WARRIOR_CLASSES.find(w => w.id === warriorSkinId) || WARRIOR_CLASSES[0];
+  const eq = (p.equipment || {}) as Record<EquipmentSlotId, number>;
+  const armorTier = eq.armor || 0;
+  const helmetTier = eq.helmet || 0;
+  const bootsTier = eq.boots || 0;
+  const backpackTier = eq.backpack || 0;
+  const glovesTier = eq.gloves || 0;
+  const visorTier = eq.visor || 0;
 
   // 1. DASH GHOSTING TRAILS
   if (p.isDashing) {
@@ -36,79 +72,87 @@ export const renderWarrior = ({
       ctx.save();
       ctx.rotate(p.angle);
       ctx.fillStyle = ghostColor;
-      ctx.globalAlpha = 0.35 / i;
+      ctx.globalAlpha = 0.40 / i;
       ctx.beginPath();
-      ctx.arc(-i * 14, 0, p.radius * (1 - i * 0.1), 0, Math.PI * 2);
+      ctx.arc(-i * 16, 0, p.radius * (1 - i * 0.12), 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }
 
-  // 2. 2.5D PERSPECTIVE DIRECTIONAL GROUND DROP SHADOW
-  // Realistic slanted oval shadow positioned at feet elevation
+  // 2. AAA REALISTIC DIRECTIONAL AMBIENT OCCLUSION & DROP SHADOW
   ctx.save();
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
   ctx.beginPath();
-  ctx.ellipse(4, 7, p.radius * 1.25, p.radius * 0.82, 0.25, 0, Math.PI * 2);
+  ctx.ellipse(3, 8, p.radius * 1.35, p.radius * 0.92, 0.22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core dense shadow right under center of mass
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(1, 3, p.radius * 0.95, p.radius * 0.75, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // 3. FLASHLIGHT VOLUMETRIC CONE LIGHT
+  // 3. FLASHLIGHT VOLUMETRIC CONE LIGHT WITH MULTI-LAYER GLOW
   ctx.save();
   ctx.rotate(p.angle);
 
-  const flashlightRange = wep.id === 'sniper' ? 540 : 440;
-  const flashlightWidth = wep.id === 'sniper' ? 0.30 : 0.46;
+  const flashlightRange = wep.id === 'sniper' ? 580 : 480;
+  const flashlightWidth = wep.id === 'sniper' ? 0.28 : 0.44;
 
-  const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, flashlightRange);
-  grad.addColorStop(0, 'rgba(254, 240, 138, 0.40)');
-  grad.addColorStop(0.3, 'rgba(254, 240, 138, 0.22)');
-  grad.addColorStop(0.7, 'rgba(254, 240, 138, 0.07)');
+  const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, flashlightRange);
+  grad.addColorStop(0, 'rgba(254, 240, 138, 0.45)');
+  grad.addColorStop(0.2, 'rgba(254, 240, 138, 0.28)');
+  grad.addColorStop(0.6, 'rgba(254, 240, 138, 0.08)');
   grad.addColorStop(1, 'rgba(254, 240, 138, 0)');
 
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.moveTo(12, 0);
-  ctx.arc(12, 0, flashlightRange, -flashlightWidth, flashlightWidth);
+  ctx.moveTo(14, 0);
+  ctx.arc(14, 0, flashlightRange, -flashlightWidth, flashlightWidth);
   ctx.closePath();
   ctx.fill();
 
-  // Floating dust motes in the flashlight beam
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-  for (let i = 0; i < 4; i++) {
-    const speckDist = 60 + ((time * 0.05 + i * 85) % (flashlightRange - 70));
-    const speckOffset = Math.sin(time * 0.003 + i * 2) * (speckDist * 0.15);
+  // Volumetric atmospheric light motes in flashlight beam
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  for (let i = 0; i < 5; i++) {
+    const speckDist = 50 + ((time * 0.06 + i * 95) % (flashlightRange - 60));
+    const speckOffset = Math.sin(time * 0.003 + i * 2.1) * (speckDist * 0.14);
     ctx.beginPath();
-    ctx.arc(speckDist, speckOffset, 1.3, 0, Math.PI * 2);
+    ctx.arc(speckDist, speckOffset, 1.2, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 
-  // 4. TACTICAL LASER SIGHT
+  // 4. PRECISION TACTICAL LASER SIGHT & TARGET INTERSECTION
   ctx.save();
   ctx.rotate(p.angle);
   const laserColor = warriorConfig.laserColor;
-  let laserDist = 650;
+  let laserDist = 680;
 
   const pCos = Math.cos(p.angle);
   const pSin = Math.sin(p.angle);
-  const gunMuzzleX = p.x + pCos * 24;
-  const gunMuzzleY = p.y + pSin * 24;
+  const gunMuzzleX = p.x + pCos * 26;
+  const gunMuzzleY = p.y + pSin * 26;
 
-  // Check zombies in laser path
+  // Detect zombies in laser line
+  let hitZombie = false;
   for (const z of zombies) {
+    if (z.hp <= 0) continue;
     const toZx = z.x - gunMuzzleX;
     const toZy = z.y - gunMuzzleY;
     const dot = toZx * pCos + toZy * pSin;
     if (dot > 0 && dot < laserDist) {
       const perpDist = Math.abs(toZx * -pSin + toZy * pCos);
       if (perpDist < z.radius) {
-        laserDist = Math.max(12, dot - z.radius * 0.6);
+        laserDist = Math.max(14, dot - z.radius * 0.6);
+        hitZombie = true;
       }
     }
   }
 
-  // Check obstacles in laser path
+  // Detect obstacles in laser line
   for (const obs of obstacles) {
     if ((obs.hp || 1) <= 0) continue;
     const obsCenterX = obs.x + obs.width / 2;
@@ -119,236 +163,419 @@ export const renderWarrior = ({
     if (dot > 0 && dot < laserDist) {
       const perpDist = Math.abs(toObsX * -pSin + toObsY * pCos);
       if (perpDist < (obs.width + obs.height) / 4) {
-        laserDist = Math.max(12, dot - obs.width / 3);
+        laserDist = Math.max(14, dot - obs.width / 3);
       }
     }
   }
 
-  // Draw laser beam line
+  // Laser beam line (tactical dashed with solid laser core)
   ctx.strokeStyle = laserColor;
-  ctx.globalAlpha = 0.65;
-  ctx.lineWidth = 1.2;
-  ctx.setLineDash([9, 4]);
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 1.0;
+  ctx.setLineDash([8, 4]);
   ctx.beginPath();
   ctx.moveTo(24, 3);
   ctx.lineTo(laserDist, 3);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Laser target dot with glow
+  // Laser target dot with glow & target hit ripple
   ctx.globalAlpha = 0.95;
   ctx.fillStyle = laserColor;
   ctx.shadowColor = laserColor;
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = hitZombie ? 16 : 9;
   ctx.beginPath();
-  ctx.arc(laserDist, 3, 2.8 + Math.sin(time * 0.01) * 0.6, 0, Math.PI * 2);
+  ctx.arc(laserDist, 3, hitZombie ? 3.8 : 2.6, 0, Math.PI * 2);
   ctx.fill();
+
+  if (hitZombie) {
+    // Pulse target ring
+    const ringR = 4 + (Math.sin(time * 0.02) + 1) * 3;
+    ctx.strokeStyle = laserColor;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(laserDist, 3, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.shadowBlur = 0;
   ctx.restore();
 
-  // 5. 2.5D PERSPECTIVE WARRIOR RENDERING (ROTATED TO PLAYER ANGLE)
+  // 5. 2.5D PERSPECTIVE WARRIOR RENDERING (ROTATED TO PLAYER AIM ANGLE)
   ctx.save();
   ctx.rotate(p.angle);
 
   const walkCycle = p.walkFrame || 0;
-  const stride = Math.sin(walkCycle) * 8;
-  const bobbing = Math.abs(Math.cos(walkCycle)) * 1.5;
+  const isMoving = Math.abs(Math.sin(walkCycle)) > 0.05;
+  const stride = Math.sin(walkCycle) * 9;
+  const bobbing = Math.abs(Math.cos(walkCycle)) * 1.8;
+  const idleBreathing = Math.sin(time * 0.003) * 0.8;
 
-  // 5.1 2.5D TACTICAL COMBAT BOOTS & LEGS
-  ctx.fillStyle = '#0f172a'; // Deep boot black
+  // 5.1 COMBAT BOOTS & ARTICULATED LEGS
+  // Left Leg / Combat Boot
+  ctx.fillStyle = '#090d16'; // Deep tactical black
   ctx.strokeStyle = '#1e293b';
   ctx.lineWidth = 1.5;
 
-  // Left Leg / Boot (animated stride)
-  ctx.beginPath();
-  ctx.roundRect 
-    ? ctx.roundRect(-6 + stride, -14, 13, 7, 3) 
-    : ctx.rect(-6 + stride, -14, 13, 7);
+  drawRoundRect(ctx, -7 + stride, -15, 14, 8, 3.5);
   ctx.fill();
   ctx.stroke();
 
-  // Right Leg / Boot (opposite stride)
-  ctx.beginPath();
-  ctx.roundRect 
-    ? ctx.roundRect(-6 - stride, 7, 13, 7, 3) 
-    : ctx.rect(-6 - stride, 7, 13, 7);
-  ctx.fill();
-  ctx.stroke();
-
-  // Knee Armor Pads with accent highlight
-  ctx.fillStyle = warriorConfig.primaryColor;
-  ctx.fillRect(-1 + stride, -13, 4, 5);
-  ctx.fillRect(-1 - stride, 8, 4, 5);
-
-  // 5.2 TACTICAL MILITARY ASSAULT BACKPACK & RADIO ANTENNA
+  // Left boot toe cap & tread grooves
   ctx.fillStyle = '#1e293b';
-  ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(-18, -10, 9, 20, 4) : ctx.rect(-18, -10, 9, 20);
+  ctx.fillRect(4 + stride, -14.5, 3, 7);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-6 + stride, -14, 2, 6);
+  ctx.fillRect(-2 + stride, -14, 2, 6);
+
+  // Right Leg / Combat Boot (opposite stride phase)
+  ctx.fillStyle = '#090d16';
+  drawRoundRect(ctx, -7 - stride, 7, 14, 8, 3.5);
+  ctx.fill();
+  ctx.stroke();
+
+  // Right boot toe cap & tread grooves
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(4 - stride, 7.5, 3, 7);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-6 - stride, 8, 2, 6);
+  ctx.fillRect(-2 - stride, 8, 2, 6);
+
+  // High-Tech Knee Armor Pads (articulated with class-specific accent plates)
+  ctx.fillStyle = warriorConfig.primaryColor;
+  drawRoundRect(ctx, -1 + stride, -14, 5.5, 6, 1.5);
+  ctx.fill();
+  drawRoundRect(ctx, -1 - stride, 8, 5.5, 6, 1.5);
+  ctx.fill();
+
+  // Boots Equipment Upgrade Thrusters / Kinetic Plates
+  if (bootsTier > 0) {
+    ctx.fillStyle = bootsTier >= 3 ? '#818cf8' : '#38bdf8';
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 6;
+    ctx.fillRect(-7 + stride, -13, 2, 4);
+    ctx.fillRect(-7 - stride, 9, 2, 4);
+    ctx.shadowBlur = 0;
+  }
+
+  // 5.2 THIGH HOLSTER (RIGHT) & COMBAT KNIFE SHEATH (LEFT)
+  // Tactical Holster on Right Thigh with Sidearm
+  ctx.fillStyle = '#1e293b';
+  drawRoundRect(ctx, -5 - stride * 0.4, 14, 9, 5, 2);
+  ctx.fill();
+  ctx.fillStyle = '#0f172a'; // Pistol grip peeking out
+  ctx.fillRect(-7 - stride * 0.4, 15, 3, 3);
+
+  // Combat Knife Sheath on Left Thigh
+  ctx.fillStyle = '#1e293b';
+  drawRoundRect(ctx, -4 + stride * 0.4, -19, 8, 4.5, 2);
+  ctx.fill();
+  ctx.fillStyle = '#94a3b8'; // Metal hilt pommel
+  ctx.fillRect(-6 + stride * 0.4, -18, 2.5, 2.5);
+
+  // 5.3 ASSAULT BACKPACK, POWER PACK & TACTICAL COMMS SUITE
+  ctx.save();
+  const backpackW = 10 + (backpackTier >= 2 ? 3 : 0);
+  const backpackH = 22 + (backpackTier >= 2 ? 4 : 0);
+
+  ctx.fillStyle = '#182234';
+  drawRoundRect(ctx, -19 - (backpackTier >= 2 ? 3 : 0), -backpackH / 2, backpackW, backpackH, 4.5);
   ctx.fill();
   ctx.strokeStyle = '#334155';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Radio antenna on backpack
-  ctx.strokeStyle = '#64748b';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(-15, -7);
-  ctx.lineTo(-26, -12);
-  ctx.stroke();
-
-  // Antenna tip LED
-  ctx.fillStyle = warriorConfig.accentColor;
-  ctx.shadowColor = warriorConfig.accentColor;
-  ctx.shadowBlur = 6;
-  ctx.beginPath();
-  ctx.arc(-26, -12, 1.8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // 5.3 MAIN 2.5D TACTICAL COMBAT BODY & KEVLAR PLATE CARRIER
-  // Under-suit Base
+  // Backpack Molle straps & buckles
   ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-17, -8, 2, 16);
+  ctx.fillStyle = '#64748b';
+  ctx.fillRect(-16, -6, 1.5, 3);
+  ctx.fillRect(-16, 3, 1.5, 3);
+
+  // Radio Whip Antenna / Cyber Exoskeleton Power Conduits
+  if (warriorSkinId === 'cyber' || backpackTier >= 3) {
+    // Glowing Cyber Power Cell with pulsing heat sinks
+    const cellPulse = 0.7 + Math.sin(time * 0.008) * 0.3;
+    ctx.fillStyle = warriorConfig.accentColor;
+    ctx.shadowColor = warriorConfig.accentColor;
+    ctx.shadowBlur = 8;
+    ctx.globalAlpha = cellPulse;
+    ctx.fillRect(-21, -5, 3, 10);
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  } else {
+    // Long flexible military whip antenna
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-16, -7);
+    ctx.lineTo(-28, -13);
+    ctx.stroke();
+
+    // Antenna status beacon LED (blinking military data link)
+    const isLedOn = Math.floor(time / 450) % 2 === 0;
+    ctx.fillStyle = isLedOn ? warriorConfig.accentColor : '#0f172a';
+    ctx.shadowColor = warriorConfig.accentColor;
+    ctx.shadowBlur = isLedOn ? 8 : 0;
+    ctx.beginPath();
+    ctx.arc(-28, -13, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+
+  // 5.4 MAIN TORSO: UNDER-SUIT & TACTICAL BALLISTIC PLATE CARRIER
+  // Base Under-suit (Dark Charcoal Nomex)
+  ctx.fillStyle = '#0b1120';
   ctx.beginPath();
-  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.arc(0, 0, 16.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Ballistic Plate Carrier Vest with 3D Bevel Edge
+  // Ballistic Plate Carrier Vest (Heavy 3D Layered Look)
   ctx.fillStyle = warriorConfig.primaryColor;
-  ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(-9, -11, 18, 22, 5) : ctx.rect(-9, -11, 18, 22);
+  drawRoundRect(ctx, -10, -12, 20, 24, 6);
   ctx.fill();
   ctx.strokeStyle = warriorConfig.accentColor;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.8;
   ctx.stroke();
 
-  // Chest Armor Plate with Molle Webbing Straps
+  // High-Grade Ceramic Chest Strike-Face Plate with Laser-Cut MOLLE Webbing
   ctx.fillStyle = '#1e293b';
-  ctx.fillRect(-5, -8, 12, 16);
+  drawRoundRect(ctx, -6, -9, 13, 18, 3.5);
+  ctx.fill();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  // MOLLE Grid Slots
   ctx.strokeStyle = '#475569';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(-4, -4); ctx.lineTo(6, -4);
-  ctx.moveTo(-4, 0);  ctx.lineTo(6, 0);
-  ctx.moveTo(-4, 4);  ctx.lineTo(6, 4);
+  ctx.moveTo(-5, -5); ctx.lineTo(6, -5);
+  ctx.moveTo(-5, -1); ctx.lineTo(6, -1);
+  ctx.moveTo(-5, 3);  ctx.lineTo(6, 3);
+  ctx.moveTo(-5, 7);  ctx.lineTo(6, 7);
   ctx.stroke();
 
-  // Ammo Mag Pouches on Vest
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(3, -7, 4.5, 4);
-  ctx.fillRect(3, -2, 4.5, 4);
-  ctx.fillRect(3, 3, 4.5, 4);
+  // 3 STANAG Rifle Magazine Pouches with Brass 5.56 Ammo Tips
+  for (let m = 0; m < 3; m++) {
+    const magY = -7 + m * 5.5;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(4, magY, 5, 4);
+    // Brass bullet tip peeking out
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(7.5, magY + 1, 1.8, 2);
+  }
 
-  // Tactical Combat Knife Sheath (Diagonal)
+  // Tactical Radio (PRC-152) & Push-to-Talk (PTT) Unit on Left Chest
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-8, -10, 4, 7);
+  ctx.fillStyle = '#38bdf8'; // Radio display LCD
+  ctx.fillRect(-7.5, -9, 3, 2.5);
+  ctx.strokeStyle = '#1e293b'; // Coiled comms cable
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-6, -6.5);
+  ctx.lineTo(-3, -bobbing * 0.5 - 5);
+  ctx.stroke();
+
+  // Custom Faction / Class Chest Insignia
   ctx.save();
-  ctx.translate(-3, -7);
-  ctx.rotate(-0.4);
-  ctx.fillStyle = '#334155';
-  ctx.fillRect(0, 0, 3.5, 9);
-  ctx.fillStyle = '#94a3b8'; // Metal hilt
-  ctx.fillRect(-0.5, -2.5, 4.5, 2.5);
+  if (warriorSkinId === 'ghost') {
+    // Ghost Skull Icon
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath();
+    ctx.arc(0, -3, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-1.5, -1.2, 3, 2);
+  } else if (warriorSkinId === 'cyber') {
+    // Vanguard Titan Heavy Hexagon
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let h = 0; h < 6; h++) {
+      const ha = (h * Math.PI) / 3;
+      const hx = Math.cos(ha) * 3;
+      const hy = Math.sin(ha) * 3;
+      if (h === 0) ctx.moveTo(hx, hy);
+      else ctx.lineTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    // Commando Special Forces Gold Star
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 
-  // Heavy Shoulder Pauldrons (Left & Right)
+  // Armor Tier Visual Plating Upgrades
+  if (armorTier >= 2) {
+    ctx.strokeStyle = armorTier >= 3 ? '#a855f7' : '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 6;
+    ctx.strokeRect(-9, -11, 18, 22);
+    ctx.shadowBlur = 0;
+  }
+
+  // Heavy Shoulder Pauldrons / Bicep Guards (Left & Right)
   ctx.fillStyle = warriorConfig.primaryColor;
   ctx.beginPath();
-  ctx.arc(-2, -13, 5.5, 0, Math.PI * 2);
-  ctx.arc(-2, 13, 5.5, 0, Math.PI * 2);
+  ctx.arc(-3, -14, 6, 0, Math.PI * 2);
+  ctx.arc(-3, 14, 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = warriorConfig.accentColor;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.6;
   ctx.stroke();
 
-  // Rank Insignia Chevron on Left Shoulder
+  // Rank Chevrons on Left Shoulder
   ctx.strokeStyle = '#facc15';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.moveTo(-3, -15); ctx.lineTo(0, -13); ctx.lineTo(-3, -11);
+  ctx.moveTo(-5, -16); ctx.lineTo(-2, -14); ctx.lineTo(-5, -12);
+  ctx.moveTo(-3, -16); ctx.lineTo(0, -14); ctx.lineTo(-3, -12);
   ctx.stroke();
 
-  // 5.4 HIGH-DETAIL WEAPON ARMS & GUN MODEL
-  renderDetailedWeapon(ctx, wep, isFiring, time);
+  // 5.5 HIGH-DETAIL WEAPON ARMS & DYNAMIC GUN RENDERING
+  renderDetailedWeapon(ctx, wep, isFiring, time, warriorConfig, glovesTier);
 
-  // 5.5 2.5D TACTICAL OPS-CORE HELMET & HUD VISOR
-  // Helmet Base Dome with Perspective Depth
+  // 5.6 ELITE TACTICAL OPS-CORE HELMET, NVG & HOLOGRAPHIC HUD VISOR
+  ctx.save();
+  const helmetY = -bobbing * 0.5 + idleBreathing;
+
+  // Ballistic FAST Helmet Dome (Realistic Curvature)
   ctx.fillStyle = '#1e293b';
   ctx.beginPath();
-  ctx.arc(0, -bobbing * 0.5, 9.5, 0, Math.PI * 2);
+  ctx.arc(0, helmetY, 10.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = '#334155';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Helmet NVG Mount Bracket on Front
+  // Helmet NVG Shroud & Wilcox Aluminum Mount on Forehead
   ctx.fillStyle = '#475569';
-  ctx.fillRect(7, -3.5 - bobbing * 0.5, 3.5, 7);
-
-  // Tactical Headset Ear-muffs & Boom Mic
+  ctx.fillRect(7.5, helmetY - 4, 4, 8);
   ctx.fillStyle = '#0f172a';
-  ctx.fillRect(-2, -11.5 - bobbing * 0.5, 5.5, 3.5);
-  ctx.fillRect(-2, 8 - bobbing * 0.5, 5.5, 3.5);
+  ctx.fillRect(9, helmetY - 2.5, 2, 5);
 
-  // Boom Mic Wire & Glowing Tip
-  ctx.strokeStyle = '#0f172a';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(2, -10 - bobbing * 0.5);
-  ctx.lineTo(8, -6 - bobbing * 0.5);
-  ctx.stroke();
-  ctx.fillStyle = '#38bdf8';
-  ctx.beginPath();
-  ctx.arc(8, -6 - bobbing * 0.5, 1.2, 0, Math.PI * 2);
+  // Tactical Headset Ear-muffs (Peltor ComTac IV)
+  ctx.fillStyle = '#090d16';
+  drawRoundRect(ctx, -3, helmetY - 12.5, 6, 4, 1.5);
+  ctx.fill();
+  drawRoundRect(ctx, -3, helmetY + 8.5, 6, 4, 1.5);
   ctx.fill();
 
-  // GLOWING TACTICAL HUD VISOR / GOGGLES (2.5D Curved Front Visor)
-  const visorColor = warriorConfig.visorColor;
-  ctx.save();
-  ctx.fillStyle = visorColor;
-  ctx.shadowColor = visorColor;
-  ctx.shadowBlur = 10;
+  // Flexible Headset Boom Microphone & Comms Light
+  ctx.strokeStyle = '#090d16';
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.arc(5, -bobbing * 0.5, 7.5, -0.75, 0.75);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = visorColor;
+  ctx.moveTo(1, helmetY - 11);
+  ctx.lineTo(8.5, helmetY - 6.5);
   ctx.stroke();
-
-  // Visor Specular Glass Glint
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = warriorConfig.accentColor;
   ctx.beginPath();
-  ctx.arc(9.5, -2.5 - bobbing * 0.5, 1.2, 0, Math.PI * 2);
+  ctx.arc(8.5, helmetY - 6.5, 1.4, 0, Math.PI * 2);
   ctx.fill();
-  ctx.restore();
+
+  // SPECIALIZED VISOR / NIGHT VISION GOGGLES (NVG) PER CLASS:
+  if (warriorSkinId === 'ghost') {
+    // PANORAMIC QUAD-NVG (GPNVG-18) - 4 Glowing Emerald Optical Tubes
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(8.5, helmetY - 7, 3.5, 14);
+
+    const nvgGlow = '#10b981';
+    ctx.fillStyle = nvgGlow;
+    ctx.shadowColor = nvgGlow;
+    ctx.shadowBlur = 10;
+    for (let tube = 0; tube < 4; tube++) {
+      const ty = helmetY - 5.5 + tube * 3.6;
+      ctx.beginPath();
+      ctx.arc(12, ty, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  } else if (warriorSkinId === 'cyber') {
+    // TITAN HEAVY BALLISTIC BLAST MASK WITH GOLDEN HOLO VISOR
+    ctx.fillStyle = '#d97706';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(5.5, helmetY, 8.5, -0.85, 0.85);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.stroke();
+
+    // Hologram Scan Line
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(9, helmetY - 4);
+    ctx.lineTo(12, helmetY);
+    ctx.lineTo(9, helmetY + 4);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  } else {
+    // COMMANDO TACTICAL CURVED HUD VISOR
+    const visorColor = warriorConfig.visorColor;
+    ctx.fillStyle = visorColor;
+    ctx.shadowColor = visorColor;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(5.5, helmetY, 8.2, -0.78, 0.78);
+    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = visorColor;
+    ctx.stroke();
+
+    // Visor Glass Specular Glint & Tactical Reticle
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(10.5, helmetY - 3, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Visor Equipment Tier Upgrade Hologram Reticle
+  if (visorTier >= 2) {
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(14, helmetY, 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore(); // End helmet rendering
 
   ctx.restore(); // End player angle rotation
 
   // 6. ACTIVE FORCEFIELD ENERGY SHIELD
   if (activeBuffs.shieldTimer > 0) {
     ctx.save();
-    const shieldAngle = time * 0.002;
+    const shieldAngle = time * 0.0025;
     ctx.rotate(shieldAngle);
 
     // Glowing Hexagonal Energy Barrier
     ctx.strokeStyle = '#6366f1';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.8;
     ctx.shadowColor = '#818cf8';
-    ctx.shadowBlur = 14;
+    ctx.shadowBlur = 16;
 
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = (i * Math.PI) / 3;
-      const hx = Math.cos(a) * (p.radius + 12);
-      const hy = Math.sin(a) * (p.radius + 12);
+      const hx = Math.cos(a) * (p.radius + 13);
+      const hy = Math.sin(a) * (p.radius + 13);
       if (i === 0) ctx.moveTo(hx, hy);
       else ctx.lineTo(hx, hy);
     }
     ctx.closePath();
     ctx.stroke();
 
-    // Pulsing inner shield ring
+    // Pulsing inner shield ring with rotating energy nodes
     ctx.beginPath();
-    ctx.arc(0, 0, p.radius + 9 + Math.sin(time * 0.008) * 2, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(167, 139, 250, 0.4)';
+    ctx.arc(0, 0, p.radius + 10 + Math.sin(time * 0.008) * 2.5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(167, 139, 250, 0.5)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -356,11 +583,11 @@ export const renderWarrior = ({
   }
 
   // 7. INVINCIBILITY / DAMAGE HIT FLASH
-  if (p.invincibleTimer > 0 && Math.floor(time / 80) % 2 === 0) {
+  if (p.invincibleTimer > 0 && Math.floor(time / 75) % 2 === 0) {
     ctx.save();
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.45)';
     ctx.beginPath();
-    ctx.arc(0, 0, p.radius + 4, 0, Math.PI * 2);
+    ctx.arc(0, 0, p.radius + 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -369,239 +596,265 @@ export const renderWarrior = ({
 };
 
 /**
- * High-detail weapon graphics rendering per weapon type
+ * Hyper-detailed firearm model rendering per weapon type
+ * Features realistic gun anatomy, recoil kickback, dual-hand tactical grip, and wrist HUD PDA
  */
 const renderDetailedWeapon = (
   ctx: CanvasRenderingContext2D,
   wep: Weapon,
   isFiring: boolean,
-  time: number
+  time: number,
+  warriorConfig: any,
+  glovesTier: number
 ) => {
   ctx.save();
 
-  const rightHandColor = '#334155'; // Tactical glove
+  const gloveColor = glovesTier >= 3 ? '#1e293b' : '#334155';
+  const knuckleColor = glovesTier >= 2 ? warriorConfig.accentColor : '#475569';
+  const recoilOffset = isFiring ? -3.5 : 0;
+
+  ctx.translate(recoilOffset, 0);
+
+  // Digital Wrist PDA / Smartwatch on Right Arm (showing animated mini vital waveform)
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(2, 4, 6, 6);
+  ctx.fillStyle = '#10b981';
+  ctx.fillRect(3.5, 5.5, 3, 3);
 
   switch (wep.id) {
     case 'pistol': {
-      // Glock-19 Tactical Pistol
+      // Glock 19X / Tactical Combat Pistol
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(4, -5, 8, 4); // Left arm
-      ctx.fillRect(4, 1, 8, 4);  // Right arm
+      ctx.fillRect(4, -6, 9, 4.5); // Left arm
+      ctx.fillRect(4, 1.5, 9, 4.5); // Right arm
 
-      // Matte Black Slide & Ejection Port
+      // Slide & Frame
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(10, -2, 14, 4);
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(14, -2, 3, 2);
+      drawRoundRect(ctx, 11, -2.5, 15, 5, 1.5);
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-      // Under-barrel laser module
+      // Slide serrations & ejection port
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(16, 2, 5, 2);
+      ctx.fillRect(13, -2.5, 4, 2);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(19, -2, 3, 1.5);
+
+      // Micro Red-Dot Reflex Sight
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(14, -4.5, 4, 2.5);
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(21, 3, 1, 0, Math.PI * 2);
+      ctx.arc(16, -3.5, 0.9, 0, Math.PI * 2);
       ctx.fill();
 
-      // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(11, -3, 3, 0, Math.PI * 2);
-      ctx.arc(11, 3, 3, 0, Math.PI * 2);
-      ctx.fill();
+      // Under-barrel Tactical Light
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(18, 2.5, 6, 2.2);
+
+      // Tactical Gloves
+      renderHands(ctx, 12, -3.5, 12, 3.5, gloveColor, knuckleColor);
       break;
     }
 
     case 'shotgun': {
-      // Remington 870 Tactical Shotgun
+      // Benelli M4 Tactical Shotgun
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, -9, 14, 4.5);
-      ctx.fillRect(0, 4, 10, 4.5);
+      ctx.fillRect(0, -10, 16, 5);
+      ctx.fillRect(0, 4, 11, 5);
 
-      // Dual Heavy Barrel
+      // Heavy Twin Barrel & Magazine Tube
       ctx.fillStyle = '#334155';
-      ctx.fillRect(8, -1.5, 25, 3);
+      ctx.fillRect(9, -2, 27, 4);
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(8, 1.5, 21, 2.5);
+      ctx.fillRect(9, 1.5, 23, 3);
 
-      // Ribbed Walnut Pump
+      // Ribbed Textured Pump Handle
       ctx.fillStyle = '#78350f';
-      ctx.fillRect(16, -2, 6, 4);
+      drawRoundRect(ctx, 17, -2.5, 7, 5, 1.5);
+      ctx.fill();
 
-      // Red Shotgun Shells in Side-Saddle
+      // Top Picatinny Rail
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(10, -3.5, 12, 1.8);
+
+      // Side-Saddle Red 12-Gauge Shells
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(9, -4, 2, 2);
-      ctx.fillRect(12, -4, 2, 2);
-      ctx.fillRect(15, -4, 2, 2);
+      ctx.fillRect(10, -5, 2.2, 2.2);
+      ctx.fillRect(13, -5, 2.2, 2.2);
+      ctx.fillRect(16, -5, 2.2, 2.2);
 
       // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(19, -4, 3.5, 0, Math.PI * 2);
-      ctx.arc(8, 4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      renderHands(ctx, 20, -4, 9, 4, gloveColor, knuckleColor);
       break;
     }
 
     case 'ak47': {
-      // AK-47 Assault Rifle
+      // Customized Spetsnaz Alpha Tactical AK
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, -9, 15, 4);
-      ctx.fillRect(0, 4, 9, 4);
+      ctx.fillRect(0, -10, 17, 4.5);
+      ctx.fillRect(0, 4, 10, 4.5);
 
-      // Wooden Handguard
+      // Russian Bakelite / Wood Handguard
       ctx.fillStyle = '#9a3412';
-      ctx.fillRect(14, -2, 8, 4);
+      drawRoundRect(ctx, 15, -2.5, 9, 5, 1.5);
+      ctx.fill();
 
       // Black Steel Receiver & Long Barrel
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(6, -2, 9, 4);
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(22, -1, 12, 2);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(34, -1.5, 3, 3);
+      ctx.fillRect(7, -2.5, 10, 5);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(24, -1.2, 14, 2.4);
 
-      // Curved Banana Magazine
+      // Railed Gas Tube & Holographic Sight
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(11, -5, 6, 3);
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(14, -3.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Curved Banana 30-round Mag
       ctx.fillStyle = '#1e293b';
       ctx.save();
-      ctx.translate(13, 2);
-      ctx.rotate(0.35);
-      ctx.fillRect(0, 0, 4, 8);
+      ctx.translate(14, 2.5);
+      ctx.rotate(0.38);
+      ctx.fillRect(0, 0, 4.5, 9);
       ctx.restore();
 
       // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(17, -4, 3.5, 0, Math.PI * 2);
-      ctx.arc(7, 3, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      renderHands(ctx, 18, -4.5, 8, 3.5, gloveColor, knuckleColor);
       break;
     }
 
     case 'sniper': {
-      // Barrett .50 Cal Sniper Rifle
+      // Barrett .50 BMG Heavy Anti-Material Sniper Rifle
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-2, -10, 16, 4);
-      ctx.fillRect(-2, 4, 10, 4);
+      ctx.fillRect(-2, -11, 18, 4.5);
+      ctx.fillRect(-2, 4, 11, 4.5);
 
-      // Heavy Fluted Steel Barrel
+      // Heavy Fluted Match Barrel
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(6, -2.5, 38, 5);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(44, -4, 7, 8);
-
-      // Optical Scope with Lens Glint
+      ctx.fillRect(7, -3, 40, 6);
       ctx.fillStyle = '#334155';
-      ctx.fillRect(10, -5, 14, 3.5);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(20, -2, 22, 4);
+
+      // Massive Dual-Baffle Chevron Muzzle Brake
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(47, -4.5, 8, 9);
+
+      // Folded Forward Heavy Bipod
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(36, -4, 2, 8);
+
+      // Long-Range High-Power Optical Scope
+      ctx.fillStyle = '#0f172a';
+      drawRoundRect(ctx, 11, -6, 16, 4.5, 1.5);
+      ctx.fill();
+      // Green coated lens glint
+      ctx.fillStyle = '#10b981';
       ctx.beginPath();
-      ctx.arc(24, -3.5, 1.5, 0, Math.PI * 2);
+      ctx.arc(27, -4, 1.6, 0, Math.PI * 2);
       ctx.fill();
 
       // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(18, -4, 3.5, 0, Math.PI * 2);
-      ctx.arc(6, 4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      renderHands(ctx, 19, -4.5, 7, 4, gloveColor, knuckleColor);
       break;
     }
 
     case 'minigun': {
-      // M134 6-Barrel Vulcan Minigun
+      // M134 6-Barrel Vulcan Rotary Minigun
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-2, -10, 15, 5);
-      ctx.fillRect(-2, 5, 15, 5);
+      ctx.fillRect(-2, -11, 16, 5.5);
+      ctx.fillRect(-2, 5, 16, 5.5);
 
-      // Motor Body
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(4, -5, 12, 10);
+      // Heavy Motor Core
+      ctx.fillStyle = '#1e293b';
+      drawRoundRect(ctx, 5, -5.5, 13, 11, 3);
+      ctx.fill();
 
-      // Rotating Barrels
+      // 6 Rotating Heavy Barrels
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(16, -4, 20, 8);
+      ctx.fillRect(18, -4.5, 22, 9);
 
-      // Clamp Rings
+      // Barrel Clamp Retaining Rings
       ctx.fillStyle = '#64748b';
-      ctx.fillRect(24, -4.5, 2.5, 9);
-      ctx.fillRect(34, -4.5, 2.5, 9);
+      ctx.fillRect(26, -5, 3, 10);
+      ctx.fillRect(37, -5, 3, 10);
 
-      // Golden Bullet Belt
+      // Linked Brass Ammunition Belt
       ctx.fillStyle = '#facc15';
-      for (let b = 0; b < 4; b++) {
-        ctx.fillRect(4 - b * 3, 5 + b * 2, 2.5, 3.5);
+      for (let b = 0; b < 5; b++) {
+        ctx.fillRect(5 - b * 3, 6 + b * 2, 2.5, 4);
       }
 
-      // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(14, -5, 4, 0, Math.PI * 2);
-      ctx.arc(14, 5, 4, 0, Math.PI * 2);
-      ctx.fill();
+      // Gloves (Dual Spade Grips)
+      renderHands(ctx, 15, -5.5, 15, 5.5, gloveColor, knuckleColor);
       break;
     }
 
     case 'rpg': {
-      // RPG-7 Rocket Launcher
+      // RPG-7 Rocket Propelled Grenade Launcher
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-2, -9, 14, 4);
-      ctx.fillRect(-2, 5, 12, 4);
+      ctx.fillRect(-3, -10, 15, 4.5);
+      ctx.fillRect(-3, 5, 13, 4.5);
 
-      // Launch Tube
-      ctx.fillStyle = '#365314';
-      ctx.fillRect(-4, -3, 30, 6);
-      ctx.fillStyle = '#9a3412';
-      ctx.fillRect(8, -3.5, 10, 7);
+      // Launch Tube with Wood Heat Shields
+      ctx.fillStyle = '#365314'; // Olive drab
+      ctx.fillRect(-5, -3.5, 32, 7);
+      ctx.fillStyle = '#9a3412'; // Wood heat guard
+      ctx.fillRect(9, -4, 11, 8);
 
-      // Rocket Warhead
+      // Optical PGO-7V Scope
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(10, -6.5, 7, 3);
+
+      // PG-7VL Tandem Shaped-Charge Warhead
       ctx.fillStyle = '#4d7c0f';
       ctx.beginPath();
-      ctx.moveTo(26, -5);
-      ctx.lineTo(36, 0);
-      ctx.lineTo(26, 5);
+      ctx.moveTo(27, -6);
+      ctx.lineTo(38, 0);
+      ctx.lineTo(27, 6);
       ctx.closePath();
       ctx.fill();
+      // Arming yellow stripe
       ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(36, -0.75, 4, 1.5);
+      ctx.fillRect(38, -1, 4.5, 2);
 
       // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(14, -4, 3.5, 0, Math.PI * 2);
-      ctx.arc(6, 4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      renderHands(ctx, 15, -4.5, 7, 4.5, gloveColor, knuckleColor);
       break;
     }
 
     case 'plasma': {
-      // Plasma Disintegrator
+      // Quantum Arc-Cannon / Plasma Disintegrator
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, -9, 14, 4);
-      ctx.fillRect(0, 4, 10, 4);
+      ctx.fillRect(0, -10, 15, 4.5);
+      ctx.fillRect(0, 4, 11, 4.5);
 
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(6, -3, 24, 6);
+      drawRoundRect(ctx, 7, -3.5, 26, 7, 2);
+      ctx.fill();
 
-      // Glowing Electromagnetic Coils
+      // Glowing Cyan Plasma Coils with pulse animation
       ctx.fillStyle = '#06b6d4';
       ctx.shadowColor = '#22d3ee';
-      ctx.shadowBlur = 10;
-      ctx.fillRect(14, -3.5, 4, 7);
-      ctx.fillRect(22, -3.5, 4, 7);
+      ctx.shadowBlur = 12;
+      ctx.fillRect(15, -4.2, 4.5, 8.4);
+      ctx.fillRect(24, -4.2, 4.5, 8.4);
 
-      // Energy Core
-      const corePulse = 2 + Math.sin(time * 0.015) * 1.2;
+      // Pulsing Dark Matter Fusion Core
+      const corePulse = 2.2 + Math.sin(time * 0.016) * 1.3;
       ctx.fillStyle = '#67e8f9';
       ctx.beginPath();
-      ctx.arc(10, 0, corePulse, 0, Math.PI * 2);
+      ctx.arc(11, 0, corePulse, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
       // Gloves
-      ctx.fillStyle = rightHandColor;
-      ctx.beginPath();
-      ctx.arc(16, -4, 3.5, 0, Math.PI * 2);
-      ctx.arc(8, 4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      renderHands(ctx, 17, -4.5, 9, 4.5, gloveColor, knuckleColor);
       break;
     }
 
@@ -612,20 +865,22 @@ const renderDetailedWeapon = (
     }
   }
 
-  // Dynamic Muzzle Flash when Firing
+  // DYNAMIC MUZZLE FLASH & SPARK CORE WHEN FIRING
   if (isFiring) {
-    const muzzleOffset = wep.id === 'sniper' ? 51 : wep.id === 'rpg' ? 42 : wep.id === 'ak47' ? 38 : 26;
+    const muzzleOffset = wep.id === 'sniper' ? 55 : wep.id === 'rpg' ? 44 : wep.id === 'ak47' ? 40 : 28;
     ctx.save();
     ctx.translate(muzzleOffset, 0);
 
-    ctx.fillStyle = wep.id === 'plasma' ? '#22d3ee' : '#f97316';
-    ctx.shadowColor = wep.id === 'plasma' ? '#67e8f9' : '#fbbf24';
-    ctx.shadowBlur = 15;
+    const isPlasma = wep.id === 'plasma';
+    ctx.fillStyle = isPlasma ? '#22d3ee' : '#f97316';
+    ctx.shadowColor = isPlasma ? '#67e8f9' : '#fbbf24';
+    ctx.shadowBlur = 18;
 
+    // 8-Point Star Muzzle Flash Burst
     ctx.beginPath();
     for (let i = 0; i < 8; i++) {
       const a = (i * Math.PI) / 4;
-      const r = i % 2 === 0 ? 13 : 5;
+      const r = i % 2 === 0 ? 15 : 6;
       const mx = Math.cos(a) * r;
       const my = Math.sin(a) * r;
       if (i === 0) ctx.moveTo(mx, my);
@@ -634,14 +889,43 @@ const renderDetailedWeapon = (
     ctx.closePath();
     ctx.fill();
 
-    // Hot White Center
+    // Hot Incandescent White Center
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   }
 
   ctx.restore();
+};
+
+/**
+ * Helper to draw tactical combat gloves with reinforced carbon knuckle plates
+ */
+const renderHands = (
+  ctx: CanvasRenderingContext2D,
+  lx: number,
+  ly: number,
+  rx: number,
+  ry: number,
+  gloveColor: string,
+  knuckleColor: string
+) => {
+  // Left Hand (Foregrip / Support)
+  ctx.fillStyle = gloveColor;
+  ctx.beginPath();
+  ctx.arc(lx, ly, 3.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = knuckleColor;
+  ctx.fillRect(lx - 1, ly - 1.5, 2, 3);
+
+  // Right Hand (Trigger)
+  ctx.fillStyle = gloveColor;
+  ctx.beginPath();
+  ctx.arc(rx, ry, 3.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = knuckleColor;
+  ctx.fillRect(rx - 1, ry - 1.5, 2, 3);
 };
