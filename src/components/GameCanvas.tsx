@@ -178,6 +178,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     waveTransitionTimer: number;
     isWaveEnding: boolean;
     autoAimTargetId: string | null;
+    targetedBossId: string | null;
   }>({
     player: { ...player },
     currentWeapon: { ...currentWeapon },
@@ -213,7 +214,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     screenShake: 0,
     waveTransitionTimer: 0,
     isWaveEnding: false,
-    autoAimTargetId: null
+    autoAimTargetId: null,
+    targetedBossId: null
   });
 
   // Sync props to stateRef when weapons/player change from Shop or UI
@@ -1084,22 +1086,47 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Player Aim Angle (Smart Auto-Aim assist, Right Touch Stick, or Mouse)
       const autoAim = autoAimEnabledRef.current;
       const touchAim = touchAimInputRef.current;
+      
+      const livingZombies = state.zombies.filter(z => z.hp > 0);
+      const livingMinions = livingZombies.filter(z => !z.isBoss);
+      const hasLivingMinions = livingMinions.length > 0;
+
+      // Validate targetedBossId: check if targeted boss is still alive
+      const activeTargetedBoss = state.targetedBossId 
+        ? livingZombies.find(z => z.id === state.targetedBossId && z.isBoss) 
+        : null;
+      if (state.targetedBossId && !activeTargetedBoss) {
+        state.targetedBossId = null; // Boss died or despawned
+      }
+
       let closestZombie: Zombie | null = null;
-      let closestDist = 620;
+      let closestDist = 650;
 
       if (autoAim) {
-        // Priority 1: Bosses within range
-        for (const z of state.zombies) {
-          if (z.hp <= 0) continue;
-          const d = Math.hypot(z.x - p.x, z.y - p.y);
-          if (z.isBoss && d < 700) {
-            closestZombie = z;
+        if (activeTargetedBoss) {
+          // Rule 1: Boss was clicked / targeted explicitly by the player -> Focus Boss!
+          const d = Math.hypot(activeTargetedBoss.x - p.x, activeTargetedBoss.y - p.y);
+          if (d < 850) {
+            closestZombie = activeTargetedBoss;
             closestDist = d;
-            break;
           }
-          if (d < closestDist) {
-            closestDist = d;
-            closestZombie = z;
+        } else if (!hasLivingMinions) {
+          // Rule 2: All regular minions/soldiers are dead -> Automatically shoot the Boss!
+          for (const z of livingZombies) {
+            const d = Math.hypot(z.x - p.x, z.y - p.y);
+            if (d < closestDist) {
+              closestDist = d;
+              closestZombie = z;
+            }
+          }
+        } else {
+          // Rule 3: Minions are still alive and Boss has NOT been clicked -> Focus only on regular minions
+          for (const z of livingMinions) {
+            const d = Math.hypot(z.x - p.x, z.y - p.y);
+            if (d < closestDist) {
+              closestDist = d;
+              closestZombie = z;
+            }
           }
         }
       }
@@ -1442,17 +1469,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           });
         }
 
-        // Autonomous Target Acquisition
+        // Autonomous Target Acquisition (Respects Boss Target Lock & Minion Clearing Priority)
         let bestTarget: Zombie | null = null;
         let bestDist = config.range;
 
-        state.zombies.forEach(z => {
-          const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
-          if (distToDrone < bestDist) {
-            bestDist = distToDrone;
-            bestTarget = z;
-          }
-        });
+        if (activeTargetedBoss && Math.hypot(activeTargetedBoss.x - drone.x, activeTargetedBoss.y - drone.y) <= config.range + 80) {
+          // If player explicitly locked onto Boss, drones focus fire on Boss
+          bestTarget = activeTargetedBoss;
+        } else if (hasLivingMinions) {
+          // If regular minions are alive, drones prioritize defending player and killing minions
+          livingMinions.forEach(z => {
+            const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
+            if (distToDrone < bestDist) {
+              bestDist = distToDrone;
+              bestTarget = z;
+            }
+          });
+        } else {
+          // When all minions are eliminated, drones target Boss
+          livingZombies.forEach(z => {
+            const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
+            if (distToDrone < bestDist) {
+              bestDist = distToDrone;
+              bestTarget = z;
+            }
+          });
+        }
 
         if (bestTarget) {
           const aimAngle = Math.atan2((bestTarget as Zombie).y - drone.y, (bestTarget as Zombie).x - drone.x);
@@ -2645,15 +2687,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.fillRect(z.x - barW / 2, z.y - z.radius - 11, barW * (z.hp / z.maxHp), 4);
         }
 
-        // Auto-Aim Lock Reticle
-        if (state.autoAimTargetId === z.id && autoAimEnabledRef.current) {
+        // Target Lock & Auto-Aim Indicators
+        const isTargetedBoss = Boolean(z.isBoss && state.targetedBossId === z.id);
+        const isAutoAimTarget = Boolean(state.autoAimTargetId === z.id && autoAimEnabledRef.current);
+
+        if (isTargetedBoss || isAutoAimTarget) {
           ctx.save();
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2;
-          ctx.shadowColor = '#34d399';
-          ctx.shadowBlur = 10;
-          const rot = (currentTime / 300);
-          const r = z.radius + 10;
+          const isBossLock = isTargetedBoss;
+          const reticleColor = isBossLock ? '#ef4444' : z.isBoss ? '#f59e0b' : '#10b981';
+          const shadowColor = isBossLock ? '#f87171' : z.isBoss ? '#fbbf24' : '#34d399';
+          
+          ctx.strokeStyle = reticleColor;
+          ctx.lineWidth = isBossLock ? 3 : 2;
+          ctx.shadowColor = shadowColor;
+          ctx.shadowBlur = isBossLock ? 16 : 10;
+          const rot = (currentTime / (isBossLock ? 180 : 300));
+          const r = z.radius + (isBossLock ? 16 : 10);
 
           // 4 Rotating Target Brackets
           ctx.beginPath();
@@ -2669,11 +2718,30 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.arc(z.x, z.y, r, rot + Math.PI * 1.5, rot + Math.PI * 1.9);
           ctx.stroke();
 
-          // Center target dot
-          ctx.fillStyle = '#34d399';
+          // Center target crosshair/dot
+          ctx.fillStyle = reticleColor;
           ctx.beginPath();
-          ctx.arc(z.x, z.y, 3, 0, Math.PI * 2);
+          ctx.arc(z.x, z.y, isBossLock ? 4 : 3, 0, Math.PI * 2);
           ctx.fill();
+
+          if (isBossLock) {
+            // "🎯 ĐÃ KHÓA BOSS" text banner over Boss
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('🎯 ĐÃ KHÓA BOSS', z.x, z.y - z.radius - 18);
+          }
+          ctx.restore();
+        } else if (z.isBoss && hasLivingMinions && !state.targetedBossId) {
+          // Subtle hint that tapping/clicking the boss will lock target
+          ctx.save();
+          ctx.font = 'bold 9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#fbbf24';
+          ctx.shadowColor = '#000000';
+          ctx.shadowBlur = 4;
+          const bounce = Math.sin(currentTime / 200) * 3;
+          ctx.fillText('🎯 [Chạm/Click để Khóa]', z.x, z.y - z.radius - 18 + bounce);
           ctx.restore();
         }
       });
@@ -2795,13 +2863,103 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
     };
 
+    const handleToggleBossLock = () => {
+      const state = stateRef.current;
+      const livingBosses = state.zombies.filter(z => z.isBoss && z.hp > 0);
+      if (livingBosses.length === 0) return;
+      
+      if (state.targetedBossId) {
+        state.targetedBossId = null;
+        soundManager.playEmptyClick();
+      } else {
+        const firstBoss = livingBosses[0];
+        state.targetedBossId = firstBoss.id;
+        soundManager.playPowerUp();
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: firstBoss.x,
+          y: firstBoss.y - firstBoss.radius - 24,
+          text: '🎯 ĐÃ KHÓA MỤC TIÊU: BOSS!',
+          color: '#ef4444',
+          alpha: 1,
+          life: 55,
+          isCrit: true
+        });
+      }
+    };
+    window.addEventListener('toggle-boss-lock', handleToggleBossLock);
+
     animationId = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('toggle-boss-lock', handleToggleBossLock);
       ro.disconnect();
     };
   }, []);
+
+  // Helper to check if a screen coordinate clicks on a Boss
+  const checkBossTargetAtScreen = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
+
+    const currentZoomMode = cameraZoomModeRef.current;
+    let baseZoom = canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+    if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
+    else if (currentZoomMode === 'normal') baseZoom *= 1.25;
+    const zoom = baseZoom;
+
+    const state = stateRef.current;
+    const worldX = (screenX - canvas.width / 2) / zoom + state.camera.x;
+    const worldY = (screenY - canvas.height / 2) / zoom + state.camera.y;
+
+    // Check if clicked directly on or near a Boss
+    const clickedBoss = state.zombies.find(
+      z => z.isBoss && z.hp > 0 && Math.hypot(z.x - worldX, z.y - worldY) <= Math.max(z.radius + 45, 65)
+    );
+
+    if (clickedBoss) {
+      if (state.targetedBossId === clickedBoss.id) {
+        // Toggle off lock
+        state.targetedBossId = null;
+        soundManager.playEmptyClick();
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: clickedBoss.x,
+          y: clickedBoss.y - clickedBoss.radius - 20,
+          text: '🔓 ĐÃ BỎ KHÓA (ƯU TIÊN DIỆT LÍNH)',
+          color: '#38bdf8',
+          alpha: 1,
+          life: 45
+        });
+      } else {
+        // Lock target onto this Boss
+        state.targetedBossId = clickedBoss.id;
+        soundManager.playPowerUp();
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: clickedBoss.x,
+          y: clickedBoss.y - clickedBoss.radius - 24,
+          text: '🎯 ĐÃ KHÓA MỤC TIÊU: BOSS!',
+          color: '#ef4444',
+          alpha: 1,
+          life: 55,
+          isCrit: true
+        });
+      }
+    } else {
+      // If clicked on a regular minion, clear boss target lock to prioritize minions
+      const clickedMinion = state.zombies.find(
+        z => !z.isBoss && z.hp > 0 && Math.hypot(z.x - worldX, z.y - worldY) <= z.radius + 20
+      );
+      if (clickedMinion && state.targetedBossId) {
+        state.targetedBossId = null;
+      }
+    }
+  };
 
   // Mouse Handlers
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -2816,11 +2974,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 0) {
       stateRef.current.isMouseDown = true;
+      checkBossTargetAtScreen(e.clientX, e.clientY);
     }
   };
 
   const handleMouseUp = () => {
     stateRef.current.isMouseDown = false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      checkBossTargetAtScreen(touch.clientX, touch.clientY);
+    }
   };
 
   return (
@@ -2829,6 +2995,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
+      onTouchStart={handleTouchStart}
       className="absolute inset-0 w-full h-full block cursor-crosshair select-none bg-neutral-950 touch-none"
     />
   );

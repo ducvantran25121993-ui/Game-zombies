@@ -250,18 +250,27 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* ROW 2: Dedicated Epic Boss Bar (Full width, no truncation) or Map Chip */}
+        {/* ROW 2: Dedicated Epic Boss Bar (Full width, clickable to lock/unlock target) or Map Chip */}
         {bossHp ? (
-          <div className="w-full bg-gradient-to-r from-red-950/95 via-neutral-950/95 to-red-950/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-red-500/80 shadow-lg shadow-red-950/50">
+          <div 
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('toggle-boss-lock'));
+            }}
+            className="w-full bg-gradient-to-r from-red-950/95 via-neutral-950/95 to-red-950/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-red-500/80 shadow-lg shadow-red-950/50 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
+            title="Click/Chạm để Khóa hoặc Hủy Khóa mục tiêu Boss"
+          >
             <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-black text-red-200 uppercase tracking-wider mb-0.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 animate-pulse" />
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
                 {bossHp.badge && (
                   <span className="px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40 text-[7px] sm:text-[8px] shrink-0">
                     {bossHp.badge}
                   </span>
                 )}
                 <span className="font-black text-white tracking-wide truncate">{bossHp.name}</span>
+                <span className="text-[7px] text-amber-400/90 font-mono hidden sm:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
+                  🎯 Chạm để Khóa
+                </span>
               </div>
               <span className="font-mono text-red-100 shrink-0 ml-2 font-black text-[9px] sm:text-[10px]">
                 {Math.ceil(bossHp.current)} / {bossHp.max}
