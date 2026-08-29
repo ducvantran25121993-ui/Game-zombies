@@ -250,46 +250,49 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* ROW 2: Dedicated Epic Boss Bar (Full width, clickable to lock/unlock target) or Map Chip */}
+        {/* ROW 2: Dedicated Epic Boss Bar (Compact & Mobile-Optimized, clickable to lock/unlock target) or Map Chip */}
         {bossHp ? (
           <div 
             onClick={() => {
               window.dispatchEvent(new CustomEvent('toggle-boss-lock'));
             }}
-            className="w-full bg-gradient-to-r from-red-950/95 via-neutral-950/95 to-red-950/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-red-500/80 shadow-lg shadow-red-950/50 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
+            className="w-full max-w-xl mx-auto bg-neutral-950/90 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-red-500/70 shadow-md shadow-red-950/40 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
             title="Click/Chạm để Khóa hoặc Hủy Khóa mục tiêu Boss"
           >
-            <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-black text-red-200 uppercase tracking-wider mb-0.5">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
+            {/* Top row: Boss Icon + Name + Skill tag + HP Ratio */}
+            <div className="flex items-center justify-between text-[7.5px] sm:text-[9.5px] font-black text-red-200 uppercase tracking-wide gap-1">
+              <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+                <ShieldAlert className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
                 {bossHp.badge && (
-                  <span className="px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40 text-[7px] sm:text-[8px] shrink-0">
+                  <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 text-[6.5px] sm:text-[7.5px] shrink-0 hidden xs:inline-block">
                     {bossHp.badge}
                   </span>
                 )}
                 <span className="font-black text-white tracking-wide truncate">{bossHp.name}</span>
-                <span className="text-[7px] text-amber-400/90 font-mono hidden sm:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
-                  🎯 Chạm để Khóa
+                {bossHp.currentSkill && (
+                  <span className="text-[6.5px] sm:text-[8px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-500/40 px-1 py-0.2 rounded truncate shrink-0 max-w-[140px] sm:max-w-[200px] flex items-center gap-0.5">
+                    <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
+                    <span>{bossHp.currentSkill}</span>
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-1">
+                <span className="font-mono text-red-200 font-black text-[7.5px] sm:text-[9.5px]">
+                  {Math.ceil(bossHp.current)} / {bossHp.max}
+                </span>
+                <span className="text-[7px] text-amber-400 font-mono hidden sm:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
+                  🎯 Khóa
                 </span>
               </div>
-              <span className="font-mono text-red-100 shrink-0 ml-2 font-black text-[9px] sm:text-[10px]">
-                {Math.ceil(bossHp.current)} / {bossHp.max}
-              </span>
             </div>
-            {/* Segmented HP Gauge */}
-            <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden border border-red-800 shadow-inner">
+
+            {/* Segmented Slim HP Gauge */}
+            <div className="h-1.5 sm:h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-red-900/80 shadow-inner mt-0.5">
               <div 
-                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full"
+                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]"
                 style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
               />
             </div>
-            {bossHp.currentSkill && (
-              <div className="text-[7.5px] sm:text-[9px] text-amber-200 truncate font-mono mt-0.5 tracking-tight flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                <span className="text-amber-400 font-bold uppercase text-[7px] sm:text-[8px]">ĐANG DÙNG CHIÊU:</span>
-                <span className="font-semibold text-amber-200">{bossHp.currentSkill}</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="flex items-center justify-between w-full">
