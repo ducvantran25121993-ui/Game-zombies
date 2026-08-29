@@ -243,7 +243,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
             onTouchMove={handleLeftTouchMove}
             onTouchEnd={handleLeftTouchEnd}
             onTouchCancel={handleLeftTouchEnd}
-            className="absolute left-0 bottom-0 w-1/2 h-2/3 pointer-events-auto touch-none"
+            className="absolute left-0 top-16 bottom-0 w-1/2 pointer-events-auto touch-none"
           >
             {/* Minimalist Movement Base */}
             <div

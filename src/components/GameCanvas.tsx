@@ -280,15 +280,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Helper to generate rich dynamic obstacles tailored to each of the 8 unique map environments
   const generateObstaclesForMap = (mapId: MapEnvironmentId): Obstacle[] => {
     const obs: Obstacle[] = [];
+    const centerX = MAP_SIZE.width / 2; // 1300
+    const centerY = MAP_SIZE.height / 2; // 1000
+    const SAFE_SPAWN_RADIUS = 280;
+
+    const isSafeFromCenter = (x: number, y: number, margin = 40) => {
+      return Math.hypot(x - centerX, y - centerY) > (SAFE_SPAWN_RADIUS + margin);
+    };
 
     if (mapId === 'street') {
       // 1. Street: Abandoned Police cars, Taxis, Civilian SUVs, Trees, Sandbags & Barrels
       const vehicleConfigs = [
         { variant: 'police', color: '#18181b', x: 380, y: 340, angle: 0.25, width: 92, height: 50, hp: 350 },
-        { variant: 'taxi', color: '#eab308', x: 860, y: 560, angle: -0.18, width: 88, height: 48, hp: 300 },
-        { variant: 'car', color: '#0f766e', x: 1250, y: 380, angle: 0.12, width: 90, height: 48, hp: 320 },
-        { variant: 'car', color: '#be123c', x: 620, y: 940, angle: 0.35, width: 90, height: 48, hp: 320 },
-        { variant: 'car', color: '#334155', x: 1450, y: 900, angle: -0.28, width: 94, height: 50, hp: 340 }
+        { variant: 'taxi', color: '#eab308', x: 760, y: 460, angle: -0.18, width: 88, height: 48, hp: 300 },
+        { variant: 'car', color: '#0f766e', x: 1850, y: 480, angle: 0.12, width: 90, height: 48, hp: 320 },
+        { variant: 'car', color: '#be123c', x: 620, y: 1540, angle: 0.35, width: 90, height: 48, hp: 320 },
+        { variant: 'car', color: '#334155', x: 1850, y: 1500, angle: -0.28, width: 94, height: 50, hp: 340 }
       ];
       vehicleConfigs.forEach((vc, idx) => {
         obs.push({
@@ -312,11 +319,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         { x: 260, y: 220, variant: 'green', size: 70 },
         { x: 540, y: 180, variant: 'dead', size: 58 },
         { x: 1020, y: 220, variant: 'green', size: 72 },
-        { x: 1400, y: 200, variant: 'green', size: 66 },
-        { x: 280, y: 1120, variant: 'green', size: 72 },
-        { x: 760, y: 1160, variant: 'dead', size: 60 },
-        { x: 1180, y: 1130, variant: 'green', size: 74 },
-        { x: 1580, y: 1100, variant: 'green', size: 68 }
+        { x: 1900, y: 200, variant: 'green', size: 66 },
+        { x: 280, y: 1620, variant: 'green', size: 72 },
+        { x: 760, y: 1660, variant: 'dead', size: 60 },
+        { x: 1880, y: 1630, variant: 'green', size: 74 }
       ];
       treeConfigs.forEach((tc, idx) => {
         obs.push({
@@ -335,10 +341,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Sandbags, Streetlights & Explosive Barrels
       for (let i = 0; i < 14; i++) {
         const isBarrel = Math.random() > 0.4;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 250 + Math.random() * (MAP_SIZE.width - 500);
+          ry = 250 + Math.random() * (MAP_SIZE.height - 500);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `street_prop_${i}`,
-          x: 250 + Math.random() * (MAP_SIZE.width - 500),
-          y: 250 + Math.random() * (MAP_SIZE.height - 500),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 48,
           height: isBarrel ? 36 : 48,
           type: isBarrel ? 'barrel' : 'sandbag',
@@ -349,10 +364,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     } else if (mapId === 'rooftop') {
       // 2. Rooftop: Heavy HVAC units with spinning fans, potted terrace shrubs, crates, explosive tanks
       const hvacUnits = [
-        { x: 340, y: 340, w: 76, h: 76 },
-        { x: 1380, y: 340, w: 76, h: 76 },
-        { x: 340, y: 960, w: 76, h: 76 },
-        { x: 1380, y: 960, w: 76, h: 76 }
+        { x: 380, y: 380, w: 76, h: 76 },
+        { x: 2180, y: 380, w: 76, h: 76 },
+        { x: 380, y: 1560, w: 76, h: 76 },
+        { x: 2180, y: 1560, w: 76, h: 76 }
       ];
       hvacUnits.forEach((h, idx) => {
         obs.push({
@@ -368,8 +383,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
 
       // Potted terrace shrubs & red barrels (keep central helipad circle clear)
-      const heliCenterX = MAP_SIZE.width / 2;
-      const heliCenterY = MAP_SIZE.height / 2;
       for (let i = 0; i < 16; i++) {
         const isBarrel = i % 2 === 0;
         let rx = 0;
@@ -379,7 +392,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           rx = 260 + Math.random() * (MAP_SIZE.width - 520);
           ry = 260 + Math.random() * (MAP_SIZE.height - 520);
           attempts++;
-        } while (Math.hypot(rx - heliCenterX, ry - heliCenterY) < 300 && attempts < 20);
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
 
         obs.push({
           id: `roof_prop_${i}`,
@@ -396,11 +409,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 3. Bunker: Server racks, toxic biohazard barrels, sandbags
       const serverRacks = [
         { x: 420, y: 330, w: 90, h: 42 },
-        { x: 720, y: 330, w: 90, h: 42 },
-        { x: 1120, y: 330, w: 90, h: 42 },
-        { x: 420, y: 970, w: 90, h: 42 },
-        { x: 720, y: 970, w: 90, h: 42 },
-        { x: 1120, y: 970, w: 90, h: 42 }
+        { x: 820, y: 330, w: 90, h: 42 },
+        { x: 1780, y: 330, w: 90, h: 42 },
+        { x: 420, y: 1670, w: 90, h: 42 },
+        { x: 820, y: 1670, w: 90, h: 42 },
+        { x: 1780, y: 1670, w: 90, h: 42 }
       ];
       serverRacks.forEach((sr, idx) => {
         obs.push({
@@ -416,10 +429,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
 
       for (let i = 0; i < 16; i++) {
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 250 + Math.random() * (MAP_SIZE.width - 500);
+          ry = 250 + Math.random() * (MAP_SIZE.height - 500);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `bunker_prop_${i}`,
-          x: 250 + Math.random() * (MAP_SIZE.width - 500),
-          y: 250 + Math.random() * (MAP_SIZE.height - 500),
+          x: rx,
+          y: ry,
           width: 36,
           height: 36,
           type: 'barrel',
@@ -445,8 +467,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
       obs.push({
         id: 'amb_2',
-        x: 1320,
-        y: 860,
+        x: 1820,
+        y: 1460,
         width: 96,
         height: 52,
         type: 'vehicle',
@@ -460,9 +482,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       const gurneys = [
         { x: 560, y: 360 },
-        { x: 940, y: 460 },
-        { x: 1160, y: 720 },
-        { x: 700, y: 900 }
+        { x: 840, y: 460 },
+        { x: 1760, y: 720 },
+        { x: 700, y: 1500 }
       ];
       gurneys.forEach((g, idx) => {
         obs.push({
@@ -480,10 +502,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       for (let i = 0; i < 14; i++) {
         const isBarrel = Math.random() > 0.4;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 250 + Math.random() * (MAP_SIZE.width - 500);
+          ry = 250 + Math.random() * (MAP_SIZE.height - 500);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `hosp_prop_${i}`,
-          x: 250 + Math.random() * (MAP_SIZE.width - 500),
-          y: 250 + Math.random() * (MAP_SIZE.height - 500),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 48,
           height: isBarrel ? 36 : 48,
           type: isBarrel ? 'barrel' : 'crate',
@@ -495,9 +526,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 5. Graveyard: Ancient Headstones, Gothic Crypts, Dead Spooky Trees, Cursed Urns
       const cryptConfigs = [
         { x: 380, y: 360, w: 84, h: 64 },
-        { x: 1340, y: 360, w: 84, h: 64 },
-        { x: 380, y: 940, w: 84, h: 64 },
-        { x: 1340, y: 940, w: 84, h: 64 }
+        { x: 2140, y: 360, w: 84, h: 64 },
+        { x: 380, y: 1540, w: 84, h: 64 },
+        { x: 2140, y: 1540, w: 84, h: 64 }
       ];
       cryptConfigs.forEach((c, idx) => {
         obs.push({
@@ -514,10 +545,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Ancient Tombstones
       for (let i = 0; i < 16; i++) {
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 260 + Math.random() * (MAP_SIZE.width - 520);
+          ry = 260 + Math.random() * (MAP_SIZE.height - 520);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `tomb_${i}`,
-          x: 260 + Math.random() * (MAP_SIZE.width - 520),
-          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          x: rx,
+          y: ry,
           width: 44,
           height: 52,
           type: 'tombstone',
@@ -529,10 +569,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Spooky dead trees & explosive urns
       for (let i = 0; i < 10; i++) {
         const isBarrel = i % 2 === 0;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 280 + Math.random() * (MAP_SIZE.width - 560);
+          ry = 280 + Math.random() * (MAP_SIZE.height - 560);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `grave_prop_${i}`,
-          x: 280 + Math.random() * (MAP_SIZE.width - 560),
-          y: 280 + Math.random() * (MAP_SIZE.height - 560),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 60,
           height: isBarrel ? 36 : 60,
           type: isBarrel ? 'barrel' : 'tree',
@@ -545,8 +594,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 6. Desert Outpost: Satellite Comms Dishes, Saguaro Cacti, Sandbags & Fuel Drums
       const sats = [
         { x: 420, y: 380 },
-        { x: 1300, y: 380 },
-        { x: 860, y: 920 }
+        { x: 2100, y: 380 },
+        { x: 660, y: 1520 }
       ];
       sats.forEach((s, idx) => {
         obs.push({
@@ -563,10 +612,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Desert Cacti
       for (let i = 0; i < 12; i++) {
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 260 + Math.random() * (MAP_SIZE.width - 520);
+          ry = 260 + Math.random() * (MAP_SIZE.height - 520);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `cactus_${i}`,
-          x: 260 + Math.random() * (MAP_SIZE.width - 520),
-          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          x: rx,
+          y: ry,
           width: 48,
           height: 64,
           type: 'cactus',
@@ -578,10 +636,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Sandbags & Fuel Barrels
       for (let i = 0; i < 16; i++) {
         const isBarrel = Math.random() > 0.45;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 250 + Math.random() * (MAP_SIZE.width - 500);
+          ry = 250 + Math.random() * (MAP_SIZE.height - 500);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `desert_prop_${i}`,
-          x: 250 + Math.random() * (MAP_SIZE.width - 500),
-          y: 250 + Math.random() * (MAP_SIZE.height - 500),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 52,
           height: isBarrel ? 36 : 52,
           type: isBarrel ? 'barrel' : 'sandbag',
@@ -593,9 +660,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 7. Cyber Facility: Quantum Server Racks, Glowing Energy Barrier Pylons, Plasma Barrels
       const cyberServers = [
         { x: 440, y: 350, w: 90, h: 44 },
-        { x: 1280, y: 350, w: 90, h: 44 },
-        { x: 440, y: 950, w: 90, h: 44 },
-        { x: 1280, y: 950, w: 90, h: 44 }
+        { x: 1980, y: 350, w: 90, h: 44 },
+        { x: 440, y: 1550, w: 90, h: 44 },
+        { x: 1980, y: 1550, w: 90, h: 44 }
       ];
       cyberServers.forEach((cs, idx) => {
         obs.push({
@@ -613,9 +680,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Energy Barrier Pylons
       const barriers = [
         { x: 620, y: 640 },
-        { x: 1100, y: 640 },
-        { x: 860, y: 380 },
-        { x: 860, y: 900 }
+        { x: 1980, y: 640 },
+        { x: 760, y: 1480 },
+        { x: 1840, y: 1480 }
       ];
       barriers.forEach((b, idx) => {
         obs.push({
@@ -633,10 +700,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Plasma explosive barrels & tech crates
       for (let i = 0; i < 14; i++) {
         const isBarrel = i % 2 === 0;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 260 + Math.random() * (MAP_SIZE.width - 520);
+          ry = 260 + Math.random() * (MAP_SIZE.height - 520);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `cyber_prop_${i}`,
-          x: 260 + Math.random() * (MAP_SIZE.width - 520),
-          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 46,
           height: isBarrel ? 36 : 46,
           type: isBarrel ? 'barrel' : 'crate',
@@ -648,11 +724,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 8. Volcanic Magma Core: Magma obsidian boulders, fiery explosive barrels
       const magmaRocks = [
         { x: 380, y: 360, size: 68 },
-        { x: 1340, y: 360, size: 74 },
-        { x: 380, y: 940, size: 70 },
-        { x: 1340, y: 940, size: 76 },
-        { x: 860, y: 340, size: 64 },
-        { x: 860, y: 960, size: 64 }
+        { x: 2140, y: 360, size: 74 },
+        { x: 380, y: 1540, size: 70 },
+        { x: 2140, y: 1540, size: 76 },
+        { x: 760, y: 440, size: 64 },
+        { x: 1860, y: 1560, size: 64 }
       ];
       magmaRocks.forEach((mr, idx) => {
         obs.push({
@@ -669,10 +745,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       for (let i = 0; i < 18; i++) {
         const isBarrel = Math.random() > 0.4;
+        let rx = 0;
+        let ry = 0;
+        let attempts = 0;
+        do {
+          rx = 260 + Math.random() * (MAP_SIZE.width - 520);
+          ry = 260 + Math.random() * (MAP_SIZE.height - 520);
+          attempts++;
+        } while (!isSafeFromCenter(rx, ry) && attempts < 25);
+
         obs.push({
           id: `volc_prop_${i}`,
-          x: 260 + Math.random() * (MAP_SIZE.width - 520),
-          y: 260 + Math.random() * (MAP_SIZE.height - 520),
+          x: rx,
+          y: ry,
           width: isBarrel ? 36 : 56,
           height: isBarrel ? 36 : 56,
           type: isBarrel ? 'barrel' : 'magma_rock',
@@ -1060,27 +1145,76 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           });
         }
 
-        const nextX = Math.max(p.radius, Math.min(MAP_SIZE.width - p.radius, p.x + nx));
-        const nextY = Math.max(p.radius, Math.min(MAP_SIZE.height - p.radius, p.y + ny));
+        let nextX = Math.max(p.radius, Math.min(MAP_SIZE.width - p.radius, p.x + nx));
+        let nextY = Math.max(p.radius, Math.min(MAP_SIZE.height - p.radius, p.y + ny));
 
-        // Obstacle collision
-        let canMoveX = true;
-        let canMoveY = true;
-        state.obstacles.forEach(obs => {
-          if ((obs.hp || 1) > 0) {
-            if (nextX + p.radius > obs.x && nextX - p.radius < obs.x + obs.width &&
-                p.y + p.radius > obs.y && p.y - p.radius < obs.y + obs.height) {
-              canMoveX = false;
-            }
-            if (p.x + p.radius > obs.x && p.x - p.radius < obs.x + obs.width &&
-                nextY + p.radius > obs.y && nextY - p.radius < obs.y + obs.height) {
-              canMoveY = false;
+        // Smooth sliding collision with obstacles (Circle vs AABB)
+        for (const obs of state.obstacles) {
+          if ((obs.hp || 1) <= 0) continue;
+
+          // Test X movement independently to allow smooth sliding
+          const clampX_X = Math.max(obs.x, Math.min(obs.x + obs.width, nextX));
+          const clampY_X = Math.max(obs.y, Math.min(obs.y + obs.height, p.y));
+          const dx_X = nextX - clampX_X;
+          const dy_X = p.y - clampY_X;
+          if (dx_X * dx_X + dy_X * dy_X < p.radius * p.radius) {
+            if (nx > 0) {
+              nextX = Math.min(nextX, obs.x - p.radius);
+            } else if (nx < 0) {
+              nextX = Math.max(nextX, obs.x + obs.width + p.radius);
+            } else {
+              nextX = p.x;
             }
           }
-        });
 
-        if (canMoveX) p.x = nextX;
-        if (canMoveY) p.y = nextY;
+          // Test Y movement independently to allow smooth sliding
+          const clampX_Y = Math.max(obs.x, Math.min(obs.x + obs.width, nextX));
+          const clampY_Y = Math.max(obs.y, Math.min(obs.y + obs.height, nextY));
+          const dx_Y = nextX - clampX_Y;
+          const dy_Y = nextY - clampY_Y;
+          if (dx_Y * dx_Y + dy_Y * dy_Y < p.radius * p.radius) {
+            if (ny > 0) {
+              nextY = Math.min(nextY, obs.y - p.radius);
+            } else if (ny < 0) {
+              nextY = Math.max(nextY, obs.y + obs.height + p.radius);
+            } else {
+              nextY = p.y;
+            }
+          }
+        }
+
+        // Apply updated coordinates within map bounds
+        p.x = Math.max(p.radius, Math.min(MAP_SIZE.width - p.radius, nextX));
+        p.y = Math.max(p.radius, Math.min(MAP_SIZE.height - p.radius, nextY));
+      }
+
+      // Continuous unsticking / anti-trapping pass (e.g. from boss knockback / dash)
+      for (const obs of state.obstacles) {
+        if ((obs.hp || 1) <= 0) continue;
+        const clampX = Math.max(obs.x, Math.min(obs.x + obs.width, p.x));
+        const clampY = Math.max(obs.y, Math.min(obs.y + obs.height, p.y));
+        const dx = p.x - clampX;
+        const dy = p.y - clampY;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < p.radius * p.radius) {
+          if (distSq < 0.001) {
+            // Center is completely inside box: push out to nearest edge
+            const leftDist = Math.abs(p.x - obs.x);
+            const rightDist = Math.abs(obs.x + obs.width - p.x);
+            const topDist = Math.abs(p.y - obs.y);
+            const bottomDist = Math.abs(obs.y + obs.height - p.y);
+            const minDist = Math.min(leftDist, rightDist, topDist, bottomDist);
+            if (minDist === leftDist) p.x = obs.x - p.radius - 1;
+            else if (minDist === rightDist) p.x = obs.x + obs.width + p.radius + 1;
+            else if (minDist === topDist) p.y = obs.y - p.radius - 1;
+            else p.y = obs.y + obs.height + p.radius + 1;
+          } else {
+            const dist = Math.sqrt(distSq);
+            const push = p.radius - dist + 1;
+            p.x += (dx / dist) * push;
+            p.y += (dy / dist) * push;
+          }
+        }
       }
 
       // Player Aim Angle (Smart Auto-Aim assist, Right Touch Stick, or Mouse)
