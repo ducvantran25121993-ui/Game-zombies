@@ -151,13 +151,20 @@ export function processBossCombatAI(
         });
       }
 
-      // If player is close, knock back & damage
-      if (distToPlayer < 240) {
-        p.hp = Math.max(0, p.hp - Math.round(boss.damage * 0.7));
+      // If player is close, knock back & damage with iframe check and armor protection
+      if (distToPlayer < 240 && p.invincibleTimer <= 0) {
         soundManager.playPlayerHurt();
+        p.invincibleTimer = 800; // ms iframe
+        let stompDmg = Math.min(Math.round(p.maxHp * 0.25), Math.round(boss.damage * 0.45));
+        if (p.armor > 0) {
+          const absorbed = Math.min(p.armor, stompDmg * 0.65);
+          p.armor -= absorbed;
+          stompDmg -= absorbed;
+        }
+        p.hp = Math.max(0, p.hp - stompDmg);
         const pKnockAngle = Math.atan2(p.y - boss.y, p.x - boss.x);
-        p.x += Math.cos(pKnockAngle) * 45;
-        p.y += Math.sin(pKnockAngle) * 45;
+        p.x += Math.cos(pKnockAngle) * 55;
+        p.y += Math.sin(pKnockAngle) * 55;
       }
 
       // Spawn 3-4 Toxic Puddles on the battlefield

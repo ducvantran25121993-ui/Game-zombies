@@ -1652,11 +1652,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (p.invincibleTimer <= 0 && state.activeBuffs.shieldTimer <= 0) {
               soundManager.playPlayerHurt();
               state.screenShake = 12;
-              p.invincibleTimer = 400; // ms iframe
+              p.invincibleTimer = 500; // ms iframe
 
-              let dmg = b.damage;
+              // Cap enemy projectile damage to fair ratio (max 22% max HP)
+              let dmg = Math.min(Math.round(p.maxHp * 0.22), b.damage);
               if (p.armor > 0) {
-                const absorbed = Math.min(p.armor, dmg * 0.7);
+                const absorbed = Math.min(p.armor, Math.round(dmg * 0.65));
                 p.armor -= absorbed;
                 dmg -= absorbed;
               }
@@ -2262,15 +2263,41 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           if (distToPlayer < p.radius + z.radius) {
             if (p.invincibleTimer <= 0 && state.activeBuffs.shieldTimer <= 0) {
               soundManager.playPlayerHurt();
-              state.screenShake = z.isBoss ? 18 : 12;
-              p.invincibleTimer = 450; // ms iframe
+              state.screenShake = z.isBoss ? 22 : 12;
 
-              let dmg = z.isBoss && z.bossSpecialState === 'charging' ? Math.round(z.damage * 1.4) : z.damage;
-              if (p.armor > 0) {
-                const absorbed = Math.min(p.armor, dmg * 0.7);
-                p.armor -= absorbed;
-                dmg -= absorbed;
+              let dmg = 0;
+              if (z.isBoss) {
+                // Boss Hit: Generous invincibility iframe (1100ms) to prevent multi-hit frame ticking
+                p.invincibleTimer = 1100;
+
+                // Push warrior away with elastic knockback to escape boss hitbox
+                const knockAngle = Math.atan2(p.y - z.y, p.x - z.x);
+                const knockDist = 60;
+                p.x = Math.max(p.radius, Math.min(MAP_SIZE.width - p.radius, p.x + Math.cos(knockAngle) * knockDist));
+                p.y = Math.max(p.radius, Math.min(MAP_SIZE.height - p.radius, p.y + Math.sin(knockAngle) * knockDist));
+
+                // Balance damage so boss must hit 2 to 3 times from full health to kill warrior
+                // Normal boss touch: ~35% of player's max HP (takes 3 direct hits with no armor).
+                // Furious charging rush: ~42% of player's max HP (takes 2-3 direct hits).
+                const hitRatio = z.bossSpecialState === 'charging' ? 0.42 : 0.35;
+                dmg = Math.round(p.maxHp * hitRatio);
+
+                if (p.armor > 0) {
+                  const absorbed = Math.min(p.armor, Math.round(dmg * 0.65));
+                  p.armor -= absorbed;
+                  dmg -= absorbed;
+                }
+              } else {
+                // Regular minion contact
+                p.invincibleTimer = 450;
+                dmg = z.damage;
+                if (p.armor > 0) {
+                  const absorbed = Math.min(p.armor, Math.round(dmg * 0.7));
+                  p.armor -= absorbed;
+                  dmg -= absorbed;
+                }
               }
+
               p.hp -= dmg;
 
               // Game Over check
@@ -2295,11 +2322,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (p.invincibleTimer <= 0 && state.activeBuffs.shieldTimer <= 0) {
           soundManager.playPlayerHurt();
           state.screenShake = 14;
-          p.invincibleTimer = 380;
+          p.invincibleTimer = 550;
 
-          let actualDmg = dmg;
+          // Cap hazard damage to max 22% of max HP per hit
+          let actualDmg = Math.min(Math.round(p.maxHp * 0.22), dmg);
           if (p.armor > 0) {
-            const absorbed = Math.min(p.armor, actualDmg * 0.7);
+            const absorbed = Math.min(p.armor, Math.round(actualDmg * 0.65));
             p.armor -= absorbed;
             actualDmg -= absorbed;
           }
