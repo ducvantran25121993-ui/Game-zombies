@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
-  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin
+  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X
 } from 'lucide-react';
 import { WARRIOR_CLASSES } from '../data/warriors';
 import { MAP_ENVIRONMENTS } from '../data/maps';
@@ -84,6 +84,37 @@ export const HUD: React.FC<HUDProps> = ({
   }, [currentWeapon, player.gold]);
 
   const canAffordAnything = Boolean(affordableLockedWeapon || canUpgradeCurrent);
+
+  // 5-second Auto-Dismiss Notification System for newly affordable weapons/gear
+  const [notification, setNotification] = useState<{ id: string; title: string; subtitle: string } | null>(null);
+  const lastNotifiedItemRef = useRef<string | null>(null);
+  const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (affordableLockedWeapon) {
+      const notifKey = `wep_${affordableLockedWeapon.id}_${affordableLockedWeapon.cost}`;
+      // Trigger notification if it's a new unlockable item
+      if (lastNotifiedItemRef.current !== notifKey) {
+        lastNotifiedItemRef.current = notifKey;
+        setNotification({
+          id: notifKey,
+          title: `ĐỦ VÀNG: ${affordableLockedWeapon.nameVi} (${affordableLockedWeapon.cost}V)!`,
+          subtitle: 'Chạm để mở Cửa Hàng & Trang Bị ngay'
+        });
+
+        if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = setTimeout(() => {
+          setNotification(null);
+        }, 5000);
+      }
+    }
+  }, [affordableLockedWeapon]);
+
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] px-[max(0.5rem,env(safe-area-inset-left,0px))] sm:p-4 md:p-6 overflow-hidden">
@@ -308,21 +339,31 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
-      {/* FLOATING PROMPT WHEN AFFORDABLE WEAPON IS AVAILABLE */}
-      {affordableLockedWeapon && (
+      {/* FLOATING PROMPT: AUTO-DISMISSES AFTER 5 SECONDS */}
+      {notification && (
         <div 
           onClick={onOpenShop}
-          className="self-center cursor-pointer pointer-events-auto bg-amber-500/90 hover:bg-amber-400 text-neutral-950 px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl border-2 border-yellow-200 shadow-[0_0_25px_rgba(245,158,11,0.7)] flex items-center gap-2 transition-all hover:scale-105 active:scale-95 animate-bounce"
+          className="self-center cursor-pointer pointer-events-auto bg-amber-500/95 hover:bg-amber-400 text-neutral-950 px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl border-2 border-yellow-200 shadow-[0_0_25px_rgba(245,158,11,0.7)] flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 animate-bounce relative group"
         >
           <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-950 shrink-0" />
           <div className="text-left">
             <div className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
-              ĐỦ VÀNG MUA: {affordableLockedWeapon.nameVi} ({affordableLockedWeapon.cost}V)!
+              {notification.title}
             </div>
             <div className="text-[8px] sm:text-[10px] font-bold text-neutral-900">
-              Nhấn phím [B] hoặc bấm vào đây để mở Kho Súng & Nâng Cấp
+              {notification.subtitle}
             </div>
           </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setNotification(null);
+            }}
+            className="p-1 rounded-full hover:bg-neutral-950/20 text-neutral-900 ml-1 transition-colors"
+            title="Đóng thông báo"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
