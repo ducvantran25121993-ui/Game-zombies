@@ -95,11 +95,11 @@ export const HUD: React.FC<HUDProps> = ({
       {/* TOP HEADER: Balanced Responsive Container */}
       <div className="flex flex-col gap-1.5 w-full max-w-7xl mx-auto pointer-events-auto">
         
-        {/* ROW 1: Player Stats, Wave Indicator, Currency & Tactical Controls */}
-        <div className="flex items-center justify-between gap-1.5 w-full flex-wrap sm:flex-nowrap">
+        {/* ROW 1: Player Stats, Wave Indicator, Currency, Shop & Grenade */}
+        <div className="flex items-center justify-between gap-1 w-full flex-nowrap">
           
           {/* Left: Warrior Avatar & Health, Armor */}
-          <div className="flex items-center gap-1.5 bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md">
+          <div className="flex items-center gap-1 sm:gap-1.5 bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md shrink-0">
             {/* Warrior Portrait */}
             {(() => {
               const currentWarrior = WARRIOR_CLASSES.find(w => w.id === (player.warriorSkin || 'commando')) || WARRIOR_CLASSES[0];
@@ -118,14 +118,14 @@ export const HUD: React.FC<HUDProps> = ({
               );
             })()}
 
-            <div className="flex flex-col gap-0.5 min-w-[65px] sm:min-w-[85px]">
+            <div className="flex flex-col gap-0.5 min-w-[58px] sm:min-w-[85px]">
               {/* Health */}
-              <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-bold leading-none">
+              <div className="flex items-center justify-between text-[7.5px] sm:text-[10px] font-bold leading-none">
                 <span className="flex items-center gap-0.5 text-red-400">
                   <Heart className={`w-2.5 h-2.5 fill-red-500 text-red-500 ${isLowHp ? 'animate-bounce' : ''}`} />
                   HP
                 </span>
-                <span className="text-neutral-300 font-mono text-[8px] sm:text-[10px]">
+                <span className="text-neutral-300 font-mono text-[7.5px] sm:text-[10px]">
                   {Math.ceil(player.hp)}/{player.maxHp}
                 </span>
               </div>
@@ -149,31 +149,31 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
 
           {/* Center: Wave Indicator */}
-          <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800 shadow-md flex items-center gap-1">
+          <div className="bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800 shadow-md flex items-center gap-1 shrink-0">
             <Skull className="w-3 h-3 text-amber-500 shrink-0" />
             <div className="flex flex-col items-center leading-none">
-              <span className="text-amber-400 text-[9px] sm:text-[11px] font-black uppercase">ĐỢT {wave}</span>
-              <span className="text-neutral-400 font-mono text-[7px] sm:text-[8px]">Còn {zombiesRemaining}</span>
+              <span className="text-amber-400 text-[8.5px] sm:text-[11px] font-black uppercase">ĐỢT {wave}</span>
+              <span className="text-neutral-400 font-mono text-[6.5px] sm:text-[8px]">Còn {zombiesRemaining}</span>
             </div>
           </div>
 
           {/* Currency: Gold & Score */}
-          <div className="bg-neutral-950/90 backdrop-blur-md px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[9px] sm:text-xs">
+          <div className="bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[8.5px] sm:text-xs">
               <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
               <span className="font-mono">{player.gold}</span>
             </div>
             <div className="h-2.5 w-[1px] bg-neutral-800" />
-            <div className="flex items-center gap-0.5 text-white font-bold text-[8px] sm:text-[10px]">
+            <div className="flex items-center gap-0.5 text-white font-bold text-[7.5px] sm:text-[10px]">
               <Award className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
               <span className="font-mono">{player.score}</span>
             </div>
           </div>
 
-          {/* Quick Shop Button in Top Bar (100% accessible on any screen) */}
+          {/* Quick Shop Button in Top Bar */}
           <button
             onClick={onOpenShop}
-            className={`px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8.5px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto ${
+            className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
               canAffordAnything
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 border-amber-300 animate-pulse shadow-amber-500/40'
                 : 'bg-neutral-950/90 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
@@ -191,7 +191,7 @@ export const HUD: React.FC<HUDProps> = ({
           <button
             onClick={onThrowGrenade}
             disabled={player.grenadeCount <= 0}
-            className={`px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8.5px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto ${
+            className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 ${
               player.grenadeCount > 0
                 ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
                 : 'bg-neutral-950/70 border-neutral-800 text-neutral-600 opacity-60'
@@ -201,14 +201,71 @@ export const HUD: React.FC<HUDProps> = ({
             <Bomb className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
             <span className="font-mono">x{player.grenadeCount}</span>
           </button>
+        </div>
 
-          {/* Tactical Controls: Zoom, Auto-Aim, Sound, Pause */}
-          <div className="flex items-center gap-1 ml-auto sm:ml-0">
+        {/* ROW 2: Boss Bar & Tactical Controls (Zoom 0.7x, Auto-Aim, Mute, Pause) ON THE SAME LINE */}
+        <div className="flex items-center justify-between gap-1 sm:gap-2 w-full">
+          {/* Boss Bar or Map Chip on the left/center */}
+          {bossHp ? (
+            <div 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('toggle-boss-lock'));
+              }}
+              className="flex-1 min-w-0 bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2.5 py-0.5 rounded-lg sm:rounded-xl border border-red-500/70 shadow-md shadow-red-950/40 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
+              title="Click/Chạm để Khóa hoặc Hủy Khóa mục tiêu Boss"
+            >
+              {/* Boss Info Header */}
+              <div className="flex items-center justify-between text-[7px] sm:text-[9.5px] font-black text-red-200 uppercase tracking-wide gap-1">
+                <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+                  <ShieldAlert className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
+                  {bossHp.badge && (
+                    <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 text-[6px] sm:text-[7.5px] shrink-0 hidden xs:inline-block">
+                      {bossHp.badge}
+                    </span>
+                  )}
+                  <span className="font-black text-white tracking-wide truncate">{bossHp.name}</span>
+                  {bossHp.currentSkill && (
+                    <span className="text-[6px] sm:text-[8px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-500/40 px-1 py-0.2 rounded truncate shrink-0 max-w-[90px] sm:max-w-[180px] flex items-center gap-0.5">
+                      <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
+                      <span>{bossHp.currentSkill}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  <span className="font-mono text-red-200 font-black text-[7px] sm:text-[9.5px]">
+                    {Math.ceil(bossHp.current)}/{bossHp.max}
+                  </span>
+                  <span className="text-[6.5px] text-amber-400 font-mono hidden md:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
+                    🎯 Khóa
+                  </span>
+                </div>
+              </div>
+
+              {/* Segmented Slim HP Gauge */}
+              <div className="h-1.5 sm:h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-red-900/80 shadow-inner mt-0.5">
+                <div 
+                  className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                  style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="text-[7.5px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
+              style={{ color: currentMap.accentColor }}
+            >
+              <MapPin className="w-2.5 h-2.5" />
+              <span>{currentMap.nameVi}</span>
+            </div>
+          )}
+
+          {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Pause) aligned on the same row */}
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
                 onClick={onToggleCameraZoom}
-                className="px-1.5 py-1 rounded-lg bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 text-[8px] sm:text-[10px] font-black text-cyan-300 backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-0.5"
+                className="px-1.5 py-0.5 sm:py-1 rounded-lg bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 text-[8px] sm:text-[10px] font-black text-cyan-300 backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-0.5"
                 title="Thay đổi góc nhìn camera (Siêu rộng / Rộng / Chuẩn)"
               >
                 <span>🔍</span>
@@ -220,7 +277,7 @@ export const HUD: React.FC<HUDProps> = ({
             {onToggleAutoAim && (
               <button
                 onClick={onToggleAutoAim}
-                className={`px-1.5 py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-1 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
+                className={`px-1.5 py-0.5 sm:py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-1 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
                   autoAimEnabled
                     ? 'bg-emerald-500/25 border-emerald-400/80 text-emerald-300'
                     : 'bg-neutral-900/90 border-neutral-700 text-neutral-400'
@@ -242,69 +299,13 @@ export const HUD: React.FC<HUDProps> = ({
 
             <button
               onClick={onPause}
-              className="px-2 py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto font-mono text-[9px] sm:text-[10px] font-bold"
+              className="px-2 py-0.5 sm:py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto font-mono text-[8.5px] sm:text-[10px] font-bold"
               title="Tạm dừng game"
             >
               II
             </button>
           </div>
         </div>
-
-        {/* ROW 2: Dedicated Epic Boss Bar (Compact & Mobile-Optimized, clickable to lock/unlock target) or Map Chip */}
-        {bossHp ? (
-          <div 
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('toggle-boss-lock'));
-            }}
-            className="w-full max-w-xl mx-auto bg-neutral-950/90 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-red-500/70 shadow-md shadow-red-950/40 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
-            title="Click/Chạm để Khóa hoặc Hủy Khóa mục tiêu Boss"
-          >
-            {/* Top row: Boss Icon + Name + Skill tag + HP Ratio */}
-            <div className="flex items-center justify-between text-[7.5px] sm:text-[9.5px] font-black text-red-200 uppercase tracking-wide gap-1">
-              <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
-                <ShieldAlert className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
-                {bossHp.badge && (
-                  <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 text-[6.5px] sm:text-[7.5px] shrink-0 hidden xs:inline-block">
-                    {bossHp.badge}
-                  </span>
-                )}
-                <span className="font-black text-white tracking-wide truncate">{bossHp.name}</span>
-                {bossHp.currentSkill && (
-                  <span className="text-[6.5px] sm:text-[8px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-500/40 px-1 py-0.2 rounded truncate shrink-0 max-w-[140px] sm:max-w-[200px] flex items-center gap-0.5">
-                    <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
-                    <span>{bossHp.currentSkill}</span>
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0 ml-1">
-                <span className="font-mono text-red-200 font-black text-[7.5px] sm:text-[9.5px]">
-                  {Math.ceil(bossHp.current)} / {bossHp.max}
-                </span>
-                <span className="text-[7px] text-amber-400 font-mono hidden sm:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
-                  🎯 Khóa
-                </span>
-              </div>
-            </div>
-
-            {/* Segmented Slim HP Gauge */}
-            <div className="h-1.5 sm:h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-red-900/80 shadow-inner mt-0.5">
-              <div 
-                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between w-full">
-            <div 
-              className="text-[8px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
-              style={{ color: currentMap.accentColor }}
-            >
-              <MapPin className="w-2.5 h-2.5" />
-              <span>{currentMap.nameVi}</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* FLOATING PROMPT WHEN AFFORDABLE WEAPON IS AVAILABLE */}
