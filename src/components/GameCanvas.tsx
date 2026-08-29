@@ -249,20 +249,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Sync unlocked Companion Drones
   useEffect(() => {
     if (!drones) return;
-    const currentActive = stateRef.current.activeDrones;
+    const currentActive = stateRef.current.activeDrones || [];
     const unlockedConfigs = drones.filter(d => d.unlocked);
+    const px = stateRef.current.player?.x ?? player.x;
+    const py = stateRef.current.player?.y ?? player.y;
 
-    const updatedActive: ActiveDroneState[] = unlockedConfigs.map(cfg => {
+    const updatedActive: ActiveDroneState[] = unlockedConfigs.map((cfg, idx) => {
       const existing = currentActive.find(a => a.id === cfg.id);
       if (existing) {
         return existing;
       }
-      const angle = Math.random() * Math.PI * 2;
+      const angle = (idx / Math.max(1, unlockedConfigs.length)) * Math.PI * 2;
       return {
         id: cfg.id,
         type: cfg.type,
-        x: player.x + Math.cos(angle) * 45,
-        y: player.y + Math.sin(angle) * 45,
+        x: px + Math.cos(angle) * 55,
+        y: py + Math.sin(angle) * 55,
         vx: 0,
         vy: 0,
         angle: 0,
@@ -275,7 +277,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     });
 
     stateRef.current.activeDrones = updatedActive;
-  }, [drones, player.x, player.y]);
+  }, [drones]);
 
   // Helper to generate rich dynamic obstacles tailored to each of the 8 unique map environments
   const generateObstaclesForMap = (mapId: MapEnvironmentId): Obstacle[] => {
@@ -1550,7 +1552,31 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       state.turrets = state.turrets.filter(t => t.duration > 0);
 
       // 5.5 UPDATE COMPANION DRONES (Follow formation + autonomous combat AI)
-      const unlockedConfigs = (drones || []).filter(d => d.unlocked);
+      const unlockedConfigs = (dronesRef.current || []).filter(d => d.unlocked);
+      
+      // Auto-sync active drones array in game loop if configs changed
+      if (unlockedConfigs.length !== state.activeDrones.length || unlockedConfigs.some(cfg => !state.activeDrones.some(a => a.id === cfg.id))) {
+        state.activeDrones = unlockedConfigs.map((cfg, idx) => {
+          const existing = state.activeDrones.find(a => a.id === cfg.id);
+          if (existing) return existing;
+          const ang = (idx / Math.max(1, unlockedConfigs.length)) * Math.PI * 2;
+          return {
+            id: cfg.id,
+            type: cfg.type,
+            x: p.x + Math.cos(ang) * 55,
+            y: p.y + Math.sin(ang) * 55,
+            vx: 0,
+            vy: 0,
+            angle: 0,
+            turretAngle: 0,
+            tilt: 0,
+            hoverOffset: Math.random() * Math.PI * 2,
+            lastShotTime: 0,
+            targetId: null
+          };
+        });
+      }
+
       const activeDrones = state.activeDrones;
       const droneCount = activeDrones.length;
 
@@ -1560,11 +1586,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         // Formation offset around player based on count and index
         let formationAngle = p.angle;
-        const formationDist = 54;
+        const formationDist = 56;
         if (droneCount === 1) {
           formationAngle += Math.PI * 0.75;
         } else if (droneCount === 2) {
-          formationAngle += idx === 0 ? -Math.PI * 0.7 : Math.PI * 0.7;
+          formationAngle += idx === 0 ? -Math.PI * 0.65 : Math.PI * 0.65;
         } else if (droneCount === 3) {
           if (idx === 0) formationAngle -= Math.PI * 0.65;
           else if (idx === 1) formationAngle += Math.PI * 0.65;
@@ -1576,51 +1602,56 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           else formationAngle += Math.PI;
         }
 
-        const targetX = p.x + Math.cos(formationAngle) * formationDist;
-        const targetY = p.y + Math.sin(formationAngle) * formationDist;
+        // Hover bobbing offset to feel floating
+        const bobX = Math.cos(currentTime * 0.004 + (drone.hoverOffset || 0)) * 5;
+        const bobY = Math.sin(currentTime * 0.005 + (drone.hoverOffset || 0)) * 6;
 
-        // Smooth spring physics follower with inertia
+        const targetX = p.x + Math.cos(formationAngle) * formationDist + bobX;
+        const targetY = p.y + Math.sin(formationAngle) * formationDist + bobY;
+
+        // Smooth spring physics follower with high agility
         const dx = targetX - drone.x;
         const dy = targetY - drone.y;
-        drone.vx = drone.vx * 0.84 + dx * 0.08;
-        drone.vy = drone.vy * 0.84 + dy * 0.08;
-        drone.x += drone.vx;
-        drone.y += drone.vy;
+        const distToTarget = Math.hypot(dx, dy);
+
+        if (distToTarget > 350) {
+          // If warrior dashed or spawned far, catch up instantly
+          drone.x = targetX;
+          drone.y = targetY;
+          drone.vx = 0;
+          drone.vy = 0;
+        } else {
+          drone.vx = drone.vx * 0.82 + dx * 0.12;
+          drone.vy = drone.vy * 0.82 + dy * 0.12;
+          drone.x += drone.vx;
+          drone.y += drone.vy;
+        }
 
         // Banking tilt when accelerating
-        drone.tilt = Math.max(-0.4, Math.min(0.4, drone.vx * 0.05));
-        drone.angle = Math.atan2(drone.vy, drone.vx);
+        drone.tilt = Math.max(-0.45, Math.min(0.45, drone.vx * 0.06));
+        drone.angle = Math.atan2(drone.vy, drone.vx || 0.1);
 
         // Gold Magnet Scout ability (for Laser Aegis drone pulling dropped loot)
         if (config.type === 'laser') {
           state.drops.forEach(item => {
             const dropDist = Math.hypot(drone.x - item.x, drone.y - item.y);
-            if (dropDist < 200) {
+            if (dropDist < 240) {
               const pullAngle = Math.atan2(p.y - item.y, p.x - item.x);
-              item.x += Math.cos(pullAngle) * 5.2;
-              item.y += Math.sin(pullAngle) * 5.2;
+              item.x += Math.cos(pullAngle) * 6.5;
+              item.y += Math.sin(pullAngle) * 6.5;
             }
           });
         }
 
-        // Autonomous Target Acquisition (Respects Boss Target Lock & Minion Clearing Priority)
+        // Autonomous Target Acquisition (Support Fire targeting closest threat or focused Boss)
         let bestTarget: Zombie | null = null;
-        let bestDist = config.range;
+        let bestDist = config.range + (config.level - 1) * 30;
 
-        if (activeTargetedBoss && Math.hypot(activeTargetedBoss.x - drone.x, activeTargetedBoss.y - drone.y) <= config.range + 80) {
+        if (activeTargetedBoss && Math.hypot(activeTargetedBoss.x - drone.x, activeTargetedBoss.y - drone.y) <= bestDist + 80) {
           // If player explicitly locked onto Boss, drones focus fire on Boss
           bestTarget = activeTargetedBoss;
-        } else if (hasLivingMinions) {
-          // If regular minions are alive, drones prioritize defending player and killing minions
-          livingMinions.forEach(z => {
-            const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
-            if (distToDrone < bestDist) {
-              bestDist = distToDrone;
-              bestTarget = z;
-            }
-          });
         } else {
-          // When all minions are eliminated, drones target Boss
+          // Find closest living enemy in range to protect player
           livingZombies.forEach(z => {
             const distToDrone = Math.hypot(z.x - drone.x, z.y - drone.y);
             if (distToDrone < bestDist) {
@@ -1635,7 +1666,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           drone.turretAngle = aimAngle;
           drone.targetId = (bestTarget as Zombie).id;
 
-          const actualFireRate = Math.max(90, config.fireRate - (config.level - 1) * 20);
+          const actualFireRate = Math.max(85, config.fireRate - (config.level - 1) * 20);
           const actualDmg = config.damage + (config.level - 1) * 10;
 
           if (currentTime - drone.lastShotTime >= actualFireRate) {
