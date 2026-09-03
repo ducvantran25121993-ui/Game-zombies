@@ -64,204 +64,210 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start p-2.5 sm:p-4 md:p-6 text-neutral-200 pb-12 sm:pb-16 touch-pan-y">
+    <div className="relative w-full min-h-screen bg-neutral-950 flex flex-col items-center justify-start text-neutral-200 pb-12 sm:pb-16 touch-pan-y">
       
-      {/* RICH CINEMATIC GAME BACKGROUND WALLPAPER */}
+      {/* FULL-SCREEN CINEMATIC DYNAMIC BACKDROP UNDER ENTIRE APP */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <img 
-          src={BG_APOCALYPSE_IMAGE} 
+          src={WARRIOR_HERO_BANNER} 
           alt="Apocalypse Atmosphere"
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-center opacity-40 scale-105 filter blur-[1px]"
+          className="w-full h-full object-cover object-center opacity-45 sm:opacity-40 scale-105 filter brightness-75 contrast-125"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-neutral-950/90" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.18)_0%,transparent_75%)]" />
+        {/* Multilevel vignette and atmospheric glow */}
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-neutral-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/90 via-transparent to-neutral-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.22)_0%,transparent_75%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3rem_3rem]" />
       </div>
 
-      {/* TOP HEADER BAR */}
-      <header className="relative z-20 w-full max-w-4xl flex items-center justify-between gap-2 px-3 py-2 mb-2 rounded-2xl bg-neutral-950/70 border border-neutral-800/80 backdrop-blur-xl shadow-lg">
-        {/* Left: Tactical Live Status */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-          </span>
-          <span className="text-[10px] sm:text-xs font-black tracking-wider uppercase text-red-400 font-mono whitespace-nowrap">
-            <span className="hidden xs:inline">LIVE // </span>WARZONE <span className="text-neutral-400">V2.4</span>
-          </span>
-        </div>
+      {/* TOP SAFE-AREA PADDING WRAPPER TO PREVENT PHONE NOTCH / STATUS BAR CLIPPING */}
+      <div className="w-full pt-safe px-2.5 sm:px-4 md:px-6 pt-3 sm:pt-4 flex flex-col items-center z-20">
 
-        {/* Right: Quick Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Guide & How to Play Button */}
-          <button
-            onClick={() => {
-              soundManager.playEmptyClick();
-              setIsInstallModalOpen(true);
-            }}
-            className="h-8 px-2.5 sm:px-3 rounded-xl border border-sky-500/40 bg-sky-950/40 hover:bg-sky-900/60 text-sky-200 transition-all flex items-center gap-1.5 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
-            title="Xem cách chơi và hướng dẫn cài đặt ứng dụng"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span>Cách Chơi & Hướng Dẫn</span>
-          </button>
+        {/* TOP HEADER BAR */}
+        <header className="w-full max-w-4xl flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 mb-2 sm:mb-3 rounded-2xl bg-neutral-950/85 border border-neutral-800/90 backdrop-blur-xl shadow-xl">
+          {/* Left: Tactical Live Status */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+            </span>
+            <span className="text-[10px] sm:text-xs font-black tracking-wider uppercase text-red-400 font-mono whitespace-nowrap">
+              <span className="hidden xs:inline">LIVE // </span>WARZONE <span className="text-neutral-400">V2.4</span>
+            </span>
+          </div>
 
-          {/* Missions & Records */}
-          {onOpenMissions && (
+          {/* Right: Quick Action Controls */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Guide & How to Play Button */}
             <button
               onClick={() => {
                 soundManager.playEmptyClick();
-                onOpenMissions();
+                setIsInstallModalOpen(true);
               }}
-              className="h-8 px-2 sm:px-2.5 rounded-xl border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
-              title="Nhiệm vụ & Kỷ lục"
+              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl border border-sky-500/40 bg-sky-950/60 hover:bg-sky-900/70 text-sky-200 transition-all flex items-center gap-1 text-[10.5px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
+              title="Xem cách chơi và hướng dẫn cài đặt ứng dụng"
             >
-              <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Nhiệm vụ</span>
-              {unclaimedMissionsCount > 0 && (
-                <span className="min-w-[15px] h-[15px] px-1 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse shrink-0">
-                  {unclaimedMissionsCount}
-                </span>
-              )}
+              <HelpCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="hidden xs:inline">Cách Chơi & Hướng Dẫn</span>
+              <span className="xs:hidden">Hướng Dẫn</span>
             </button>
-          )}
 
-          {/* Audio Mute Toggle */}
-          <button
-            onClick={onToggleMute}
-            className={`h-8 px-2 sm:px-2.5 rounded-xl border transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap ${
-              isMuted 
-                ? 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-neutral-200' 
-                : 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60'
-            }`}
-            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-          >
-            {isMuted ? (
-              <VolumeX className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-            ) : (
-              <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+            {/* Missions & Records */}
+            {onOpenMissions && (
+              <button
+                onClick={() => {
+                  soundManager.playEmptyClick();
+                  onOpenMissions();
+                }}
+                className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-xl border border-amber-500/40 bg-amber-950/60 hover:bg-amber-900/70 text-amber-300 transition-all flex items-center gap-1 text-[10.5px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
+                title="Nhiệm vụ & Kỷ lục"
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Nhiệm vụ</span>
+                {unclaimedMissionsCount > 0 && (
+                  <span className="min-w-[15px] h-[15px] px-1 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse shrink-0">
+                    {unclaimedMissionsCount}
+                  </span>
+                )}
+              </button>
             )}
-            <span className="hidden sm:inline">{isMuted ? 'Tắt âm' : 'Bật âm'}</span>
-          </button>
-        </div>
-      </header>
 
-      {/* MAIN CONTAINER CARD */}
-      <div className="relative z-10 w-full max-w-4xl bg-neutral-900/95 border border-neutral-800/90 rounded-3xl p-3.5 sm:p-5 md:p-7 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
-        
-        {/* UNIFIED TACTICAL LOBBY HERO CARD */}
-        <div className="relative w-full rounded-2xl overflow-hidden border border-neutral-700/80 mb-3 sm:mb-4 shadow-2xl group bg-neutral-950">
-          <div className="relative w-full h-32 sm:h-40 md:h-48 overflow-hidden">
-            <img 
-              src={WARRIOR_HERO_BANNER} 
-              alt="Zombie Apocalypse Warrior Hero" 
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-80"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/80 via-transparent to-neutral-950/40" />
-            
-            {/* Top Badges */}
-            <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="px-2 py-0.5 rounded-full bg-red-600 text-[9px] font-black text-white tracking-widest uppercase shadow">
-                  SPEC-OPS
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-neutral-950/80 text-[9px] font-bold text-amber-400 border border-amber-500/40">
-                  SURVIVOR CORPS
+            {/* Audio Mute Toggle */}
+            <button
+              onClick={onToggleMute}
+              className={`h-7 sm:h-8 px-2 rounded-xl border transition-all flex items-center gap-1 text-[10.5px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap ${
+                isMuted 
+                  ? 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-neutral-200' 
+                  : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/70'
+              }`}
+              title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            >
+              {isMuted ? (
+                <VolumeX className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+              )}
+              <span className="hidden md:inline">{isMuted ? 'Tắt âm' : 'Bật âm'}</span>
+            </button>
+          </div>
+        </header>
+
+        {/* MAIN CONTAINER CARD */}
+        <div className="w-full max-w-4xl bg-neutral-900/90 border border-neutral-800/90 rounded-3xl p-3 sm:p-5 md:p-6 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
+          
+          {/* TACTICAL COMMAND LOBBY HERO BANNER (INTEGRATED FULLY WITH BACKDROP) */}
+          <div className="relative w-full rounded-2xl overflow-hidden border border-neutral-700/80 mb-3 sm:mb-4 shadow-2xl group bg-neutral-950">
+            <div className="relative w-full h-32 sm:h-40 md:h-44 overflow-hidden">
+              <img 
+                src={WARRIOR_HERO_BANNER} 
+                alt="Zombie Apocalypse Warrior Hero" 
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-85"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-transparent to-neutral-950/50" />
+              
+              {/* Top Badges */}
+              <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-red-600 text-[9px] font-black text-white tracking-widest uppercase shadow">
+                    SPEC-OPS
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-neutral-950/80 text-[9px] font-bold text-amber-400 border border-amber-500/40">
+                    SURVIVOR CORPS
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-neutral-400 font-bold">
+                  {mode === 'survival' ? 'WAVES 1-20' : 'ENDLESS'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-neutral-400 font-bold">
-                {mode === 'survival' ? 'WAVES 1-20' : 'ENDLESS'}
-              </span>
+
+              {/* Title */}
+              <div className="absolute bottom-2 left-3 right-3">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-200 to-amber-400 drop-shadow">
+                  ZOMBIE APOCALYPSE
+                </h1>
+                <p className="text-[10px] sm:text-xs font-semibold text-neutral-300 line-clamp-1">
+                  SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
+                </p>
+              </div>
             </div>
 
-            {/* Title */}
-            <div className="absolute bottom-2 left-3 right-3">
-              <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-200 to-amber-400 drop-shadow">
-                ZOMBIE APOCALYPSE
-              </h1>
-              <p className="text-[10px] sm:text-xs font-semibold text-neutral-300 line-clamp-1">
-                SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
-              </p>
+            {/* Quick Interactive Squad Bar & Play Button */}
+            <div className="p-2 sm:p-2.5 bg-neutral-900/90 border-t border-neutral-800/90 flex flex-col sm:flex-row items-center justify-between gap-2">
+              {/* Quick Loadout Chips */}
+              <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                {/* Warrior Chip */}
+                <button
+                  type="button"
+                  onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
+                  className="px-2 py-1 rounded-xl bg-neutral-950 border border-amber-500/40 hover:border-amber-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/w"
+                  title="Bấm để chọn Chiến Binh"
+                >
+                  <div className="w-6 h-6 rounded-lg overflow-hidden border border-amber-400 shrink-0">
+                    <img src={activeWarrior.avatar} alt={activeWarrior.nameVi} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="leading-tight">
+                    <div className="text-[8.5px] text-amber-400 font-black flex items-center gap-0.5">
+                      <span>CHIẾN BINH</span>
+                      <span className="text-[7.5px] text-neutral-400 group-hover/w:text-amber-300">▼</span>
+                    </div>
+                    <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
+                      {activeWarrior.nameVi}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Map Chip */}
+                <button
+                  type="button"
+                  onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
+                  className="px-2 py-1 rounded-xl bg-neutral-950 border border-sky-500/40 hover:border-sky-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/m"
+                  title="Bấm để chọn Bối Cảnh Chiến Trường"
+                >
+                  <div className="w-6 h-6 rounded-lg overflow-hidden border border-sky-400 shrink-0 bg-neutral-900 flex items-center justify-center">
+                    {activeMap.image ? (
+                      <img src={activeMap.image} alt={activeMap.nameVi} className="w-full h-full object-cover" />
+                    ) : (
+                      <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                    )}
+                  </div>
+                  <div className="leading-tight">
+                    <div className="text-[8.5px] text-sky-400 font-black flex items-center gap-0.5">
+                      <span>BỐI CẢNH</span>
+                      <span className="text-[7.5px] text-neutral-400 group-hover/m:text-sky-300">▼</span>
+                    </div>
+                    <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
+                      {activeMap.nameVi}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Difficulty Pill */}
+                <button
+                  type="button"
+                  onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
+                  className="px-2 py-1 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-neutral-700 flex flex-col justify-center text-left shrink-0"
+                  title="Bấm để chỉnh Chế độ & Độ khó"
+                >
+                  <span className="text-[8.5px] text-neutral-400 font-black">ĐỘ KHÓ</span>
+                  <span className="text-[11px] font-bold text-amber-400 uppercase">
+                    {difficulty}
+                  </span>
+                </button>
+              </div>
+
+              {/* Main Action Start Button */}
+              <button
+                onClick={handleLaunchGame}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/80 shrink-0"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>VÀO TRẬN NGAY</span>
+              </button>
             </div>
           </div>
-
-          {/* Quick Interactive Squad Bar & Play Button */}
-          <div className="p-2 sm:p-2.5 bg-neutral-900/90 border-t border-neutral-800/90 flex flex-col sm:flex-row items-center justify-between gap-2">
-            {/* Quick Loadout Chips */}
-            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
-              {/* Warrior Chip */}
-              <button
-                type="button"
-                onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-                className="px-2 py-1 rounded-xl bg-neutral-950 border border-amber-500/40 hover:border-amber-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/w"
-                title="Bấm để chọn Chiến Binh"
-              >
-                <div className="w-6 h-6 rounded-lg overflow-hidden border border-amber-400 shrink-0">
-                  <img src={activeWarrior.avatar} alt={activeWarrior.nameVi} className="w-full h-full object-cover" />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[8.5px] text-amber-400 font-black flex items-center gap-0.5">
-                    <span>CHIẾN BINH</span>
-                    <span className="text-[7.5px] text-neutral-400 group-hover/w:text-amber-300">▼</span>
-                  </div>
-                  <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
-                    {activeWarrior.nameVi}
-                  </div>
-                </div>
-              </button>
-
-              {/* Map Chip */}
-              <button
-                type="button"
-                onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-                className="px-2 py-1 rounded-xl bg-neutral-950 border border-sky-500/40 hover:border-sky-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/m"
-                title="Bấm để chọn Bối Cảnh Chiến Trường"
-              >
-                <div className="w-6 h-6 rounded-lg overflow-hidden border border-sky-400 shrink-0 bg-neutral-900 flex items-center justify-center">
-                  {activeMap.image ? (
-                    <img src={activeMap.image} alt={activeMap.nameVi} className="w-full h-full object-cover" />
-                  ) : (
-                    <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                  )}
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[8.5px] text-sky-400 font-black flex items-center gap-0.5">
-                    <span>BỐI CẢNH</span>
-                    <span className="text-[7.5px] text-neutral-400 group-hover/m:text-sky-300">▼</span>
-                  </div>
-                  <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
-                    {activeMap.nameVi}
-                  </div>
-                </div>
-              </button>
-
-              {/* Difficulty Pill */}
-              <button
-                type="button"
-                onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
-                className="px-2 py-1 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-neutral-700 flex flex-col justify-center text-left shrink-0"
-                title="Bấm để chỉnh Chế độ & Độ khó"
-              >
-                <span className="text-[8.5px] text-neutral-400 font-black">ĐỘ KHÓ</span>
-                <span className="text-[11px] font-bold text-amber-400 uppercase">
-                  {difficulty}
-                </span>
-              </button>
-            </div>
-
-            {/* Main Action Start Button */}
-            <button
-              onClick={handleLaunchGame}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/80 shrink-0"
-            >
-              <Play className="w-4 h-4 fill-white" />
-              <span>VÀO TRẬN NGAY</span>
-            </button>
-          </div>
-        </div>
 
         {/* MODERN SEGMENTED TABS CONTROLLER (4 BALANCED TABS FOR MOBILE) */}
         <div className="w-full bg-neutral-950/80 p-1 sm:p-1.5 rounded-2xl border border-neutral-800/80 mb-3 sm:mb-4 grid grid-cols-4 gap-1 shadow-inner">
@@ -673,6 +679,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             )}
           </div>
         )}
+
+        </div>
 
       </div>
 
