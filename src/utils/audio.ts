@@ -368,13 +368,39 @@ class SoundEngine {
     osc.frequency.setValueAtTime(1400, t);
     osc.frequency.exponentialRampToValueAtTime(500, t + 0.08);
 
-    gain.gain.setValueAtTime(0.15 * this.sfxVolume, t);
+    gain.gain.setValueAtTime(0.2 * this.sfxVolume, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(t);
     osc.stop(t + 0.08);
+  }
+
+  // Plasma shot or energetic EMP discharge
+  public playPlasmaShot() {
+    this.playShoot('plasma');
+  }
+
+  // Game Over somber jingle
+  public playGameOver() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const notes = [293.66, 261.63, 220.0, 174.61]; // D4, C4, A3, F3 somber descent
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.16);
+      gain.gain.setValueAtTime(0.28 * this.sfxVolume, t + idx * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.16 + 0.32);
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(t + idx * 0.16);
+      osc.stop(t + idx * 0.16 + 0.32);
+    });
   }
 
   // Drone Plasma Pulse
@@ -497,6 +523,64 @@ class SoundEngine {
 
     noise.start(t);
     noise.stop(t + duration);
+  }
+
+  public playMissionComplete() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Festive triumphant arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.08);
+      gain.gain.setValueAtTime(0.24 * this.sfxVolume, t + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(t + idx * 0.08);
+      osc.stop(t + idx * 0.08 + 0.35);
+    });
+  }
+
+  public playUltimateReady() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(392, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + 0.25);
+    gain.gain.setValueAtTime(0.3 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
+
+  public playUltimateActivate() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Heavy sub bass impact + charging riser
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+    gain.gain.setValueAtTime(0.45 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.6);
   }
 
   // Background Synth Tension Loop

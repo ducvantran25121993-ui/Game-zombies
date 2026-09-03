@@ -423,27 +423,44 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
               })}
             </div>
 
-            {/* Prominent Dash Button */}
-            <button
-              onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
-              onClick={onDash}
-              disabled={!canDash}
-              className={`w-full py-2.5 px-4 rounded-xl border flex items-center justify-center gap-2 shadow-xl transition-transform active:scale-90 font-black text-xs landscape:text-sm backdrop-blur-md relative overflow-hidden ${
-                canDash
-                  ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
-                  : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-50'
-              }`}
-              title="Lướt né đòn (Space)"
-            >
-              <Zap className={`w-4 h-4 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
-              <span>LƯỚT NÉ ĐÒN</span>
+            {/* Dash and Ultimate Action Cluster */}
+            <div className="flex items-center gap-2 w-full">
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onDash(); }}
+                onClick={onDash}
+                disabled={!canDash}
+                className={`flex-1 py-2.5 px-3 rounded-xl border flex items-center justify-center gap-1.5 shadow-xl transition-transform active:scale-90 font-black text-xs landscape:text-sm backdrop-blur-md relative overflow-hidden ${
+                  canDash
+                    ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 border-indigo-300 text-white shadow-indigo-500/30'
+                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-50'
+                }`}
+                title="Lướt né đòn (Space)"
+              >
+                <Zap className={`w-3.5 h-3.5 ${canDash ? 'fill-white text-yellow-300' : 'text-neutral-600'}`} />
+                <span>LƯỚT NÉ</span>
 
-              {/* Micro Stamina Progress */}
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-300 transition-all"
-                style={{ width: `${staminaPct}%` }}
-              />
-            </button>
+                {/* Micro Stamina Progress */}
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-300 transition-all"
+                  style={{ width: `${staminaPct}%` }}
+                />
+              </button>
+
+              <button
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('trigger-ultimate'));
+                }}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('trigger-ultimate'));
+                }}
+                className="py-2.5 px-3 rounded-xl border border-amber-400/80 bg-gradient-to-r from-amber-600 to-yellow-500 text-neutral-950 font-black text-xs flex items-center gap-1 shadow-lg active:scale-90 transition-transform pointer-events-auto"
+                title="Kích hoạt tuyệt kỹ chiến binh (F/U)"
+              >
+                <Zap className="w-3.5 h-3.5 fill-neutral-950 text-neutral-950" />
+                <span>TUYỆT KỸ</span>
+              </button>
+            </div>
           </div>
         </>
       )}

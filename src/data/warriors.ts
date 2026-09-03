@@ -23,6 +23,14 @@ export interface WarriorClass {
     dashCooldownReduction: number;
     damageMultiplier: number;
   };
+  ultimate: {
+    id: 'airstrike' | 'chrono_matrix' | 'titan_overload';
+    nameVi: string;
+    badgeVi: string;
+    descVi: string;
+    themeColor: string;
+    duration: number; // in ms
+  };
   unlockedByDefault: boolean;
   unlockCost: number;
 }
@@ -50,6 +58,14 @@ export const WARRIOR_CLASSES: WarriorClass[] = [
       dashCooldownReduction: 0,
       damageMultiplier: 1.0
     },
+    ultimate: {
+      id: 'airstrike',
+      nameVi: 'KHÔNG KÍCH TẢN DIỆN',
+      badgeVi: 'AIRSTRIKE BOMBER',
+      descVi: 'Gọi máy bay ném 12 quả rocket hành trình dội bão lửa oanh tạc toàn khu vực xung quanh',
+      themeColor: '#ef4444',
+      duration: 3500
+    },
     unlockedByDefault: true,
     unlockCost: 0
   },
@@ -73,6 +89,14 @@ export const WARRIOR_CLASSES: WarriorClass[] = [
       dashCooldownReduction: 0.25,
       damageMultiplier: 1.08
     },
+    ultimate: {
+      id: 'chrono_matrix',
+      nameVi: 'MA TRẬN LÀM CHẬM & TÀNG HÌNH',
+      badgeVi: 'CHRONO MATRIX',
+      descVi: 'Làm chậm quái & đạn địch 80% trong 5 giây, tàng hình và tăng 100% tỷ lệ sát thương chí mạng (Red Crit)',
+      themeColor: '#10b981',
+      duration: 5000
+    },
     unlockedByDefault: false,
     unlockCost: 500
   },
@@ -95,6 +119,14 @@ export const WARRIOR_CLASSES: WarriorClass[] = [
       speedMultiplier: 0.94,
       dashCooldownReduction: -0.1,
       damageMultiplier: 1.15
+    },
+    ultimate: {
+      id: 'titan_overload',
+      nameVi: 'QUÁ TẢI CƠ GIÁP & BẤT TỬ',
+      badgeVi: 'TITAN OVERLOAD',
+      descVi: 'Bật khiên bảo vệ bất tử 6 giây, kích nổ 4 sóng xung kích EMP làm tê liệt và nạp pháo laser 360 độ',
+      themeColor: '#f59e0b',
+      duration: 6000
     },
     unlockedByDefault: false,
     unlockCost: 1000

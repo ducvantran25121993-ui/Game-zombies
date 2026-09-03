@@ -1,12 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
-  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X
+  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X, Target
 } from 'lucide-react';
 import { WARRIOR_CLASSES } from '../data/warriors';
 import { MAP_ENVIRONMENTS } from '../data/maps';
+import { MiniMapRadar } from './MiniMapRadar';
 
 interface HUDProps {
   player: PlayerStats;
@@ -31,6 +32,9 @@ interface HUDProps {
   onToggleCameraZoom?: () => void;
   autoAimEnabled?: boolean;
   onToggleAutoAim?: () => void;
+  radarData?: { zombies: Zombie[]; drops: DropItem[] };
+  onOpenMissions?: () => void;
+  unclaimedMissionsCount?: number;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -55,7 +59,10 @@ export const HUD: React.FC<HUDProps> = ({
   cameraZoomMode = 'wide',
   onToggleCameraZoom,
   autoAimEnabled = true,
-  onToggleAutoAim
+  onToggleAutoAim,
+  radarData,
+  onOpenMissions,
+  unclaimedMissionsCount = 0
 }) => {
   const hpPercent = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
   const armorPercent = Math.max(0, Math.min(100, (player.armor / player.maxArmor) * 100));
@@ -232,6 +239,51 @@ export const HUD: React.FC<HUDProps> = ({
             <Bomb className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
             <span className="font-mono">x{player.grenadeCount}</span>
           </button>
+
+          {/* Missions & Achievements Button */}
+          {onOpenMissions && (
+            <button
+              onClick={onOpenMissions}
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-indigo-500/60 bg-neutral-950/90 hover:bg-neutral-900 text-indigo-300 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0"
+              title="Xem Danh Sách Nhiệm Vụ & Thành Tựu"
+            >
+              <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 shrink-0" />
+              <span>NV</span>
+              {unclaimedMissionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-600 text-white font-mono text-[8px] flex items-center justify-center border border-white animate-bounce">
+                  {unclaimedMissionsCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* Ultimate Skill Button */}
+          {(() => {
+            const currentWarrior = WARRIOR_CLASSES.find(w => w.id === (player.warriorSkin || 'commando')) || WARRIOR_CLASSES[0];
+            const ultReady = (player.ultimateCharge || 0) >= 100;
+            const ultActive = player.isUltimateActive;
+            return (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('trigger-ultimate'));
+                }}
+                disabled={!ultReady && !ultActive}
+                className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 relative ${
+                  ultActive
+                    ? 'bg-gradient-to-r from-red-600 to-amber-500 border-amber-300 text-white animate-pulse shadow-red-500/50'
+                    : ultReady
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-300 border-yellow-200 text-neutral-950 animate-bounce shadow-[0_0_15px_rgba(245,158,11,0.7)]'
+                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-500'
+                }`}
+                title={`Tuyệt Kỹ [${currentWarrior.ultimate.nameVi}] (Phím F/U)`}
+              >
+                <Zap className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${ultReady ? 'fill-neutral-950 text-neutral-950' : 'text-amber-500'}`} />
+                <span className="font-mono">
+                  {ultActive ? 'KÍCH HOẠT' : ultReady ? 'MAX [F]' : `${Math.floor(player.ultimateCharge || 0)}%`}
+                </span>
+              </button>
+            );
+          })()}
         </div>
 
         {/* ROW 2: Boss Bar & Tactical Controls (Zoom 0.7x, Auto-Aim, Mute, Pause) ON THE SAME LINE */}
@@ -338,6 +390,17 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
       </div>
+
+      {/* TACTICAL MINIMAP RADAR (Top Right Floating Widget) */}
+      {radarData && (
+        <div className="absolute top-[72px] sm:top-[80px] right-2 sm:right-4 z-20 pointer-events-auto">
+          <MiniMapRadar
+            player={player}
+            zombies={radarData.zombies}
+            drops={radarData.drops}
+          />
+        </div>
+      )}
 
       {/* FLOATING PROMPT: AUTO-DISMISSES AFTER 5 SECONDS */}
       {notification && (

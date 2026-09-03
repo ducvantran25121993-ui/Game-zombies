@@ -290,6 +290,10 @@ export interface PlayerStats {
   invincibleTimer: number;
   warriorSkin?: string;
   walkFrame?: number;
+  // Ultimate Skill
+  ultimateCharge: number; // 0 to 100
+  isUltimateActive?: boolean;
+  ultimateTimer?: number;
   // Upgrade levels
   upgrades: {
     maxHpLevel: number;
@@ -385,4 +389,27 @@ export interface EquipmentItem {
   maxLevel: number;
   tiers: EquipmentTierConfig[];
 }
+
+export interface Mission {
+  id: string;
+  titleVi: string;
+  descVi: string;
+  target: number;
+  current: number;
+  rewardGold: number;
+  completed: boolean;
+  claimed: boolean;
+  icon: string;
+}
+
+export interface GameRecordStats {
+  highScore: number;
+  maxWave: number;
+  totalKills: number;
+  totalBossKills: number;
+  totalGoldEarned: number;
+  gamesPlayed: number;
+  ultimatesCast: number;
+}
+
 

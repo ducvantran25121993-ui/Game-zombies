@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayerStats, Weapon, WeaponType, GameDifficulty, 
-  GameMode, ActiveBuffs, MapEnvironmentId, EquipmentSlotId, EquipmentItem
+  GameMode, ActiveBuffs, MapEnvironmentId, EquipmentSlotId, EquipmentItem,
+  Mission, GameRecordStats, Zombie, DropItem
 } from './types/game';
 import { INITIAL_WEAPONS, MAP_SIZE, UPGRADES_CONFIG } from './utils/constants';
 import { soundManager } from './utils/audio';
 import { WARRIOR_CLASSES } from './data/warriors';
 import { INITIAL_DRONES, CompanionDroneConfig } from './data/drones';
 import { INITIAL_EQUIPMENT } from './data/equipment';
+import { loadRecordStats, saveRecordStats, loadSavedMissions, saveMissions } from './data/missions';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
 import { ShopModal } from './components/ShopModal';
@@ -15,13 +17,20 @@ import { VirtualControls } from './components/VirtualControls';
 import { GameOverModal } from './components/GameOverModal';
 import { PauseModal } from './components/PauseModal';
 import { StartScreen } from './components/StartScreen';
+import { MissionsModal } from './components/MissionsModal';
 
 export const App: React.FC = () => {
   // Screen States
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
   const [isPaused, setIsPaused] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isMissionsOpen, setIsMissionsOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Missions, Records & Radar
+  const [missions, setMissions] = useState<Mission[]>(() => loadSavedMissions());
+  const [recordStats, setRecordStats] = useState<GameRecordStats>(() => loadRecordStats());
+  const [radarData, setRadarData] = useState<{ zombies: Zombie[]; drops: DropItem[] }>({ zombies: [], drops: [] });
 
   // Difficulty & Mode & Warrior & Map Environment
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
@@ -163,8 +172,89 @@ export const App: React.FC = () => {
   }, [gameState]);
 
   const handleGameOver = useCallback(() => {
+    soundManager.playGameOver();
+    setRecordStats(() => {
+      return saveRecordStats({
+        highScore: player.score,
+        maxWave: wave,
+        totalKills: player.kills,
+        totalGoldEarned: player.gold,
+        gamesPlayed: 1
+      });
+    });
     setGameState('gameover');
+  }, [player.score, player.kills, player.gold, wave]);
+
+  const handleBossKilled = useCallback(() => {
+    setRecordStats(() => saveRecordStats({ totalBossKills: 1 }));
+    setMissions(prev => {
+      const next = prev.map(m => {
+        if (m.id === 'boss_slayer') {
+          const current = m.current + 1;
+          return { ...m, current, completed: current >= m.target };
+        }
+        return m;
+      });
+      saveMissions(next);
+      return next;
+    });
   }, []);
+
+  const handleUltimateUsed = useCallback((_type: string) => {
+    setRecordStats(() => saveRecordStats({ ultimatesCast: 1 }));
+    setMissions(prev => {
+      const next = prev.map(m => {
+        if (m.id === 'ultimate_power') {
+          const current = m.current + 1;
+          return { ...m, current, completed: current >= m.target };
+        }
+        return m;
+      });
+      saveMissions(next);
+      return next;
+    });
+  }, []);
+
+  const handleClaimReward = (missionId: string) => {
+    const mission = missions.find(m => m.id === missionId);
+    if (!mission || !mission.completed || mission.claimed) return;
+
+    soundManager.playPowerUp();
+    const updated = missions.map(m => m.id === missionId ? { ...m, claimed: true } : m);
+    setMissions(updated);
+    saveMissions(updated);
+    setPlayer(p => ({ ...p, gold: p.gold + mission.rewardGold }));
+  };
+
+  // Sync real-time mission progress
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    setMissions(prevMissions => {
+      let changed = false;
+      const next = prevMissions.map(m => {
+        let current = m.current;
+        if (m.id === 'first_blood') current = player.kills;
+        else if (m.id === 'combo_master') current = Math.max(m.current, player.combo);
+        else if (m.id === 'wave_veteran') current = Math.max(m.current, wave);
+        else if (m.id === 'gold_tycoon') current = Math.max(m.current, player.gold);
+        else if (m.id === 'zombie_annihilator') current = player.kills;
+
+        const completed = current >= m.target;
+        if (current !== m.current || completed !== m.completed) {
+          changed = true;
+          return { ...m, current, completed };
+        }
+        return m;
+      });
+
+      if (changed) {
+        saveMissions(next);
+        return next;
+      }
+      return prevMissions;
+    });
+  }, [player.kills, player.combo, player.gold, wave, gameState]);
 
   const handleMapChange = useCallback((newMapId: MapEnvironmentId) => {
     setSelectedMapId(newMapId);
@@ -630,6 +720,8 @@ export const App: React.FC = () => {
           }}
           selectedMapId={selectedMapId}
           onSelectMap={(id) => setSelectedMapId(id)}
+          onOpenMissions={() => setIsMissionsOpen(true)}
+          unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
         />
       )}
 
@@ -668,6 +760,9 @@ export const App: React.FC = () => {
             touchAimInput={touchAimInput}
             autoAimEnabled={autoAimEnabled}
             cameraZoomMode={cameraZoomMode}
+            onRadarUpdate={(zombies, drops) => setRadarData({ zombies, drops })}
+            onBossKilled={handleBossKilled}
+            onUltimateUsed={handleUltimateUsed}
           />
 
           {/* Top & Bottom HUD Display */}
@@ -693,6 +788,9 @@ export const App: React.FC = () => {
             onToggleCameraZoom={handleToggleCameraZoom}
             autoAimEnabled={autoAimEnabled}
             onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
+            radarData={radarData}
+            onOpenMissions={() => setIsMissionsOpen(true)}
+            unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
             onThrowGrenade={() => {
               if (player.grenadeCount > 0) {
                 // Triggered through simulated key or direct state
@@ -775,6 +873,15 @@ export const App: React.FC = () => {
           />
         </>
       )}
+
+      {/* Missions & Hall of Fame Records Modal */}
+      <MissionsModal
+        isOpen={isMissionsOpen}
+        onClose={() => setIsMissionsOpen(false)}
+        missions={missions}
+        onClaimReward={handleClaimReward}
+        recordStats={recordStats}
+      />
 
       {/* 3. GAME OVER MODAL */}
       {gameState === 'gameover' && (

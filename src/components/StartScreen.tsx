@@ -19,6 +19,8 @@ interface StartScreenProps {
   onSelectWarrior: (id: string) => void;
   selectedMapId: MapEnvironmentId;
   onSelectMap: (id: MapEnvironmentId) => void;
+  onOpenMissions?: () => void;
+  unclaimedMissionsCount?: number;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -28,7 +30,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   selectedWarriorId,
   onSelectWarrior,
   selectedMapId,
-  onSelectMap
+  onSelectMap,
+  onOpenMissions,
+  unclaimedMissionsCount = 0
 }) => {
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [mode, setMode] = useState<GameMode>('survival');
@@ -81,6 +85,24 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenMissions && (
+            <button
+              onClick={() => {
+                soundManager.playEmptyClick();
+                onOpenMissions();
+              }}
+              className="px-3 py-1.5 rounded-xl border border-amber-500/50 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Nhiệm vụ & Kỷ lục</span>
+              {unclaimedMissionsCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse">
+                  {unclaimedMissionsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           <button
             onClick={onToggleMute}
             className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 ${

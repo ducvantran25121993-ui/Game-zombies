@@ -67,6 +67,9 @@ interface GameCanvasProps {
   touchAimInput: { angle: number; isShooting: boolean };
   autoAimEnabled?: boolean;
   cameraZoomMode?: 'wide' | 'ultrawide' | 'normal';
+  onUltimateUsed?: () => void;
+  onRadarUpdate?: (zombies: Zombie[], drops: DropItem[]) => void;
+  onBossKilled?: () => void;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -100,9 +103,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   touchMoveInput,
   touchAimInput,
   autoAimEnabled = true,
-  cameraZoomMode = 'wide'
+  cameraZoomMode = 'wide',
+  onUltimateUsed,
+  onRadarUpdate,
+  onBossKilled
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const onUltimateUsedRef = useRef(onUltimateUsed);
+  onUltimateUsedRef.current = onUltimateUsed;
+
+  const onRadarUpdateRef = useRef(onRadarUpdate);
+  onRadarUpdateRef.current = onRadarUpdate;
+
+  const onBossKilledRef = useRef(onBossKilled);
+  onBossKilledRef.current = onBossKilled;
 
   // Synchronized refs for props to ensure the high-frequency animation loop is never restarted on re-render
   const touchMoveInputRef = useRef(touchMoveInput);
@@ -179,8 +194,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     isWaveEnding: boolean;
     autoAimTargetId: string | null;
     targetedBossId: string | null;
+    slowMoTimer: number;
+    bossDefeatedBanner: { text: string; subText: string; alpha: number; timer: number; themeColor: string } | null;
+    orbitalStrikes: Array<{ x: number; y: number; delay: number; triggered: boolean }>;
+    titanEmpPulses: Array<{ delay: number; triggered: boolean }>;
+    waveHazard: { id: string; nameVi: string; descVi: string; color: string; bannerTimer: number; nextEventTime: number } | null;
+    hazardStrikes: Array<{ id: string; x: number; y: number; radius: number; timer: number; maxTimer: number; type: 'lightning' | 'meteor' | 'spore'; damage: number }>;
+    lightningFlashAlpha: number;
   }>({
-    player: { ...player },
+    player: { ...player, ultimateCharge: player.ultimateCharge || 0 },
     currentWeapon: { ...currentWeapon },
     weapons: { ...weapons },
     currentMapId: (selectedMapId as MapEnvironmentId) || 'rooftop',
@@ -215,7 +237,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     waveTransitionTimer: 0,
     isWaveEnding: false,
     autoAimTargetId: null,
-    targetedBossId: null
+    targetedBossId: null,
+    slowMoTimer: 0,
+    bossDefeatedBanner: null,
+    orbitalStrikes: [],
+    titanEmpPulses: [],
+    waveHazard: null,
+    hazardStrikes: [],
+    lightningFlashAlpha: 0
   });
 
   // Sync props to stateRef when weapons/player change from Shop or UI
@@ -805,8 +834,59 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     state.bossHazards = [];
     state.sweepingLasers = [];
     state.tentacleHooks = [];
+    state.hazardStrikes = [];
     setTotalZombiesInWave(baseCount + state.bossesToSpawn);
     setZombiesRemaining(baseCount + state.bossesToSpawn);
+
+    // Dynamic Wave Environmental Hazards System
+    let hazard = null;
+    if (waveNum === 2 || waveNum === 7) {
+      hazard = {
+        id: 'bio_rain',
+        nameVi: 'BÃO BÀO TỬ KHÍ ĐỘC BIO-HAZARD',
+        descVi: 'Mưa bào tử acid ăn mòn chiến trường, tạo ổ nổ độc tố tiêu diệt quái vật',
+        color: '#10b981',
+        bannerTimer: 240,
+        nextEventTime: performance.now() + 3500
+      };
+    } else if (waveNum === 3 || waveNum === 8) {
+      hazard = {
+        id: 'lightning_storm',
+        nameVi: 'BÃO SẤM SÉT TỪ TRƯỜNG ĐÔ THỊ',
+        descVi: 'Tia sét điện trường định kỳ giáng xuống giật điện thiêu rụi bầy quái vật',
+        color: '#38bdf8',
+        bannerTimer: 240,
+        nextEventTime: performance.now() + 4000
+      };
+    } else if (waveNum === 4 || waveNum === 9) {
+      hazard = {
+        id: 'meteor_fire',
+        nameVi: 'MƯA NHAM THẠCH & THIÊN THẠCH LỬA',
+        descVi: 'Thiên thạch rực lửa rơi xuống tạo hố nổ thiêu rụi mọi zombie lọt vào',
+        color: '#f97316',
+        bannerTimer: 240,
+        nextEventTime: performance.now() + 4200
+      };
+    } else if (waveNum === 5) {
+      hazard = {
+        id: 'void_eclipse',
+        nameVi: 'NHẬT THỰC HUYẾT NGUYỆT ĐẠI DỊCH',
+        descVi: 'Bầu trời đỏ quạch, sấm sét liên hồi báo hiệu chúa tể Boss đột biến!',
+        color: '#ef4444',
+        bannerTimer: 260,
+        nextEventTime: performance.now() + 3000
+      };
+    } else if (waveNum === 6) {
+      hazard = {
+        id: 'sandstorm',
+        nameVi: 'BÃO CÁT CHIẾN TUYẾN CUỒNG PHONG',
+        descVi: 'Cuồng phong cát đỏ kích thích tăng tốc độ di chuyển của chiến binh!',
+        color: '#eab308',
+        bannerTimer: 240,
+        nextEventTime: performance.now() + 4500
+      };
+    }
+    state.waveHazard = hazard;
 
     // Wave Boss Archetype Announcement
     const archetypeKey = waveNum === 1 ? 'boss_mutant' : waveNum === 2 ? 'boss_abomination' : waveNum === 3 ? 'boss_cyber_behemoth' : waveNum === 4 ? 'boss_inferno_titan' : 'boss_void_reaper';
@@ -854,6 +934,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (key === 'g' || key === 'e') {
         handleGrenade();
       }
+      // Ultimate Skill (F or U)
+      if (key === 'f' || key === 'u') {
+        handleUltimate();
+      }
       // Weapon switch 1-7
       if (['1', '2', '3', '4', '5', '6', '7'].includes(key)) {
         const weaponKeys = Object.keys(stateRef.current.weapons) as WeaponType[];
@@ -872,13 +956,104 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       stateRef.current.keysDown[e.key.toLowerCase()] = false;
     };
 
+    const handleTriggerUltimateEvent = () => {
+      handleUltimate();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('trigger-ultimate', handleTriggerUltimateEvent);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('trigger-ultimate', handleTriggerUltimateEvent);
     };
   }, []);
+
+  const handleUltimate = () => {
+    const state = stateRef.current;
+    const p = state.player;
+    if ((p.ultimateCharge || 0) < 100 || p.isUltimateActive) {
+      soundManager.playEmptyClick();
+      return;
+    }
+
+    p.ultimateCharge = 0;
+    p.isUltimateActive = true;
+    soundManager.playUltimateActivate();
+
+    const skin = p.warriorSkin || 'commando';
+
+    if (skin === 'commando') {
+      // 1. Orbital Airstrike: 12 rockets rain down
+      p.ultimateTimer = 3500;
+      state.screenShake = 24;
+      state.floatingTexts.push({
+        id: Math.random().toString(),
+        x: p.x,
+        y: p.y - 70,
+        text: '🚀 BÃO LỬA KHÔNG KÍCH AIRSTRIKE!',
+        color: '#ef4444',
+        alpha: 1,
+        life: 90,
+        isCrit: true
+      });
+
+      // Schedule 12 strikes around player with delays
+      for (let s = 0; s < 12; s++) {
+        const offsetAng = Math.random() * Math.PI * 2;
+        const offsetDist = 50 + Math.random() * 260;
+        state.orbitalStrikes.push({
+          x: p.x + Math.cos(offsetAng) * offsetDist,
+          y: p.y + Math.sin(offsetAng) * offsetDist,
+          delay: 150 + s * 160,
+          triggered: false
+        });
+      }
+    } else if (skin === 'ghost') {
+      // 2. Chrono Matrix & Ghost Stealth
+      p.ultimateTimer = 5000;
+      p.invincibleTimer = 3000;
+      state.screenShake = 12;
+      state.floatingTexts.push({
+        id: Math.random().toString(),
+        x: p.x,
+        y: p.y - 70,
+        text: '⏳ MA TRẬN CHRONO: SLOW-MO 80% & 100% CRIT!',
+        color: '#10b981',
+        alpha: 1,
+        life: 100,
+        isCrit: true
+      });
+    } else if (skin === 'cyber') {
+      // 3. Titan Overload & Invincible EMP
+      p.ultimateTimer = 6000;
+      p.invincibleTimer = 6000;
+      state.screenShake = 22;
+      state.floatingTexts.push({
+        id: Math.random().toString(),
+        x: p.x,
+        y: p.y - 70,
+        text: '⚡ QUÁ TẢI CƠ GIÁP: BẤT TỬ & SÓNG XUNG KÍCH EMP!',
+        color: '#f59e0b',
+        alpha: 1,
+        life: 100,
+        isCrit: true
+      });
+
+      // Schedule 4 massive EMP pulses
+      for (let ep = 0; ep < 4; ep++) {
+        state.titanEmpPulses.push({
+          delay: 200 + ep * 1300,
+          triggered: false
+        });
+      }
+    }
+
+    if (onUltimateUsedRef.current) {
+      onUltimateUsedRef.current();
+    }
+  };
 
   const handleReload = () => {
     const state = stateRef.current;
@@ -1015,21 +1190,36 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     let lastShotTime = 0;
     let lastStateSync = 0;
+    let lastRadarSync = 0;
 
     const loop = (currentTime: number) => {
       animationId = requestAnimationFrame(loop);
 
       try {
         const state = stateRef.current;
-        const dt = Math.min(100, currentTime - state.lastTime);
+        const rawDt = Math.min(100, currentTime - state.lastTime);
         state.lastTime = currentTime;
+
+        let dt = rawDt;
+        if (state.slowMoTimer > 0) {
+          state.slowMoTimer -= rawDt;
+          dt = rawDt * 0.28; // Cinematic Boss Knockout Slow-Motion!
+        }
 
         if (isPausedRef.current || isShopOpenRef.current) return;
 
       const p = state.player;
       const wep = state.currentWeapon;
 
-      // Realtime periodic synchronization of Gold, Score, HP, Armor, Grenades back to React App State
+      // Periodic Radar Map Sync
+      if (currentTime - lastRadarSync > 90) {
+        lastRadarSync = currentTime;
+        if (onRadarUpdateRef.current) {
+          onRadarUpdateRef.current(state.zombies, state.drops);
+        }
+      }
+
+      // Realtime periodic synchronization of Gold, Score, HP, Armor, Grenades, Ultimate back to React App State
       if (currentTime - lastStateSync > 60) {
         lastStateSync = currentTime;
         setPlayer(prev => {
@@ -1042,7 +1232,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             prev.headshots !== p.headshots ||
             prev.combo !== p.combo ||
             prev.multiplier !== p.multiplier ||
-            prev.grenadeCount !== p.grenadeCount
+            prev.grenadeCount !== p.grenadeCount ||
+            Math.floor(prev.ultimateCharge || 0) !== Math.floor(p.ultimateCharge || 0) ||
+            prev.isUltimateActive !== p.isUltimateActive
           ) {
             return {
               ...prev,
@@ -1054,12 +1246,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               headshots: p.headshots,
               combo: p.combo,
               multiplier: p.multiplier,
-              grenadeCount: p.grenadeCount
+              grenadeCount: p.grenadeCount,
+              ultimateCharge: p.ultimateCharge || 0,
+              isUltimateActive: p.isUltimateActive
             };
           }
           return prev;
         });
       }
+
+      // Passive ultimate trickle charge
+      p.ultimateCharge = Math.min(100, (p.ultimateCharge || 0) + (dt / 1000) * 0.5);
 
       // 1. RECOVERY & TIMERS
       p.stamina = Math.min(p.maxStamina, p.stamina + 0.35);
@@ -1319,6 +1516,42 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               decay: 0.25,
               shape: 'spark'
             });
+
+            // Realistic Brass Shell Casing Ejection (Authentic gunplay polish)
+            const shellSide = p.angle - Math.PI / 2 + (Math.random() - 0.5) * 0.45;
+            const shellSpeed = 2.4 + Math.random() * 2.2;
+            state.particles.push({
+              x: p.x + Math.cos(p.angle) * 8,
+              y: p.y + Math.sin(p.angle) * 8,
+              vx: Math.cos(shellSide) * shellSpeed - Math.cos(p.angle) * 0.4,
+              vy: Math.sin(shellSide) * shellSpeed - Math.sin(p.angle) * 0.4,
+              radius: 3,
+              color: '#f59e0b',
+              alpha: 1,
+              life: 0,
+              maxLife: 140,
+              decay: 0.007,
+              shape: 'shell',
+              angle: Math.random() * Math.PI * 2,
+              vAngle: (Math.random() - 0.5) * 0.35
+            });
+
+            // Muzzle Smoke Puff
+            if (Math.random() < 0.6) {
+              state.particles.push({
+                x: muzzleX,
+                y: muzzleY,
+                vx: Math.cos(p.angle) * 1.2 + (Math.random() - 0.5) * 0.6,
+                vy: Math.sin(p.angle) * 1.2 + (Math.random() - 0.5) * 0.6,
+                radius: 4,
+                color: 'rgba(215, 220, 225, 0.4)',
+                alpha: 0.5,
+                life: 0,
+                maxLife: 18,
+                decay: 0.025,
+                shape: 'smoke'
+              });
+            }
 
             // Bullet pellets
             for (let i = 0; i < wep.bulletCount; i++) {
@@ -1772,6 +2005,179 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
+      // Update Orbital Strikes (Commando Ultimate Skill)
+      for (let os = state.orbitalStrikes.length - 1; os >= 0; os--) {
+        const strike = state.orbitalStrikes[os];
+        strike.delay -= dt;
+        if (strike.delay <= 0) {
+          state.screenShake = 16;
+          soundManager.playExplosion();
+          triggerExplosion(strike.x, strike.y, 220, 480);
+          state.decals.push({
+            x: strike.x,
+            y: strike.y,
+            radius: 120,
+            color: '#7f1d1d',
+            alpha: 0.8,
+            type: 'crater'
+          });
+          state.orbitalStrikes.splice(os, 1);
+        }
+      }
+
+      // Update Titan EMP Pulses (Cyber Titan Ultimate Skill)
+      for (let ep = state.titanEmpPulses.length - 1; ep >= 0; ep--) {
+        const pulse = state.titanEmpPulses[ep];
+        pulse.delay -= dt;
+        if (pulse.delay <= 0) {
+          state.screenShake = 16;
+          soundManager.playPlasmaShot();
+          triggerExplosion(p.x, p.y, 280, 360);
+          state.decals.push({
+            x: p.x,
+            y: p.y,
+            radius: 200,
+            color: '#fbbf24',
+            alpha: 0.8,
+            type: 'crater'
+          });
+          state.titanEmpPulses.splice(ep, 1);
+        }
+      }
+
+      // Update Environmental Wave Hazards
+      if (state.waveHazard) {
+        if (state.waveHazard.bannerTimer > 0) {
+          state.waveHazard.bannerTimer -= 1;
+        }
+
+        // Spawn ambient atmospheric weather particles for the hazard
+        if (Math.random() < 0.45) {
+          const cam = state.camera;
+          const pColor = state.waveHazard.id === 'lightning_storm' ? '#38bdf8' : state.waveHazard.id === 'meteor_fire' ? '#fb923c' : state.waveHazard.id === 'bio_rain' ? '#34d399' : '#f43f5e';
+          state.particles.push({
+            x: cam.x + (Math.random() - 0.5) * canvas.width * 1.3,
+            y: cam.y - canvas.height * 0.7,
+            vx: (Math.random() - 0.5) * 3 + (state.waveHazard.id === 'sandstorm' ? 5 : 0),
+            vy: 2.5 + Math.random() * 4,
+            radius: 1.2 + Math.random() * 2,
+            color: pColor,
+            alpha: 0.75,
+            life: 0,
+            maxLife: 90,
+            decay: 0.012,
+            shape: state.waveHazard.id === 'meteor_fire' ? 'spark' : 'smoke'
+          });
+        }
+
+        // Trigger dynamic tactical hazard strikes
+        if (currentTime >= state.waveHazard.nextEventTime) {
+          state.waveHazard.nextEventTime = currentTime + 3500 + Math.random() * 3200;
+
+          const candidates = state.zombies.filter(z => Math.hypot(z.x - p.x, z.y - p.y) < 650);
+          const targetX = candidates.length > 0
+            ? candidates[Math.floor(Math.random() * candidates.length)].x + (Math.random() - 0.5) * 40
+            : p.x + (Math.random() - 0.5) * 420;
+          const targetY = candidates.length > 0
+            ? candidates[Math.floor(Math.random() * candidates.length)].y + (Math.random() - 0.5) * 40
+            : p.y + (Math.random() - 0.5) * 420;
+
+          if (state.waveHazard.id === 'lightning_storm') {
+            state.hazardStrikes.push({
+              id: Math.random().toString(),
+              x: targetX,
+              y: targetY,
+              radius: 115,
+              timer: 750,
+              maxTimer: 750,
+              type: 'lightning',
+              damage: 280
+            });
+          } else if (state.waveHazard.id === 'meteor_fire') {
+            state.hazardStrikes.push({
+              id: Math.random().toString(),
+              x: targetX,
+              y: targetY,
+              radius: 135,
+              timer: 950,
+              maxTimer: 950,
+              type: 'meteor',
+              damage: 350
+            });
+          } else {
+            state.hazardStrikes.push({
+              id: Math.random().toString(),
+              x: targetX,
+              y: targetY,
+              radius: 95,
+              timer: 650,
+              maxTimer: 650,
+              type: 'spore',
+              damage: 210
+            });
+          }
+        }
+      }
+
+      // Update Environmental Hazard Strikes
+      for (let hs = state.hazardStrikes.length - 1; hs >= 0; hs--) {
+        const strike = state.hazardStrikes[hs];
+        strike.timer -= dt;
+        if (strike.timer <= 0) {
+          if (strike.type === 'lightning') {
+            state.lightningFlashAlpha = 0.55;
+            state.screenShake = 16;
+            soundManager.playPlasmaShot();
+            triggerExplosion(strike.x, strike.y, strike.radius, strike.damage);
+            state.decals.push({
+              x: strike.x,
+              y: strike.y,
+              radius: strike.radius * 0.9,
+              color: '#0284c7',
+              alpha: 0.7,
+              type: 'crater'
+            });
+          } else if (strike.type === 'meteor') {
+            state.screenShake = 18;
+            soundManager.playExplosion();
+            triggerExplosion(strike.x, strike.y, strike.radius, strike.damage);
+            state.decals.push({
+              x: strike.x,
+              y: strike.y,
+              radius: strike.radius * 0.95,
+              color: '#7c2d12',
+              alpha: 0.85,
+              type: 'crater'
+            });
+          } else {
+            soundManager.playExplosion();
+            triggerExplosion(strike.x, strike.y, strike.radius, strike.damage);
+            state.decals.push({
+              x: strike.x,
+              y: strike.y,
+              radius: strike.radius * 0.85,
+              color: '#064e3b',
+              alpha: 0.75,
+              type: 'blood'
+            });
+          }
+          state.hazardStrikes.splice(hs, 1);
+        }
+      }
+
+      // Decay Lightning Flash
+      if (state.lightningFlashAlpha > 0) {
+        state.lightningFlashAlpha = Math.max(0, state.lightningFlashAlpha - dt * 0.0032);
+      }
+
+      // Update Ultimate Duration Timer
+      if (p.isUltimateActive && p.ultimateTimer) {
+        p.ultimateTimer -= dt;
+        if (p.ultimateTimer <= 0) {
+          p.isUltimateActive = false;
+        }
+      }
+
       // 6. UPDATE BULLETS
       for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
@@ -1925,10 +2331,28 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (dist < z.radius + b.radius) {
               soundManager.playZombieHit();
 
-              // Critical hit calculation
+              // Critical hit calculation (100% crit if Ghost Chrono Matrix active)
               const critChance = (p.upgrades.critChanceLevel || 0) * 0.06;
-              const isCrit = Math.random() < critChance;
+              const isCrit = (p.isUltimateActive && p.warriorSkin === 'ghost') ? true : (Math.random() < critChance);
               let rawDmg = isCrit ? Math.round(b.damage * 2.5) : b.damage;
+
+              // Ultimate Charge accumulation on bullet hit
+              const prevCharge = p.ultimateCharge || 0;
+              const chargeGain = z.isBoss ? 1.6 : 0.8;
+              p.ultimateCharge = Math.min(100, (p.ultimateCharge || 0) + chargeGain);
+              if (prevCharge < 100 && p.ultimateCharge >= 100) {
+                soundManager.playUltimateReady();
+                state.floatingTexts.push({
+                  id: Math.random().toString(),
+                  x: p.x,
+                  y: p.y - 45,
+                  text: '⚡ TUYỆT KỸ SẴN SÀNG! [F/U]',
+                  color: '#fbbf24',
+                  alpha: 1,
+                  life: 60,
+                  isCrit: true
+                });
+              }
 
               // BOSS TANKINESS & HEAVY ARMOR
               // Bosses possess reinforced carapaces, absorbing 28% of incoming damage ("trâu hơn")
@@ -2057,6 +2481,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           p.comboTimer = 3500; // ms
           p.multiplier = 1 + Math.min(3, p.combo * 0.1);
 
+          // Ultimate charge on kill
+          p.ultimateCharge = Math.min(100, (p.ultimateCharge || 0) + (z.isBoss ? 12 : 2.5));
+
           const goldGain = Math.round(z.goldValue * p.multiplier);
           const scoreGain = Math.round(z.scoreValue * p.multiplier);
 
@@ -2067,7 +2494,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
           if (z.isBoss) {
             // Screen shake and epic celebration on boss death
-            state.screenShake = 22;
+            state.screenShake = 24;
+            state.slowMoTimer = 1800; // Cinematic Slow-Mo Knockout
+            state.bossDefeatedBanner = {
+              text: '💥 TRÙM ĐÃ BỊ TIÊU DIỆT! 💥',
+              subText: 'CƠN MƯA VÀNG, RƯƠNG TRÙM & KIM CƯƠNG RƠI ĐẦY!',
+              alpha: 1,
+              timer: 140,
+              themeColor: '#facc15'
+            };
+            if (onBossKilledRef.current) {
+              onBossKilledRef.current();
+            }
+
             soundManager.playExplosion();
             soundManager.playPowerUp();
 
@@ -2420,7 +2859,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             });
           }
 
-          const zSpeed = z.speed;
+          const zSpeed = (p.isUltimateActive && p.warriorSkin === 'ghost') ? (z.speed * 0.22) : z.speed;
           z.x += Math.cos(zAngle) * zSpeed;
           z.y += Math.sin(zAngle) * zSpeed;
 
@@ -3018,6 +3457,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           continue;
         }
 
+        if (pt.shape === 'shell') {
+          pt.vx *= 0.94;
+          pt.vy *= 0.94;
+          if (pt.vAngle && pt.angle !== undefined) pt.angle += pt.vAngle;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, pt.alpha);
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.angle || 0);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(-3, -1.5, 6, 3);
+          ctx.fillStyle = '#fef08a';
+          ctx.fillRect(-2, -0.7, 4, 1.4);
+          ctx.restore();
+          continue;
+        } else if (pt.shape === 'smoke') {
+          pt.radius += 0.15;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, pt.alpha);
+          ctx.fillStyle = pt.color;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        }
+
         ctx.save();
         ctx.globalAlpha = Math.max(0, pt.alpha);
         ctx.fillStyle = pt.color;
@@ -3048,8 +3513,169 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.restore();
       }
 
+      // Render Dynamic Environmental Hazard Strikes (Telegraphing Warning Zones)
+      state.hazardStrikes.forEach(strike => {
+        ctx.save();
+        const progress = 1 - (strike.timer / strike.maxTimer);
+        const strokeColor = strike.type === 'lightning' ? '#38bdf8' : strike.type === 'meteor' ? '#f97316' : '#10b981';
+
+        // Outer pulsing ring
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(strike.x, strike.y, strike.radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner contracting danger radius
+        ctx.fillStyle = strike.type === 'lightning' ? 'rgba(56, 189, 248, 0.22)' : strike.type === 'meteor' ? 'rgba(249, 115, 22, 0.25)' : 'rgba(16, 185, 129, 0.22)';
+        ctx.beginPath();
+        ctx.arc(strike.x, strike.y, strike.radius * progress, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Warning Icon or Symbol in center
+        ctx.fillStyle = strokeColor;
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(strike.type === 'lightning' ? '⚡' : strike.type === 'meteor' ? '☄️' : '☣️', strike.x, strike.y);
+        ctx.restore();
+      });
+
+      // ==========================================
+      // DYNAMIC ATMOSPHERIC LIGHTING & TACTICAL FLASHLIGHT
+      // ==========================================
+      ctx.save();
+      // Forward Tactical Weapon Flashlight Beam (Cone)
+      const flashDist = 380;
+      const flashGrad = ctx.createRadialGradient(
+        p.x, p.y, 10,
+        p.x + Math.cos(p.angle) * (flashDist * 0.6), p.y + Math.sin(p.angle) * (flashDist * 0.6), flashDist
+      );
+      flashGrad.addColorStop(0, 'rgba(254, 240, 138, 0.28)');
+      flashGrad.addColorStop(0.35, 'rgba(254, 240, 138, 0.14)');
+      flashGrad.addColorStop(0.8, 'rgba(254, 240, 138, 0.04)');
+      flashGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+
+      const coneAngle = 0.52; // ~30 degrees each side
+      ctx.fillStyle = flashGrad;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, flashDist, p.angle - coneAngle, p.angle + coneAngle);
+      ctx.closePath();
+      ctx.fill();
+
+      // Soft 360-degree Personal Ambient Lantern Aura
+      const lanternGrad = ctx.createRadialGradient(
+        p.x, p.y, 0,
+        p.x, p.y, 130
+      );
+      lanternGrad.addColorStop(0, 'rgba(255, 255, 255, 0.16)');
+      lanternGrad.addColorStop(0.65, 'rgba(255, 255, 255, 0.05)');
+      lanternGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = lanternGrad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 130, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Laser Sight Line for Commando & Cyber skins
+      if (p.warriorSkin === 'cyber' || p.warriorSkin === 'commando') {
+        ctx.strokeStyle = p.warriorSkin === 'cyber' ? 'rgba(56, 189, 248, 0.45)' : 'rgba(239, 68, 68, 0.45)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(p.x + Math.cos(p.angle) * 22, p.y + Math.sin(p.angle) * 22);
+        ctx.lineTo(p.x + Math.cos(p.angle) * 440, p.y + Math.sin(p.angle) * 440);
+        ctx.stroke();
+
+        ctx.fillStyle = p.warriorSkin === 'cyber' ? '#38bdf8' : '#ef4444';
+        ctx.beginPath();
+        ctx.arc(p.x + Math.cos(p.angle) * 440, p.y + Math.sin(p.angle) * 440, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
       } finally {
         ctx.restore(); // Restore camera transform
+      }
+
+      // Full-screen Lightning Flash Overlay
+      if (state.lightningFlashAlpha > 0) {
+        ctx.save();
+        ctx.fillStyle = `rgba(224, 242, 254, ${Math.min(0.65, state.lightningFlashAlpha)})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      // Screen-space Chrono Matrix / Ultimate Vignette
+      if (p.isUltimateActive) {
+        ctx.save();
+        const pulse = 0.5 + 0.5 * Math.sin(currentTime / 180);
+        const skin = p.warriorSkin || 'commando';
+        const glowColor = skin === 'ghost' ? 'rgba(16, 185, 129, ' : skin === 'cyber' ? 'rgba(245, 158, 11, ' : 'rgba(239, 68, 68, ';
+        const grad = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.4,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75
+        );
+        grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        grad.addColorStop(1, `${glowColor}${0.2 + pulse * 0.15})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      // Screen-space Dynamic Wave Hazard Emergency Banner
+      if (state.waveHazard && state.waveHazard.bannerTimer > 0) {
+        ctx.save();
+        const hazardAlpha = Math.min(1, state.waveHazard.bannerTimer / 30);
+        ctx.globalAlpha = hazardAlpha;
+        const bannerY = canvas.height * 0.14;
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+        ctx.fillRect(canvas.width * 0.15, bannerY - 18, canvas.width * 0.7, 44);
+
+        // Glowing border
+        ctx.strokeStyle = state.waveHazard.color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(canvas.width * 0.15, bannerY - 18, canvas.width * 0.7, 44);
+
+        ctx.textAlign = 'center';
+        ctx.font = '900 13px system-ui, -apple-system, sans-serif';
+        ctx.fillStyle = state.waveHazard.color;
+        ctx.shadowColor = state.waveHazard.color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(`⚠️ ${state.waveHazard.nameVi}`, canvas.width / 2, bannerY);
+
+        ctx.font = 'bold 9.5px system-ui, -apple-system, sans-serif';
+        ctx.fillStyle = '#f3f4f6';
+        ctx.shadowBlur = 0;
+        ctx.fillText(state.waveHazard.descVi, canvas.width / 2, bannerY + 16);
+        ctx.restore();
+      }
+
+      // Screen-space Boss Defeated Banner
+      if (state.bossDefeatedBanner) {
+        state.bossDefeatedBanner.timer -= 1;
+        if (state.bossDefeatedBanner.timer <= 0) {
+          state.bossDefeatedBanner = null;
+        } else {
+          ctx.save();
+          ctx.textAlign = 'center';
+          const bannerY = canvas.height * 0.22;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+          ctx.fillRect(0, bannerY - 32, canvas.width, 68);
+
+          ctx.font = '900 22px system-ui, -apple-system, sans-serif';
+          ctx.fillStyle = '#facc15';
+          ctx.shadowColor = '#eab308';
+          ctx.shadowBlur = 12;
+          ctx.fillText(state.bossDefeatedBanner.text, canvas.width / 2, bannerY);
+
+          ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+          ctx.fillStyle = '#fef08a';
+          ctx.shadowBlur = 4;
+          ctx.fillText(state.bossDefeatedBanner.subText, canvas.width / 2, bannerY + 22);
+          ctx.restore();
+        }
       }
       } catch (loopError) {
         console.error("Game loop error handled:", loopError);
