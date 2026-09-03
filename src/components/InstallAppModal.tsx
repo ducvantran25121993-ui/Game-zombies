@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Smartphone, Download, Share2, PlusSquare, X, CheckCircle2, Sparkles, Gamepad2, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Smartphone, Download, Share2, PlusSquare, X, CheckCircle2, Sparkles, Gamepad2, HelpCircle, Shield, Bomb, Cpu } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 
 interface InstallAppModalProps {
@@ -9,6 +9,7 @@ interface InstallAppModalProps {
   isInstalled: boolean;
   isIOS: boolean;
   onInstall: () => Promise<boolean>;
+  defaultTab?: 'install' | 'gameplay';
 }
 
 export const InstallAppModal: React.FC<InstallAppModalProps> = ({
@@ -17,9 +18,16 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   isInstallable,
   isInstalled,
   isIOS,
-  onInstall
+  onInstall,
+  defaultTab = 'gameplay'
 }) => {
-  const [modalTab, setModalTab] = useState<'install' | 'gameplay'>('install');
+  const [modalTab, setModalTab] = useState<'install' | 'gameplay'>(defaultTab);
+
+  useEffect(() => {
+    if (isOpen && defaultTab) {
+      setModalTab(defaultTab);
+    }
+  }, [isOpen, defaultTab]);
 
   if (!isOpen) return null;
 
@@ -195,11 +203,12 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                   <Smartphone className="w-3.5 h-3.5" /> Điều khiển trên Điện thoại:
                 </h4>
                 <ul className="space-y-1.5 text-neutral-300 text-[11px]">
-                  <li>• <strong className="text-white">Cần Joystick Trái</strong>: Di chuyển nhân vật 360 độ</li>
-                  <li>• <strong className="text-white">Cần Joystick Phải</strong>: Ngắm hướng và bắn liên tục</li>
-                  <li>• <strong className="text-white">Nút Lướt (Dash)</strong>: Lướt nhanh né quái vật bao vây</li>
-                  <li>• <strong className="text-white">Nút Ném Bom / Tuyệt Kỹ</strong>: Kích hoạt chiêu thức hủy diệt diện rộng</li>
-                  <li>• <strong className="text-white">Dải súng dưới cùng</strong>: Chạm vào súng bất kỳ để chuyển đổi tức thì</li>
+                  <li>• <strong className="text-white">Cần Joystick Trái</strong>: Di chuyển chiến binh 360 độ linh hoạt</li>
+                  <li>• <strong className="text-white">Cần Joystick Phải</strong>: Xoay hướng ngắm và tự động xả đạn</li>
+                  <li>• <strong className="text-white">Nút Lướt (Dash)</strong>: Lướt nhanh né quái vật khi bị dồn vào góc</li>
+                  <li>• <strong className="text-white">Nút Nạp Đạn (Reload)</strong>: Thay đạn trước khi quái vật áp sát</li>
+                  <li>• <strong className="text-white">Nút Lựu Đạn / Tuyệt Kỹ</strong>: Ném bộc phá hủy diệt bầy Zombie</li>
+                  <li>• <strong className="text-white">Dải súng dưới màn hình</strong>: Chạm vào bất kỳ súng nào để chuyển đổi tức thì</li>
                 </ul>
               </div>
 
@@ -208,17 +217,26 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                   <Gamepad2 className="w-3.5 h-3.5" /> Điều khiển trên Máy tính:
                 </h4>
                 <ul className="space-y-1 text-neutral-300 text-[11px]">
-                  <li>• <strong className="text-white">W, A, S, D</strong>: Di chuyển</li>
+                  <li>• <strong className="text-white">W, A, S, D</strong> hoặc <strong className="text-white">Mũi tên</strong>: Di chuyển</li>
                   <li>• <strong className="text-white">Chuột Trái</strong>: Bắn súng | <strong className="text-white">R</strong>: Nạp đạn</li>
-                  <li>• <strong className="text-white">Phím Cách (Space)</strong>: Lướt né</li>
-                  <li>• <strong className="text-white">Phím G / E</strong>: Ném lựu đạn</li>
-                  <li>• <strong className="text-white">Phím F / U</strong>: Tuyệt kỹ tối thượng</li>
-                  <li>• <strong className="text-white">Phím B</strong>: Mở Cửa hàng vũ khí</li>
+                  <li>• <strong className="text-white">Phím Space</strong>: Lướt né phản xạ nhanh</li>
+                  <li>• <strong className="text-white">Phím G / E</strong>: Ném lựu đạn nổ lan</li>
+                  <li>• <strong className="text-white">Phím 1 - 7 / Lăn chuột</strong>: Đổi vũ khí</li>
+                  <li>• <strong className="text-white">Phím B</strong>: Mở Cửa Hàng mua vũ khí & Nâng cấp</li>
+                  <li>• <strong className="text-white">Phím ESC / P</strong>: Tạm dừng trận đấu</li>
                 </ul>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-200 text-[11px]">
-                💡 <strong>Mẹo sinh tồn:</strong> Luôn giữ khoảng cách, bắn thùng phuy nổ lan khi quái đông và nâng cấp vũ khí tại Shop!
+              <div className="p-3 rounded-2xl bg-neutral-950/80 border border-neutral-800 space-y-2 text-[11px]">
+                <h4 className="font-black text-red-400 uppercase text-xs flex items-center gap-1.5">
+                  <Bomb className="w-3.5 h-3.5" /> Bí kíp & Chiến thuật sinh tồn:
+                </h4>
+                <ul className="space-y-1 text-neutral-300">
+                  <li>• 💥 <strong>Thùng Phuy Đỏ:</strong> Bắn vào thùng khi bầy Zombie vây đông để tạo vụ nổ dây chuyền dọn sạch bản đồ.</li>
+                  <li>• 🤖 <strong>Robo Tác Chiến:</strong> Tích lũy Vàng vào Cửa Hàng (Shop) thuê Robo Drone bay theo xả đạn bảo kê bạn.</li>
+                  <li>• ☠️ <strong>Trùm Đột Biến:</strong> Cứ mỗi 5 Wave sẽ xuất hiện Boss khổng lồ với chiêu thức dập đất và húc lao — hãy dùng Lướt để né!</li>
+                  <li>• 🗺️ <strong>Chuyển Cảnh:</strong> Sau mỗi Wave, bản đồ sẽ tự động xoay chuyển qua 8 bối cảnh chiến trường khác nhau.</li>
+                </ul>
               </div>
             </div>
           )}

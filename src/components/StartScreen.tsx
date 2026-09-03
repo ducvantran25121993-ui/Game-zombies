@@ -38,7 +38,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 }) => {
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [mode, setMode] = useState<GameMode>('survival');
-  const [activeTab, setActiveTab] = useState<'play' | 'warriors' | 'maps' | 'leaderboard' | 'guide'>('play');
+  const [activeTab, setActiveTab] = useState<'play' | 'warriors' | 'maps' | 'leaderboard'>('play');
   const [leaderboard, setLeaderboard] = useState<HighScoreRecord[]>([]);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -94,17 +94,17 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
         {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Guide & Mobile Install Button */}
+          {/* Guide & How to Play Button */}
           <button
             onClick={() => {
               soundManager.playEmptyClick();
               setIsInstallModalOpen(true);
             }}
-            className="h-8 px-2 sm:px-2.5 rounded-xl border border-sky-500/40 bg-sky-950/40 hover:bg-sky-900/60 text-sky-200 transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
-            title="Xem hướng dẫn cài đặt điện thoại và cách chơi"
+            className="h-8 px-2.5 sm:px-3 rounded-xl border border-sky-500/40 bg-sky-950/40 hover:bg-sky-900/60 text-sky-200 transition-all flex items-center gap-1.5 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
+            title="Xem cách chơi và hướng dẫn cài đặt ứng dụng"
           >
             <HelpCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span>Hướng dẫn</span>
+            <span>Cách Chơi & Hướng Dẫn</span>
           </button>
 
           {/* Missions & Records */}
@@ -263,11 +263,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           </div>
         </div>
 
-        {/* MODERN SEGMENTED TABS CONTROLLER */}
-        <div className="w-full bg-neutral-950/70 p-1 sm:p-1.5 rounded-2xl border border-neutral-800/80 mb-3 sm:mb-4 flex items-center gap-1 overflow-x-auto no-scrollbar touch-pan-x shadow-inner">
+        {/* MODERN SEGMENTED TABS CONTROLLER (4 BALANCED TABS FOR MOBILE) */}
+        <div className="w-full bg-neutral-950/80 p-1 sm:p-1.5 rounded-2xl border border-neutral-800/80 mb-3 sm:mb-4 grid grid-cols-4 gap-1 shadow-inner">
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
-            className={`flex-1 min-w-[76px] sm:min-w-[90px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
+            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
               activeTab === 'play'
                 ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-md shadow-red-600/30'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
@@ -279,7 +279,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-            className={`flex-1 min-w-[85px] sm:min-w-[100px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
+            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
               activeTab === 'warriors'
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 shadow-md shadow-amber-500/30'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
@@ -292,7 +292,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-            className={`flex-1 min-w-[85px] sm:min-w-[100px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
+            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
               activeTab === 'maps'
                 ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-neutral-950 shadow-md shadow-sky-500/30'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
@@ -305,7 +305,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('leaderboard'); }}
-            className={`flex-1 min-w-[70px] sm:min-w-[85px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
+            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
               activeTab === 'leaderboard'
                 ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md shadow-purple-500/30'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
@@ -313,18 +313,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           >
             <Trophy className="w-3.5 h-3.5 shrink-0" />
             <span>Kỷ Lục</span>
-          </button>
-
-          <button
-            onClick={() => { soundManager.playEmptyClick(); setActiveTab('guide'); }}
-            className={`flex-1 min-w-[78px] sm:min-w-[90px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
-              activeTab === 'guide'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-neutral-950 shadow-md shadow-emerald-500/30'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
-            }`}
-          >
-            <HelpCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>Cách Chơi</span>
           </button>
         </div>
 
@@ -411,17 +399,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* BOTTOM LARGE START ACTION */}
-            <div className="pt-2">
-              <button
-                onClick={handleLaunchGame}
-                className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-sm sm:text-base uppercase tracking-widest shadow-2xl shadow-red-600/50 transition-all flex items-center justify-center gap-2 active:scale-95 group border border-amber-300"
-              >
-                <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                <span>BẮT ĐẦU: {activeWarrior.nameVi.toUpperCase()} ({difficulty.toUpperCase()})</span>
-              </button>
             </div>
           </div>
         )}
@@ -697,44 +674,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           </div>
         )}
 
-        {/* TAB 5: HOW TO PLAY */}
-        {activeTab === 'guide' && (
-          <div className="w-full space-y-4 text-xs text-neutral-300 bg-neutral-950/60 p-4 rounded-2xl border border-neutral-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-black text-amber-400 uppercase mb-2">ĐIỀU KHIỂN TRÊN MÁY TÍNH:</h4>
-                <ul className="space-y-1.5 text-neutral-300">
-                  <li>• <strong className="text-white">W, A, S, D</strong> hoặc <strong className="text-white">Mũi tên</strong>: Di chuyển</li>
-                  <li>• <strong className="text-white">Chuột trái</strong>: Bắn súng</li>
-                  <li>• <strong className="text-white">SPACE (Phím cách)</strong>: Lướt nhanh né quái</li>
-                  <li>• <strong className="text-white">Phím R</strong>: Nạp đạn</li>
-                  <li>• <strong className="text-white">Phím G hoặc E</strong>: Ném lựu đạn nổ lan</li>
-                  <li>• <strong className="text-white">Phím 1-7 hoặc Lăn chuột</strong>: Đổi vũ khí</li>
-                  <li>• <strong className="text-white">Phím B</strong>: Mở Cửa Hàng vũ khí & nâng cấp</li>
-                  <li>• <strong className="text-white">Phím ESC / P</strong>: Tạm dừng game</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-black text-sky-400 uppercase mb-2">ĐIỀU KHIỂN TRÊN ĐIỆN THOẠI:</h4>
-                <ul className="space-y-1.5 text-neutral-300">
-                  <li>• <strong className="text-white">Cần gạt ảo bên trái</strong>: Di chuyển 360 độ</li>
-                  <li>• <strong className="text-white">Cần gạt ảo bên phải</strong>: Ngắm & Bắn tự động</li>
-                  <li>• <strong className="text-white">Các nút bấm nhanh</strong>: Lướt né, Nạp đạn, Ném lựu và Chuyển súng</li>
-                  <li>• <strong className="text-white">Dải vũ khí ngang</strong>: Chạm vào súng bất kỳ để đổi ngay lập tức</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-neutral-800 text-neutral-300">
-              💡 <strong>MẸO SINH TỒN:</strong> Bắn vào các thùng phuy đỏ khi quái bám đông để kích nổ diện rộng! Tích lũy Vàng mở khóa <strong>Robo tác chiến trong Cửa Hàng (Phím B)</strong> để được robot bay hộ tống nã đạn bảo vệ bạn trước những đợt bão Zombie đông đảo và Boss hung hãn!
-            </div>
-          </div>
-        )}
-
       </div>
 
-      {/* Install App Modal */}
+      {/* Install App & Gameplay Guide Modal */}
       <InstallAppModal
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
@@ -742,6 +684,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         isInstalled={isInstalled}
         isIOS={isIOS}
         onInstall={install}
+        defaultTab="gameplay"
       />
 
     </div>
