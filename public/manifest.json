@@ -1,18 +1,38 @@
 {
+  "id": "/",
   "name": "Zombie Apocalypse: Survival Strike",
-  "short_name": "Zombie Neon",
+  "short_name": "Zombie Strike",
   "description": "Game bắn súng sinh tồn diệt Zombie 2D góc nhìn từ trên xuống",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0e0e0e",
-  "theme_color": "#a8a8a8",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

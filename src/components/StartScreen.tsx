@@ -5,11 +5,13 @@ import {
   Flame, HelpCircle, Radio, Award, ChevronRight, Check,
   UserCheck, Sparkles, Heart, Footprints, MapPin, Building2,
   Biohazard, AlertTriangle, Ghost, SunMedium, Cpu, Layers,
-  Volume2, VolumeX, ShieldAlert, Swords
+  Volume2, VolumeX, ShieldAlert, Swords, Smartphone
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WARRIOR_HERO_BANNER } from '../data/warriors';
 import { MAP_ENVIRONMENTS, BG_APOCALYPSE_IMAGE } from '../data/maps';
+import { usePWAInstall } from '../utils/usePWAInstall';
+import { InstallAppModal } from './InstallAppModal';
 
 interface StartScreenProps {
   onStartGame: (difficulty: GameDifficulty, mode: GameMode, warriorId: string, mapId: MapEnvironmentId) => void;
@@ -38,6 +40,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [mode, setMode] = useState<GameMode>('survival');
   const [activeTab, setActiveTab] = useState<'play' | 'warriors' | 'maps' | 'leaderboard' | 'guide'>('play');
   const [leaderboard, setLeaderboard] = useState<HighScoreRecord[]>([]);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
 
   useEffect(() => {
     try {
@@ -85,6 +89,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Phone PWA Install Button */}
+          <button
+            onClick={() => {
+              soundManager.playEmptyClick();
+              setIsInstallModalOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl border border-red-500/50 bg-red-950/60 hover:bg-red-900/80 text-red-200 backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 group"
+            title="Cài đặt game Zombie Strike vào màn hình chính điện thoại"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-red-400 group-hover:animate-bounce" />
+            <span>Cài đặt ĐT</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+
           {onOpenMissions && (
             <button
               onClick={() => {
@@ -808,6 +826,16 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         )}
 
       </div>
+
+      {/* Install App Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        isInstallable={isInstallable}
+        isInstalled={isInstalled}
+        isIOS={isIOS}
+        onInstall={install}
+      />
 
     </div>
   );
