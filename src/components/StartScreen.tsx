@@ -80,60 +80,72 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </div>
 
       {/* TOP HEADER BAR */}
-      <div className="relative z-20 w-full max-w-4xl flex items-center justify-between py-2 px-1 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-          <span className="text-[11px] sm:text-xs font-black tracking-widest uppercase text-red-400 font-mono">
-            LIVE // ZOMBIE WARZONE V2.4
+      <header className="relative z-20 w-full max-w-4xl flex items-center justify-between gap-2 px-3 py-2 mb-2 rounded-2xl bg-neutral-950/70 border border-neutral-800/80 backdrop-blur-xl shadow-lg">
+        {/* Left: Tactical Live Status */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+          </span>
+          <span className="text-[10px] sm:text-xs font-black tracking-wider uppercase text-red-400 font-mono whitespace-nowrap">
+            <span className="hidden xs:inline">LIVE // </span>WARZONE <span className="text-neutral-400">V2.4</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Mobile Phone PWA Install Button */}
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Guide & Mobile Install Button */}
           <button
             onClick={() => {
               soundManager.playEmptyClick();
               setIsInstallModalOpen(true);
             }}
-            className="px-3 py-1.5 rounded-xl border border-red-500/50 bg-red-950/60 hover:bg-red-900/80 text-red-200 backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 group"
-            title="Cài đặt game Zombie Strike vào màn hình chính điện thoại"
+            className="h-8 px-2 sm:px-2.5 rounded-xl border border-sky-500/40 bg-sky-950/40 hover:bg-sky-900/60 text-sky-200 transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
+            title="Xem hướng dẫn cài đặt điện thoại và cách chơi"
           >
-            <Smartphone className="w-3.5 h-3.5 text-red-400 group-hover:animate-bounce" />
-            <span>Cài đặt ĐT</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <HelpCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <span>Hướng dẫn</span>
           </button>
 
+          {/* Missions & Records */}
           {onOpenMissions && (
             <button
               onClick={() => {
                 soundManager.playEmptyClick();
                 onOpenMissions();
               }}
-              className="px-3 py-1.5 rounded-xl border border-amber-500/50 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95"
+              className="h-8 px-2 sm:px-2.5 rounded-xl border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap"
+              title="Nhiệm vụ & Kỷ lục"
             >
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span>Nhiệm vụ & Kỷ lục</span>
+              <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Nhiệm vụ</span>
               {unclaimedMissionsCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse">
+                <span className="min-w-[15px] h-[15px] px-1 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse shrink-0">
                   {unclaimedMissionsCount}
                 </span>
               )}
             </button>
           )}
 
+          {/* Audio Mute Toggle */}
           <button
             onClick={onToggleMute}
-            className={`px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95 ${
+            className={`h-8 px-2 sm:px-2.5 rounded-xl border transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 whitespace-nowrap ${
               isMuted 
-                ? 'bg-neutral-900/80 border-neutral-700 text-neutral-400' 
-                : 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+                ? 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-neutral-200' 
+                : 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60'
             }`}
+            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />}
-            <span>{isMuted ? 'Âm thanh: TẮT' : 'Âm thanh: BẬT'}</span>
+            {isMuted ? (
+              <VolumeX className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+            ) : (
+              <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+            )}
+            <span className="hidden sm:inline">{isMuted ? 'Tắt âm' : 'Bật âm'}</span>
           </button>
         </div>
-      </div>
+      </header>
 
       {/* MAIN CONTAINER CARD */}
       <div className="relative z-10 w-full max-w-4xl bg-neutral-900/95 border border-neutral-800/90 rounded-3xl p-3.5 sm:p-5 md:p-7 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
