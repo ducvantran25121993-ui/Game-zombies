@@ -150,298 +150,192 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       {/* MAIN CONTAINER CARD */}
       <div className="relative z-10 w-full max-w-4xl bg-neutral-900/95 border border-neutral-800/90 rounded-3xl p-3.5 sm:p-5 md:p-7 shadow-2xl backdrop-blur-2xl flex flex-col items-center">
         
-        {/* HERO BANNER SECTION WITH DIRECT PLAY BUTTON */}
-        <div className="relative w-full h-36 sm:h-44 md:h-52 rounded-2xl overflow-hidden border border-neutral-700/80 mb-3.5 sm:mb-4 shadow-2xl group">
-          <img 
-            src={WARRIOR_HERO_BANNER} 
-            alt="Zombie Apocalypse Warrior Hero" 
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-90"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-transparent flex flex-col justify-between p-3.5 sm:p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-[9px] sm:text-[10px] font-black text-white tracking-widest uppercase shadow-md">
-                  TACTICAL SPEC-OPS
+        {/* UNIFIED TACTICAL LOBBY HERO CARD */}
+        <div className="relative w-full rounded-2xl overflow-hidden border border-neutral-700/80 mb-3 sm:mb-4 shadow-2xl group bg-neutral-950">
+          <div className="relative w-full h-32 sm:h-40 md:h-48 overflow-hidden">
+            <img 
+              src={WARRIOR_HERO_BANNER} 
+              alt="Zombie Apocalypse Warrior Hero" 
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 brightness-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/80 via-transparent to-neutral-950/40" />
+            
+            {/* Top Badges */}
+            <div className="absolute top-2.5 left-3 right-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full bg-red-600 text-[9px] font-black text-white tracking-widest uppercase shadow">
+                  SPEC-OPS
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-neutral-950/80 text-[9px] sm:text-[10px] font-bold text-amber-400 border border-amber-500/40">
+                <span className="px-2 py-0.5 rounded-full bg-neutral-950/80 text-[9px] font-bold text-amber-400 border border-amber-500/40">
                   SURVIVOR CORPS
                 </span>
               </div>
+              <span className="text-[10px] font-mono text-neutral-400 font-bold">
+                {mode === 'survival' ? 'WAVES 1-20' : 'ENDLESS'}
+              </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div>
-                <h1 className="text-xl sm:text-2xl md:text-4xl font-black tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-300 to-amber-400 drop-shadow-[0_2px_12px_rgba(239,68,68,0.5)]">
-                  ZOMBIE APOCALYPSE
-                </h1>
-                <p className="text-[10px] sm:text-xs font-semibold tracking-wider text-neutral-300 line-clamp-1">
-                  SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
-                </p>
-              </div>
+            {/* Title */}
+            <div className="absolute bottom-2 left-3 right-3">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-200 to-amber-400 drop-shadow">
+                ZOMBIE APOCALYPSE
+              </h1>
+              <p className="text-[10px] sm:text-xs font-semibold text-neutral-300 line-clamp-1">
+                SURVIVAL STRIKE • CHIẾN DỊCH DIỆT QUÁI SINH TỒN
+              </p>
+            </div>
+          </div>
 
-              {/* DIRECT HERO START BUTTON */}
+          {/* Quick Interactive Squad Bar & Play Button */}
+          <div className="p-2 sm:p-2.5 bg-neutral-900/90 border-t border-neutral-800/90 flex flex-col sm:flex-row items-center justify-between gap-2">
+            {/* Quick Loadout Chips */}
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
+              {/* Warrior Chip */}
               <button
-                onClick={handleLaunchGame}
-                className="px-5 py-2.5 sm:py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-xl shadow-red-600/50 transition-all flex items-center justify-center gap-2 active:scale-95 border-2 border-amber-400/80 animate-pulse shrink-0"
+                type="button"
+                onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
+                className="px-2 py-1 rounded-xl bg-neutral-950 border border-amber-500/40 hover:border-amber-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/w"
+                title="Bấm để chọn Chiến Binh"
               >
-                <Play className="w-4 h-4 fill-white" />
-                <span>BẮT ĐẦU CHƠI NGAY</span>
+                <div className="w-6 h-6 rounded-lg overflow-hidden border border-amber-400 shrink-0">
+                  <img src={activeWarrior.avatar} alt={activeWarrior.nameVi} className="w-full h-full object-cover" />
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[8.5px] text-amber-400 font-black flex items-center gap-0.5">
+                    <span>CHIẾN BINH</span>
+                    <span className="text-[7.5px] text-neutral-400 group-hover/w:text-amber-300">▼</span>
+                  </div>
+                  <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
+                    {activeWarrior.nameVi}
+                  </div>
+                </div>
+              </button>
+
+              {/* Map Chip */}
+              <button
+                type="button"
+                onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
+                className="px-2 py-1 rounded-xl bg-neutral-950 border border-sky-500/40 hover:border-sky-400 flex items-center gap-1.5 transition-all text-left shrink-0 active:scale-95 group/m"
+                title="Bấm để chọn Bối Cảnh Chiến Trường"
+              >
+                <div className="w-6 h-6 rounded-lg overflow-hidden border border-sky-400 shrink-0 bg-neutral-900 flex items-center justify-center">
+                  {activeMap.image ? (
+                    <img src={activeMap.image} alt={activeMap.nameVi} className="w-full h-full object-cover" />
+                  ) : (
+                    <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                  )}
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[8.5px] text-sky-400 font-black flex items-center gap-0.5">
+                    <span>BỐI CẢNH</span>
+                    <span className="text-[7.5px] text-neutral-400 group-hover/m:text-sky-300">▼</span>
+                  </div>
+                  <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
+                    {activeMap.nameVi}
+                  </div>
+                </div>
+              </button>
+
+              {/* Difficulty Pill */}
+              <button
+                type="button"
+                onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
+                className="px-2 py-1 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-neutral-700 flex flex-col justify-center text-left shrink-0"
+                title="Bấm để chỉnh Chế độ & Độ khó"
+              >
+                <span className="text-[8.5px] text-neutral-400 font-black">ĐỘ KHÓ</span>
+                <span className="text-[11px] font-bold text-amber-400 uppercase">
+                  {difficulty}
+                </span>
               </button>
             </div>
+
+            {/* Main Action Start Button */}
+            <button
+              onClick={handleLaunchGame}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300/80 shrink-0"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              <span>VÀO TRẬN NGAY</span>
+            </button>
           </div>
         </div>
 
-        {/* PROMINENT TOP CALL-TO-ACTION PLAY BAR */}
-        <div className="w-full mb-3.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-red-950/80 via-neutral-900 to-amber-950/80 border-2 border-red-500/60 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xl">
-          <div className="flex items-center gap-3 text-left w-full sm:w-auto">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-amber-400 shrink-0 bg-neutral-950">
-              <img 
-                src={activeWarrior.avatar} 
-                alt={activeWarrior.nameVi} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
-                <span>{activeWarrior.nameVi}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-600 text-white font-bold uppercase">
-                  {difficulty.toUpperCase()}
-                </span>
-              </div>
-              <div className="text-[10.5px] text-sky-300 font-medium">
-                📍 {activeMap.nameVi} • {mode === 'survival' ? 'Từng Đợt Sóng (Waves)' : 'Ác Mộng Vô Tận'}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLaunchGame}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-red-600/40 transition-all flex items-center justify-center gap-2 active:scale-95 border border-amber-300 shrink-0"
-          >
-            <Play className="w-4 h-4 fill-white" />
-            <span>VÀO TRẬN CHIẾN ĐẤU</span>
-          </button>
-        </div>
-
-        {/* NAVIGATION TABS (Fluid Horizontal Scroll for Mobile) */}
-        <div className="flex w-full border-b border-neutral-800 mb-3.5 sm:mb-5 gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar touch-pan-x">
+        {/* MODERN SEGMENTED TABS CONTROLLER */}
+        <div className="w-full bg-neutral-950/70 p-1 sm:p-1.5 rounded-2xl border border-neutral-800/80 mb-3 sm:mb-4 flex items-center gap-1 overflow-x-auto no-scrollbar touch-pan-x shadow-inner">
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
-            className={`flex-1 min-w-[110px] sm:min-w-[130px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
+            className={`flex-1 min-w-[76px] sm:min-w-[90px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
               activeTab === 'play'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
+                ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-md shadow-red-600/30'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
             }`}
           >
-            <Swords className="w-3.5 h-3.5" /> THIẾT LẬP VÀO TRẬN
+            <Swords className="w-3.5 h-3.5 shrink-0" />
+            <span>Thiết Lập</span>
           </button>
-          <button
-            onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-            className={`flex-1 min-w-[105px] sm:min-w-[125px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
-              activeTab === 'maps'
-                ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-neutral-950 font-black shadow-lg shadow-sky-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" /> BỐI CẢNH ({MAP_ENVIRONMENTS.length})
-          </button>
+
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-            className={`flex-1 min-w-[105px] sm:min-w-[125px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
+            className={`flex-1 min-w-[85px] sm:min-w-[100px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
               activeTab === 'warriors'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 shadow-md shadow-amber-500/30'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5" /> CHIẾN BINH ({WARRIOR_CLASSES.length})
+            <UserCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>Chiến Binh</span>
+            <span className="text-[9px] px-1 rounded-full bg-neutral-800 text-amber-400 font-bold ml-0.5">3</span>
           </button>
+
+          <button
+            onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
+            className={`flex-1 min-w-[85px] sm:min-w-[100px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
+              activeTab === 'maps'
+                ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-neutral-950 shadow-md shadow-sky-500/30'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span>Bối Cảnh</span>
+            <span className="text-[9px] px-1 rounded-full bg-neutral-800 text-sky-400 font-bold ml-0.5">8</span>
+          </button>
+
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('leaderboard'); }}
-            className={`flex-1 min-w-[95px] sm:min-w-[110px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
+            className={`flex-1 min-w-[70px] sm:min-w-[85px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
               activeTab === 'leaderboard'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md shadow-purple-500/30'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
             }`}
           >
-            <Trophy className="w-3.5 h-3.5" /> KỶ LỤC
+            <Trophy className="w-3.5 h-3.5 shrink-0" />
+            <span>Kỷ Lục</span>
           </button>
+
           <button
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('guide'); }}
-            className={`flex-1 min-w-[95px] sm:min-w-[110px] py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 ${
+            className={`flex-1 min-w-[78px] sm:min-w-[90px] py-1.5 sm:py-2 px-2 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all shrink-0 active:scale-95 ${
               activeTab === 'guide'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50 bg-neutral-950/50 border border-neutral-800/80'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-neutral-950 shadow-md shadow-emerald-500/30'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
             }`}
           >
-            <HelpCircle className="w-3.5 h-3.5" /> CÁCH CHƠI
+            <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>Cách Chơi</span>
           </button>
         </div>
 
-        {/* TAB 1: PLAY CONFIGURATION & ACTIVE WARRIOR SUMMARY */}
+        {/* TAB 1: PLAY CONFIGURATION */}
         {activeTab === 'play' && (
-          <div className="w-full space-y-4 sm:space-y-5">
-            {/* DUAL PREVIEW SUMMARY CARDS: WARRIOR & BATTLEFIELD ENVIRONMENT */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
-              {/* CURRENT SELECTED WARRIOR CARD */}
-              <div className="relative overflow-hidden p-3 sm:p-3.5 rounded-2xl bg-neutral-950/80 border border-amber-500/40 flex items-center justify-between gap-3 shadow-lg group">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-amber-400 shadow-md shrink-0 bg-neutral-900">
-                    <img 
-                      src={activeWarrior.avatar} 
-                      alt={activeWarrior.nameVi}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-0 right-0 px-1 py-0.2 bg-amber-500 text-[8px] font-black text-neutral-950 rounded-tl">
-                      {activeWarrior.codename}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-black text-white text-xs sm:text-sm">{activeWarrior.nameVi}</h3>
-                    </div>
-                    <span className="text-[10px] text-sky-400 font-semibold block">
-                      {activeWarrior.titleVi}
-                    </span>
-                    <p className="text-[10px] sm:text-[11px] text-amber-300/90 font-medium line-clamp-1">
-                      ✨ {activeWarrior.bonusDesc}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-400 text-xs font-bold transition-all border border-amber-500/30 shrink-0 active:scale-90"
-                  >
-                    Đổi
-                  </button>
-                </div>
-              </div>
-
-              {/* CURRENT SELECTED MAP ENVIRONMENT CARD WITH ARTWORK */}
-              <div className="relative overflow-hidden p-3 sm:p-3.5 rounded-2xl bg-neutral-950/80 border border-sky-500/40 flex items-center justify-between gap-3 shadow-lg group">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-sky-400 shadow-md shrink-0 bg-neutral-900">
-                    {activeMap.image ? (
-                      <img 
-                        src={activeMap.image} 
-                        alt={activeMap.nameVi}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-sky-950/50">
-                        <MapPin className="w-6 h-6 text-sky-400" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/60 to-transparent pointer-events-none" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-black text-white text-xs sm:text-sm">{activeMap.nameVi}</h3>
-                    </div>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 font-bold border border-sky-500/40 inline-block">
-                      {activeMap.badge}
-                    </span>
-                    <p className="text-[10px] sm:text-[11px] text-neutral-300 line-clamp-1 mt-0.5">
-                      {activeMap.subtitleVi}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sky-400 text-xs font-bold transition-all border border-sky-500/30 shrink-0 active:scale-90"
-                  >
-                    Đổi
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* QUICK BATTLEFIELD ENVIRONMENT PICKER (WITH HIGH-RES THUMBNAILS) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] sm:text-xs font-black text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-sky-400" /> CHỌN BỐI CẢNH CHIẾN TRƯỜNG ({MAP_ENVIRONMENTS.length}):
-                </label>
-                <span className="text-[10px] sm:text-[11px] text-sky-400/90 font-medium">Tự chuyển cảnh qua mỗi đợt</span>
-              </div>
-
-              {/* 8 MAP THUMBNAIL CARDS GRID */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 touch-pan-y">
-                {MAP_ENVIRONMENTS.map((map) => {
-                  const isSelected = selectedMapId === map.id;
-                  return (
-                    <button
-                      key={map.id}
-                      type="button"
-                      onClick={() => {
-                        soundManager.playEmptyClick();
-                        onSelectMap(map.id);
-                      }}
-                      className={`group relative overflow-hidden rounded-2xl border text-left transition-all p-2 sm:p-2.5 flex flex-col justify-end min-h-[86px] sm:min-h-[96px] active:scale-95 touch-pan-y ${
-                        isSelected
-                          ? 'border-sky-400 shadow-xl shadow-sky-500/25 ring-2 ring-sky-400/50'
-                          : 'border-neutral-800/90 hover:border-neutral-600 bg-neutral-950/60'
-                      }`}
-                    >
-                      {/* Battlefield Thumbnail Artwork Background */}
-                      {map.image && (
-                        <img 
-                          src={map.image} 
-                          alt={map.nameVi}
-                          referrerPolicy="no-referrer"
-                          className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 ${
-                            isSelected ? 'opacity-85 brightness-105' : 'opacity-40 brightness-75 group-hover:opacity-60'
-                          }`}
-                        />
-                      )}
-                      
-                      {/* Dark Gradient Overlay for Ultra-High Readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/30 pointer-events-none" />
-
-                      {/* Map Badges & Selection Indicator */}
-                      <div className="relative z-10 flex items-center justify-between w-full mb-1">
-                        <span 
-                          className="text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded-md backdrop-blur-md border uppercase tracking-wider"
-                          style={{ 
-                            backgroundColor: `${map.themeColor}30`, 
-                            color: map.accentColor,
-                            borderColor: `${map.themeColor}60`
-                          }}
-                        >
-                          {map.badge}
-                        </span>
-                        {isSelected && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-lg shadow-sky-400 animate-pulse" />
-                        )}
-                      </div>
-
-                      {/* Map Title */}
-                      <div className="relative z-10 font-black text-[11px] sm:text-xs text-white leading-tight drop-shadow-md truncate">
-                        {map.nameVi}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Mobile Friendly Scroll Down Hint */}
-              <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-neutral-400 sm:hidden">
-                <span>↓ Cuộn xuống để chọn Chế độ & Độ khó ↓</span>
-              </div>
-            </div>
-
+          <div className="w-full space-y-3.5 sm:space-y-4">
             {/* GAME MODE SELECTION */}
             <div>
-              <label className="text-[11px] sm:text-xs font-black text-neutral-300 uppercase tracking-wider block mb-1.5 sm:mb-2">
-                CHẾ ĐỘ CHƠI:
+              <label className="text-[11px] sm:text-xs font-black text-neutral-300 uppercase tracking-wider block mb-1.5 sm:mb-2 flex items-center gap-1.5">
+                <Skull className="w-3.5 h-3.5 text-red-500" />
+                <span>CHỌN CHẾ ĐỘ CHIẾN ĐẤU:</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 <button
@@ -460,7 +354,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     {mode === 'survival' && <Check className="w-4 h-4 text-red-400" />}
                   </div>
                   <p className="text-[10px] sm:text-[11px] text-neutral-300 mt-1 leading-relaxed">
-                    Chiến đấu qua từng Wave, đụng độ Trùm Đột Biến mỗi 5 Wave và chuyển sang bản đồ mới.
+                    Chiến đấu qua từng Wave, đụng độ Trùm Đột Biến mỗi 5 Wave và tự chuyển cảnh qua 8 vùng đất.
                   </p>
                 </button>
 
@@ -480,7 +374,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     {mode === 'endless' && <Check className="w-4 h-4 text-amber-400" />}
                   </div>
                   <p className="text-[10px] sm:text-[11px] text-neutral-300 mt-1 leading-relaxed">
-                    Zombie tràn ngập liên tục không ngừng nghỉ. Thử thách giới hạn sinh tồn của bạn!
+                    Zombie tràn ngập liên tục không ngừng nghỉ. Thử thách giới hạn sinh tồn và leo rank đỉnh cao!
                   </p>
                 </button>
               </div>
@@ -488,8 +382,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
             {/* DIFFICULTY SELECTION */}
             <div>
-              <label className="text-[11px] sm:text-xs font-black text-neutral-300 uppercase tracking-wider block mb-1.5 sm:mb-2">
-                ĐỘ KHÓ CHIẾN TRƯỜNG:
+              <label className="text-[11px] sm:text-xs font-black text-neutral-300 uppercase tracking-wider block mb-1.5 sm:mb-2 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>ĐỘ KHÓ CHIẾN TRƯỜNG:</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                 {[
@@ -518,14 +413,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </div>
             </div>
 
-            {/* HIGH VISIBILITY LARGE BOTTOM START BUTTON */}
-            <div className="pt-3">
+            {/* BOTTOM LARGE START ACTION */}
+            <div className="pt-2">
               <button
                 onClick={handleLaunchGame}
-                className="w-full py-4 sm:py-4.5 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-base sm:text-lg uppercase tracking-widest shadow-2xl shadow-red-600/50 transition-all flex items-center justify-center gap-3 active:scale-95 group border-2 border-amber-300"
+                className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-sm sm:text-base uppercase tracking-widest shadow-2xl shadow-red-600/50 transition-all flex items-center justify-center gap-2 active:scale-95 group border border-amber-300"
               >
-                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-white group-hover:scale-110 transition-transform" />
-                <span>BẮT ĐẦU CHƠI: {activeWarrior.nameVi.toUpperCase()}</span>
+                <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+                <span>BẮT ĐẦU: {activeWarrior.nameVi.toUpperCase()} ({difficulty.toUpperCase()})</span>
               </button>
             </div>
           </div>
