@@ -269,56 +269,100 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             </div>
           </div>
 
-        {/* MODERN SEGMENTED TABS CONTROLLER (4 BALANCED TABS FOR MOBILE) */}
-        <div className="w-full bg-neutral-950/80 p-1 sm:p-1.5 rounded-2xl border border-neutral-800/80 mb-3 sm:mb-4 grid grid-cols-4 gap-1 shadow-inner">
+        {/* TACTICAL SCI-FI MILITARY SEGMENTED DOCK TABS */}
+        <div className="w-full bg-neutral-950/85 p-1.5 rounded-2xl border border-neutral-800/90 mb-3.5 sm:mb-4 grid grid-cols-4 gap-1.5 shadow-2xl backdrop-blur-xl">
+          {/* TAB 1: THIẾT LẬP */}
           <button
+            type="button"
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('play'); }}
-            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
               activeTab === 'play'
-                ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-md shadow-red-600/30'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
+                ? 'bg-gradient-to-b from-red-500/20 via-red-950/40 to-neutral-950/90 border border-red-500/70 shadow-[0_0_15px_rgba(239,68,68,0.25)] text-white'
+                : 'bg-neutral-950/40 border border-neutral-800/50 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60 hover:border-neutral-700/60'
             }`}
           >
-            <Swords className="w-3.5 h-3.5 shrink-0" />
-            <span>Thiết Lập</span>
+            <div className="relative flex items-center justify-center">
+              <Swords className={`w-4 h-4 transition-transform duration-200 ${activeTab === 'play' ? 'text-red-400 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'text-neutral-400 group-hover:text-neutral-200'}`} />
+            </div>
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap mt-1 ${activeTab === 'play' ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+              Thiết Lập
+            </span>
+            {/* Tactical Laser Pip */}
+            <div className={`h-0.5 rounded-full mt-1 transition-all duration-300 ${activeTab === 'play' ? 'w-5 sm:w-6 bg-gradient-to-r from-red-500 via-rose-300 to-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'w-0 opacity-0'}`} />
           </button>
 
+          {/* TAB 2: CHIẾN BINH */}
           <button
+            type="button"
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('warriors'); }}
-            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
               activeTab === 'warriors'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 shadow-md shadow-amber-500/30'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
+                ? 'bg-gradient-to-b from-amber-500/20 via-amber-950/40 to-neutral-950/90 border border-amber-500/70 shadow-[0_0_15px_rgba(245,158,11,0.25)] text-white'
+                : 'bg-neutral-950/40 border border-neutral-800/50 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60 hover:border-neutral-700/60'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5 shrink-0" />
-            <span>Chiến Binh</span>
-            <span className="text-[9px] px-1 rounded-full bg-neutral-800 text-amber-400 font-bold ml-0.5">3</span>
+            <div className="relative flex items-center justify-center">
+              <UserCheck className={`w-4 h-4 transition-transform duration-200 ${activeTab === 'warriors' ? 'text-amber-400 scale-110 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-neutral-400 group-hover:text-neutral-200'}`} />
+              <span className={`absolute -top-1.5 -right-3 px-1 py-0.2 rounded-full text-[8.5px] font-black leading-none border shadow-sm ${
+                activeTab === 'warriors'
+                  ? 'bg-amber-400 border-amber-300 text-neutral-950'
+                  : 'bg-neutral-900 border-neutral-700 text-neutral-400'
+              }`}>
+                3
+              </span>
+            </div>
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap mt-1 ${activeTab === 'warriors' ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+              Chiến Binh
+            </span>
+            {/* Tactical Laser Pip */}
+            <div className={`h-0.5 rounded-full mt-1 transition-all duration-300 ${activeTab === 'warriors' ? 'w-5 sm:w-6 bg-gradient-to-r from-amber-500 via-yellow-200 to-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'w-0 opacity-0'}`} />
           </button>
 
+          {/* TAB 3: BỐI CẢNH */}
           <button
+            type="button"
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('maps'); }}
-            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
               activeTab === 'maps'
-                ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-neutral-950 shadow-md shadow-sky-500/30'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
+                ? 'bg-gradient-to-b from-sky-500/20 via-sky-950/40 to-neutral-950/90 border border-sky-500/70 shadow-[0_0_15px_rgba(14,165,233,0.25)] text-white'
+                : 'bg-neutral-950/40 border border-neutral-800/50 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60 hover:border-neutral-700/60'
             }`}
           >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span>Bối Cảnh</span>
-            <span className="text-[9px] px-1 rounded-full bg-neutral-800 text-sky-400 font-bold ml-0.5">8</span>
+            <div className="relative flex items-center justify-center">
+              <MapPin className={`w-4 h-4 transition-transform duration-200 ${activeTab === 'maps' ? 'text-sky-400 scale-110 drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]' : 'text-neutral-400 group-hover:text-neutral-200'}`} />
+              <span className={`absolute -top-1.5 -right-3 px-1 py-0.2 rounded-full text-[8.5px] font-black leading-none border shadow-sm ${
+                activeTab === 'maps'
+                  ? 'bg-sky-400 border-sky-300 text-neutral-950'
+                  : 'bg-neutral-900 border-neutral-700 text-neutral-400'
+              }`}>
+                8
+              </span>
+            </div>
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap mt-1 ${activeTab === 'maps' ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+              Bối Cảnh
+            </span>
+            {/* Tactical Laser Pip */}
+            <div className={`h-0.5 rounded-full mt-1 transition-all duration-300 ${activeTab === 'maps' ? 'w-5 sm:w-6 bg-gradient-to-r from-sky-500 via-cyan-200 to-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]' : 'w-0 opacity-0'}`} />
           </button>
 
+          {/* TAB 4: KỶ LỤC */}
           <button
+            type="button"
             onClick={() => { soundManager.playEmptyClick(); setActiveTab('leaderboard'); }}
-            className={`py-1.5 sm:py-2 px-1 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
               activeTab === 'leaderboard'
-                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md shadow-purple-500/30'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/40'
+                ? 'bg-gradient-to-b from-purple-500/20 via-purple-950/40 to-neutral-950/90 border border-purple-500/70 shadow-[0_0_15px_rgba(168,85,247,0.25)] text-white'
+                : 'bg-neutral-950/40 border border-neutral-800/50 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60 hover:border-neutral-700/60'
             }`}
           >
-            <Trophy className="w-3.5 h-3.5 shrink-0" />
-            <span>Kỷ Lục</span>
+            <div className="relative flex items-center justify-center">
+              <Trophy className={`w-4 h-4 transition-transform duration-200 ${activeTab === 'leaderboard' ? 'text-purple-400 scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'text-neutral-400 group-hover:text-neutral-200'}`} />
+            </div>
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap mt-1 ${activeTab === 'leaderboard' ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+              Kỷ Lục
+            </span>
+            {/* Tactical Laser Pip */}
+            <div className={`h-0.5 rounded-full mt-1 transition-all duration-300 ${activeTab === 'leaderboard' ? 'w-5 sm:w-6 bg-gradient-to-r from-purple-500 via-fuchsia-200 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]' : 'w-0 opacity-0'}`} />
           </button>
         </div>
 
