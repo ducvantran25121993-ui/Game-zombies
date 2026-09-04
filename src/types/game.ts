@@ -412,4 +412,6 @@ export interface GameRecordStats {
   ultimatesCast: number;
 }
 
+export type GameViewMode = '3d-iso' | '3d-top' | '3d-action' | '2d';
+
 

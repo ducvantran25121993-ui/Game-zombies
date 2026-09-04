@@ -3,7 +3,7 @@ import {
   PlayerStats, Weapon, WeaponType, Zombie, Bullet, 
   Particle, Decal, DropItem, ActiveTurret, FloatingText, 
   Obstacle, ActiveBuffs, GameDifficulty, GameMode, PowerUpType,
-  MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook
+  MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook, GameViewMode
 } from '../types/game';
 import { MAP_SIZE, ZOMBIE_TEMPLATES, BOSS_SKILL_DATABASE } from '../utils/constants';
 import { soundManager } from '../utils/audio';
@@ -22,6 +22,7 @@ import {
   updateTentacleHooks, 
   renderBossSpecialEffects 
 } from '../utils/bossSkills';
+import { ThreeRenderer } from './ThreeRenderer';
 
 const MAP_SEQUENCE: MapEnvironmentId[] = [
   'rooftop',
@@ -67,6 +68,7 @@ interface GameCanvasProps {
   touchAimInput: { angle: number; isShooting: boolean };
   autoAimEnabled?: boolean;
   cameraZoomMode?: 'wide' | 'ultrawide' | 'normal';
+  viewMode?: GameViewMode;
   onUltimateUsed?: () => void;
   onRadarUpdate?: (zombies: Zombie[], drops: DropItem[]) => void;
   onBossKilled?: () => void;
@@ -104,11 +106,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   touchAimInput,
   autoAimEnabled = true,
   cameraZoomMode = 'wide',
+  viewMode = '2d',
   onUltimateUsed,
   onRadarUpdate,
   onBossKilled
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const threeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const threeRendererRef = useRef<ThreeRenderer | null>(null);
+
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
   const onUltimateUsedRef = useRef(onUltimateUsed);
   onUltimateUsedRef.current = onUltimateUsed;
@@ -815,6 +823,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     state.currentMapId = nextMapId;
     state.obstacles = generateObstaclesForMap(nextMapId);
+    threeRendererRef.current?.syncObstacles(state.obstacles);
 
     // Sync active map back to parent application & HUD
     if (onMapChangeRef.current) {
@@ -1173,6 +1182,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Initialize 3D Three.js WebGL Engine
+    if (threeCanvasRef.current && !threeRendererRef.current) {
+      try {
+        const r3 = new ThreeRenderer(threeCanvasRef.current);
+        threeRendererRef.current = r3;
+        r3.syncObstacles(stateRef.current.obstacles);
+      } catch (err) {
+        console.error("Three.js initialization error:", err);
+      }
+    }
+
     let animationId: number;
 
     const resizeCanvas = () => {
@@ -1181,6 +1201,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (canvas.width !== targetW || canvas.height !== targetH) {
         canvas.width = targetW;
         canvas.height = targetH;
+      }
+      if (threeRendererRef.current) {
+        threeRendererRef.current.resize(targetW, targetH);
       }
     };
     resizeCanvas();
@@ -1475,9 +1498,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (touchMove.dx !== 0 || touchMove.dy !== 0) {
           p.angle = Math.atan2(touchMove.dy, touchMove.dx);
         } else {
-          const screenCenterX = canvas.width / 2;
-          const screenCenterY = canvas.height / 2;
-          p.angle = Math.atan2(state.mousePos.y - screenCenterY, state.mousePos.x - screenCenterX);
+          const is3D = viewModeRef.current !== '2d';
+          if (is3D && threeRendererRef.current) {
+            const hit = threeRendererRef.current.getGroundIntersection(state.mousePos.x, state.mousePos.y);
+            if (hit) {
+              p.angle = Math.atan2(hit.y - p.y, hit.x - p.x);
+            } else {
+              const screenCenterX = canvas.width / 2;
+              const screenCenterY = canvas.height / 2;
+              p.angle = Math.atan2(state.mousePos.y - screenCenterY, state.mousePos.x - screenCenterX);
+            }
+          } else {
+            const screenCenterX = canvas.width / 2;
+            const screenCenterY = canvas.height / 2;
+            p.angle = Math.atan2(state.mousePos.y - screenCenterY, state.mousePos.x - screenCenterX);
+          }
         }
       }
 
@@ -3219,13 +3254,106 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       // ==========================================
-      // 11. RENDERING FRAME (CANVAS GRAPHICS)
+      // 11. RENDERING FRAME (3D WEBGL OR 2D CANVAS)
       // ==========================================
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const is3D = viewModeRef.current !== '2d';
 
-      ctx.save();
-      try {
+      if (is3D && threeRendererRef.current) {
+        // Set camera angle mode
+        if (viewModeRef.current === '3d-top') {
+          threeRendererRef.current.setCameraView('topdown');
+        } else if (viewModeRef.current === '3d-action') {
+          threeRendererRef.current.setCameraView('action');
+        } else {
+          threeRendererRef.current.setCameraView('isometric');
+        }
+
+        // Render full 3D scene
+        threeRendererRef.current.update(
+          {
+            player: p,
+            currentWeapon: wep,
+            zombies: state.zombies,
+            bullets: state.bullets,
+            particles: state.particles,
+            drops: state.drops,
+            turrets: state.turrets,
+            activeDrones: state.activeDrones,
+            laserBeams: state.sweepingLasers,
+            bossHazards: state.bossHazards,
+            activeBuffs: state.activeBuffs,
+            currentMapId: state.currentMapId || 'rooftop',
+            screenShake: state.screenShake
+          },
+          currentTime,
+          isFiring && (currentTime - lastShotTime < 75)
+        );
+
+        // 2D Overlay Canvas (Transparent UI, floating damage numbers, target brackets)
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Projected Zombie HP Bars and Target Lock
+        state.zombies.forEach(z => {
+          if (z.hp <= 0) return;
+          const pos = threeRendererRef.current?.projectToScreen(z.x, z.y, z.isBoss ? 45 : 22);
+          if (!pos || pos.x < -60 || pos.x > canvas.width + 60 || pos.y < -60 || pos.y > canvas.height + 60) return;
+
+          // HP Bar
+          if (z.hp < z.maxHp) {
+            const barW = Math.max(30, (z.radius || 18) * 1.8);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            ctx.fillRect(pos.x - barW / 2 - 1, pos.y - 14, barW + 2, 5);
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(pos.x - barW / 2, pos.y - 13, barW, 3);
+            ctx.fillStyle = z.isBoss ? '#f59e0b' : '#ef4444';
+            ctx.fillRect(pos.x - barW / 2, pos.y - 13, barW * (z.hp / z.maxHp), 3);
+          }
+
+          // Target Lock Reticle
+          const isTargetedBoss = Boolean(z.isBoss && state.targetedBossId === z.id);
+          const isAutoAimTarget = Boolean(state.autoAimTargetId === z.id && autoAimEnabledRef.current);
+          if (isTargetedBoss || isAutoAimTarget) {
+            ctx.save();
+            ctx.strokeStyle = isTargetedBoss ? '#ef4444' : '#10b981';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = isTargetedBoss ? '#ef4444' : '#10b981';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, isTargetedBoss ? 28 : 20, 0, Math.PI * 2);
+            ctx.stroke();
+            if (isTargetedBoss) {
+              ctx.font = 'bold 10px monospace';
+              ctx.textAlign = 'center';
+              ctx.fillStyle = '#ef4444';
+              ctx.fillText('🎯 ĐÃ KHÓA BOSS', pos.x, pos.y - 32);
+            }
+            ctx.restore();
+          }
+        });
+
+        // Projected Floating Texts (+150 VÀNG, CRIT, etc.)
+        state.floatingTexts.forEach(ft => {
+          const pos = threeRendererRef.current?.projectToScreen(ft.x, ft.y, 28);
+          if (pos) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, ft.alpha));
+            ctx.fillStyle = ft.color;
+            ctx.font = ft.isCrit ? '900 13px system-ui, sans-serif' : 'bold 11px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.shadowColor = ft.isCrit ? ft.color : '#000000';
+            ctx.shadowBlur = ft.isCrit ? 8 : 4;
+            ctx.fillText(ft.text, pos.x, pos.y);
+            ctx.restore();
+          }
+        });
+      } else {
+        // Classic 2D Graphics Engine
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        try {
         // Apply screen shake
         const shakeX = (Math.random() - 0.5) * state.screenShake;
         const shakeY = (Math.random() - 0.5) * state.screenShake;
@@ -3598,6 +3726,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       } finally {
         ctx.restore(); // Restore camera transform
       }
+      }
 
       // Full-screen Lightning Flash Overlay
       if (state.lightningFlashAlpha > 0) {
@@ -3714,6 +3843,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('toggle-boss-lock', handleToggleBossLock);
       ro.disconnect();
+      if (threeRendererRef.current) {
+        threeRendererRef.current.destroy();
+        threeRendererRef.current = null;
+      }
     };
   }, []);
 
@@ -3732,8 +3865,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const zoom = baseZoom;
 
     const state = stateRef.current;
-    const worldX = (screenX - canvas.width / 2) / zoom + state.camera.x;
-    const worldY = (screenY - canvas.height / 2) / zoom + state.camera.y;
+    const is3D = viewModeRef.current !== '2d';
+    let worldX = 0;
+    let worldY = 0;
+    if (is3D && threeRendererRef.current) {
+      const hit = threeRendererRef.current.getGroundIntersection(screenX, screenY);
+      if (hit) {
+        worldX = hit.x;
+        worldY = hit.y;
+      } else {
+        worldX = (screenX - canvas.width / 2) / zoom + state.camera.x;
+        worldY = (screenY - canvas.height / 2) / zoom + state.camera.y;
+      }
+    } else {
+      worldX = (screenX - canvas.width / 2) / zoom + state.camera.x;
+      worldY = (screenY - canvas.height / 2) / zoom + state.camera.y;
+    }
 
     // Check if clicked directly on or near a Boss
     const clickedBoss = state.zombies.find(
@@ -3809,13 +3956,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseMove={handleMouseMove}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      className="absolute inset-0 w-full h-full block cursor-crosshair select-none bg-neutral-950 touch-none"
-    />
+    <div className="absolute inset-0 w-full h-full overflow-hidden select-none bg-neutral-950 touch-none">
+      {/* 3D WebGL Canvas */}
+      <canvas
+        ref={threeCanvasRef}
+        className="absolute inset-0 w-full h-full block"
+        style={{ display: viewMode !== '2d' ? 'block' : 'none' }}
+      />
+
+      {/* 2D Canvas: 2D World Renderer in 2D mode, OR transparent UI overlay in 3D mode */}
+      <canvas
+        ref={canvasRef}
+        onMouseMove={handleMouseMove}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        className="absolute inset-0 w-full h-full block cursor-crosshair select-none touch-none"
+      />
+    </div>
   );
 };

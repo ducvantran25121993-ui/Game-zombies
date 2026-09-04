@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayerStats, Weapon, WeaponType, GameDifficulty, 
   GameMode, ActiveBuffs, MapEnvironmentId, EquipmentSlotId, EquipmentItem,
-  Mission, GameRecordStats, Zombie, DropItem
+  Mission, GameRecordStats, Zombie, DropItem, GameViewMode
 } from './types/game';
 import { INITIAL_WEAPONS, MAP_SIZE, UPGRADES_CONFIG } from './utils/constants';
 import { soundManager } from './utils/audio';
@@ -117,6 +117,18 @@ export const App: React.FC = () => {
 
   // Tactical Camera Zoom (Default 'wide' for maximum visibility on mobile)
   const [cameraZoomMode, setCameraZoomMode] = useState<'wide' | 'ultrawide' | 'normal'>('wide');
+
+  // Graphics View Mode (Default '2d' for the ultra-detailed, high-fidelity handcrafted graphics)
+  const [viewMode, setViewMode] = useState<GameViewMode>('2d');
+
+  const handleToggleViewMode = () => {
+    setViewMode(prev => {
+      if (prev === '2d') return '3d-iso';
+      if (prev === '3d-iso') return '3d-top';
+      if (prev === '3d-top') return '3d-action';
+      return '2d';
+    });
+  };
 
   const handleToggleCameraZoom = () => {
     setCameraZoomMode(prev => {
@@ -760,6 +772,7 @@ export const App: React.FC = () => {
             touchAimInput={touchAimInput}
             autoAimEnabled={autoAimEnabled}
             cameraZoomMode={cameraZoomMode}
+            viewMode={viewMode}
             onRadarUpdate={(zombies, drops) => setRadarData({ zombies, drops })}
             onBossKilled={handleBossKilled}
             onUltimateUsed={handleUltimateUsed}
@@ -786,6 +799,8 @@ export const App: React.FC = () => {
             onSelectWeapon={(id) => setCurrentWeaponId(id)}
             cameraZoomMode={cameraZoomMode}
             onToggleCameraZoom={handleToggleCameraZoom}
+            viewMode={viewMode}
+            onToggleViewMode={handleToggleViewMode}
             autoAimEnabled={autoAimEnabled}
             onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
             radarData={radarData}

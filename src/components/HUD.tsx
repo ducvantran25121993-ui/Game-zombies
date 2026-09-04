@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem, GameViewMode } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
@@ -30,6 +30,8 @@ interface HUDProps {
   onSelectWeapon: (weaponId: WeaponType) => void;
   cameraZoomMode?: 'wide' | 'ultrawide' | 'normal';
   onToggleCameraZoom?: () => void;
+  viewMode?: GameViewMode;
+  onToggleViewMode?: () => void;
   autoAimEnabled?: boolean;
   onToggleAutoAim?: () => void;
   radarData?: { zombies: Zombie[]; drops: DropItem[] };
@@ -58,6 +60,8 @@ export const HUD: React.FC<HUDProps> = ({
   onSelectWeapon,
   cameraZoomMode = 'wide',
   onToggleCameraZoom,
+  viewMode = '3d-iso',
+  onToggleViewMode,
   autoAimEnabled = true,
   onToggleAutoAim,
   radarData,
@@ -344,6 +348,24 @@ export const HUD: React.FC<HUDProps> = ({
 
           {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Pause) aligned on the same row */}
           <div className="flex items-center gap-1 shrink-0 ml-auto">
+            {/* 3D / 2D Graphics Engine View Mode Toggle */}
+            {onToggleViewMode && (
+              <button
+                onClick={onToggleViewMode}
+                className={`px-2 py-0.5 sm:py-1 rounded-lg border text-[8px] sm:text-[10px] font-black backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-1 transition-all ${
+                  viewMode === '2d'
+                    ? 'bg-emerald-500/20 hover:bg-emerald-500/35 border-emerald-400/80 text-emerald-300'
+                    : 'bg-indigo-500/25 hover:bg-indigo-500/40 border-indigo-400/80 text-indigo-300'
+                }`}
+                title="Chế độ đồ họa: 2D HD Sắc Nét / 3D Isometric / 3D Góc Nhìn Trên Xuống / 3D Hành Động"
+              >
+                <span>{viewMode === '2d' ? '✨' : '🎮'}</span>
+                <span>
+                  {viewMode === '2d' ? '2D HD' : viewMode === '3d-iso' ? '3D ISO' : viewMode === '3d-top' ? '3D TOP' : '3D ACTION'}
+                </span>
+              </button>
+            )}
+
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
