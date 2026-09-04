@@ -118,16 +118,11 @@ export const App: React.FC = () => {
   // Tactical Camera Zoom (Default 'wide' for maximum visibility on mobile)
   const [cameraZoomMode, setCameraZoomMode] = useState<'wide' | 'ultrawide' | 'normal'>('wide');
 
-  // Graphics View Mode (Default '2d' for the ultra-detailed, high-fidelity handcrafted graphics)
+  // Graphics View Mode (Default '2d' for the pristine, ultra-detailed handcrafted 2D visuals)
   const [viewMode, setViewMode] = useState<GameViewMode>('2d');
 
   const handleToggleViewMode = () => {
-    setViewMode(prev => {
-      if (prev === '2d') return '3d-iso';
-      if (prev === '3d-iso') return '3d-top';
-      if (prev === '3d-top') return '3d-action';
-      return '2d';
-    });
+    setViewMode(prev => (prev === '2d' ? '3d-iso' : '2d'));
   };
 
   const handleToggleCameraZoom = () => {

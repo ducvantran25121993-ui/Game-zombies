@@ -1,11 +1,20 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+
 import { 
   PlayerStats, Weapon, Zombie, Bullet, Particle, 
   DropItem, ActiveTurret, Obstacle, ActiveBuffs, 
   MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook 
 } from '../types/game';
 import { MAP_SIZE } from '../utils/constants';
-import { ActiveDroneState, CompanionDroneConfig } from '../data/drones';
+import { ActiveDroneState } from '../data/drones';
+
+import { getTacticalGroundTexture, getContainerTexture, getGlowSpriteTexture } from './three/tacticalTextures';
+import { VolumetricSpotlight } from './three/volumetricLight';
+import { createCommandoModel, createZombieModel, CommandoRig, ZombieRig } from './three/tacticalModels';
 
 export type CameraViewMode = 'isometric' | 'topdown' | 'action';
 
@@ -17,45 +26,49 @@ export class ThreeRenderer {
   public raycaster: THREE.Raycaster;
   public groundPlane: THREE.Plane;
 
+  // Post-Processing
+  private composer: EffectComposer;
+  private bloomPass: UnrealBloomPass;
+
   public cameraMode: CameraViewMode = 'isometric';
   public width: number = 800;
   public height: number = 600;
 
   // Lighting
   private ambientLight: THREE.AmbientLight;
-  private dirLight: THREE.DirectionalLight;
-  private playerFlashlight: THREE.SpotLight;
-  private playerFlashlightTarget: THREE.Object3D;
+  private moonLight: THREE.DirectionalLight;
+  private flashlight: THREE.SpotLight;
+  private flashlightTarget: THREE.Object3D;
+  private volumetricLight: VolumetricSpotlight;
   private muzzleFlashLight: THREE.PointLight;
+  private emergencyBeaconLight: THREE.PointLight;
+  private emergencyBeaconMesh: THREE.Mesh;
 
   // Environment & Ground
   private groundMesh: THREE.Mesh;
-  private helipadGroup: THREE.Group;
-  private backgroundCityGroup: THREE.Group;
-  private boundaryGroup: THREE.Group;
+  private groundMaterial: THREE.MeshStandardMaterial;
   private obstaclesGroup: THREE.Group;
+  private cityBackdropGroup: THREE.Group;
+  private rainPoints: THREE.Points | null = null;
+  private rainGeo: THREE.BufferGeometry | null = null;
 
-  // Player & Companions
-  private playerGroup: THREE.Group;
-  private playerBody: THREE.Mesh;
-  private playerHead: THREE.Mesh;
-  private playerVisor: THREE.Mesh;
-  private playerArmor: THREE.Mesh;
-  private playerLeftLeg: THREE.Mesh;
-  private playerRightLeg: THREE.Mesh;
-  private playerLeftArm: THREE.Mesh;
-  private playerRightArm: THREE.Mesh;
-  private playerWeaponGroup: THREE.Group;
+  // Player & Rig
+  private commandoRig: CommandoRig;
+  private lastPlayerPos = { x: 0, y: 0 };
   private playerShieldMesh: THREE.Mesh;
-  private dronesMap: Map<string, THREE.Group> = new Map();
 
-  // Entities Maps
-  private zombiesMap: Map<string, THREE.Group> = new Map();
+  // Entities & Animations
+  private zombiesMap: Map<string, ZombieRig> = new Map();
   private bulletsMap: Map<string, THREE.Mesh> = new Map();
   private dropsMap: Map<string, THREE.Group> = new Map();
   private turretsMap: Map<string, THREE.Group> = new Map();
+  private dronesMap: Map<string, THREE.Group> = new Map();
   private bossHazardsMap: Map<string, THREE.Mesh> = new Map();
   private lasersGroup: THREE.Group;
+
+  // Spent Brass Cartridge Casings
+  private casingMeshes: THREE.Mesh[] = [];
+  private nextCasingIdx = 0;
 
   // Particle System
   private particleGeo: THREE.BufferGeometry;
@@ -63,9 +76,9 @@ export class ThreeRenderer {
   private particlePoints: THREE.Points;
   private particlePositions: Float32Array;
   private particleColors: Float32Array;
-  private max3DParticles = 600;
+  private max3DParticles = 800;
 
-  // Current map tracking
+  // Active Map
   private currentMapId: MapEnvironmentId = 'rooftop';
 
   constructor(canvas: HTMLCanvasElement) {
@@ -73,7 +86,7 @@ export class ThreeRenderer {
     this.width = canvas.clientWidth || window.innerWidth;
     this.height = canvas.clientHeight || window.innerHeight;
 
-    // 1. WebGL Renderer
+    // 1. WebGL Renderer with High-Performance Settings
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -85,728 +98,260 @@ export class ThreeRenderer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.25;
 
-    // 2. Scene
+    // 2. Scene with Dark Grim Atmosphere & Distance Fog
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#030712');
-    this.scene.fog = new THREE.FogExp2('#030712', 0.0012);
+    this.scene.fog = new THREE.FogExp2('#030712', 0.00095);
 
-    // 3. Camera
-    this.camera = new THREE.PerspectiveCamera(50, this.width / this.height, 1, 4000);
+    // 3. Perspective Camera
+    this.camera = new THREE.PerspectiveCamera(48, this.width / this.height, 1, 5000);
     this.setCameraView('isometric');
 
-    // 4. Raycaster & Ground Math Plane
+    // 4. Post-Processing Pipeline (Bloom & Tone Mapping)
+    this.composer = new EffectComposer(this.renderer);
+    const renderPass = new RenderPass(this.scene, this.camera);
+    this.composer.addPass(renderPass);
+
+    // Unreal Bloom: Soft glow for muzzle flashes, glowing red eyes, acid, tracers
+    this.bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(this.width, this.height),
+      0.65, // strength
+      0.35, // radius
+      0.82  // threshold (only bright highlights bloom)
+    );
+    this.composer.addPass(this.bloomPass);
+
+    const outputPass = new OutputPass();
+    this.composer.addPass(outputPass);
+
+    // 5. Raycaster for precise 3D aiming
     this.raycaster = new THREE.Raycaster();
     this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-    // 5. Lights
-    this.ambientLight = new THREE.AmbientLight(0x38bdf8, 0.45);
+    // 6. Lights
+    // Dark Slate Tactical Ambient
+    this.ambientLight = new THREE.AmbientLight(0x1e293b, 0.42);
     this.scene.add(this.ambientLight);
 
-    this.dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
-    this.dirLight.position.set(400, 700, 300);
-    this.dirLight.castShadow = true;
-    this.dirLight.shadow.mapSize.width = 2048;
-    this.dirLight.shadow.mapSize.height = 2048;
-    this.dirLight.shadow.camera.near = 50;
-    this.dirLight.shadow.camera.far = 1600;
-    const d = 500;
-    this.dirLight.shadow.camera.left = -d;
-    this.dirLight.shadow.camera.right = d;
-    this.dirLight.shadow.camera.top = d;
-    this.dirLight.shadow.camera.bottom = -d;
-    this.dirLight.shadow.bias = -0.0005;
-    this.scene.add(this.dirLight);
+    // High-angle Moonlight with Dramatic Soft Shadows
+    this.moonLight = new THREE.DirectionalLight(0x94a3b8, 0.95);
+    this.moonLight.position.set(380, 850, 260);
+    this.moonLight.castShadow = true;
+    this.moonLight.shadow.mapSize.width = 2048;
+    this.moonLight.shadow.mapSize.height = 2048;
+    this.moonLight.shadow.camera.near = 50;
+    this.moonLight.shadow.camera.far = 1800;
+    const d = 550;
+    this.moonLight.shadow.camera.left = -d;
+    this.moonLight.shadow.camera.right = d;
+    this.moonLight.shadow.camera.top = d;
+    this.moonLight.shadow.camera.bottom = -d;
+    this.moonLight.shadow.bias = -0.0004;
+    this.scene.add(this.moonLight);
 
-    // Tactical Flashlight attached to player
-    this.playerFlashlightTarget = new THREE.Object3D();
-    this.scene.add(this.playerFlashlightTarget);
+    // Commando's Spotlight (Flashlight)
+    this.flashlightTarget = new THREE.Object3D();
+    this.scene.add(this.flashlightTarget);
 
-    this.playerFlashlight = new THREE.SpotLight(0xfff7ed, 3.5, 420, Math.PI * 0.22, 0.45, 1.2);
-    this.playerFlashlight.castShadow = true;
-    this.playerFlashlight.shadow.mapSize.width = 1024;
-    this.playerFlashlight.shadow.mapSize.height = 1024;
-    this.playerFlashlight.target = this.playerFlashlightTarget;
-    this.scene.add(this.playerFlashlight);
+    this.flashlight = new THREE.SpotLight(0xffedd5, 4.5, 450, Math.PI * 0.22, 0.45, 1.3);
+    this.flashlight.castShadow = true;
+    this.flashlight.shadow.mapSize.width = 1024;
+    this.flashlight.shadow.mapSize.height = 1024;
+    this.flashlight.shadow.bias = -0.0003;
+    this.flashlight.target = this.flashlightTarget;
+    this.scene.add(this.flashlight);
+
+    // Volumetric Atmospheric Light Shaft & Laser Line
+    this.volumetricLight = new VolumetricSpotlight(360, 80);
+    this.scene.add(this.volumetricLight.group);
 
     // Muzzle flash point light
-    this.muzzleFlashLight = new THREE.PointLight(0xf59e0b, 0, 120);
+    this.muzzleFlashLight = new THREE.PointLight(0xf59e0b, 0, 160);
     this.scene.add(this.muzzleFlashLight);
 
-    // 6. Ground & Environment
-    const groundGeo = new THREE.PlaneGeometry(MAP_SIZE.width, MAP_SIZE.height, 48, 48);
-    groundGeo.rotateX(-Math.PI / 2);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x111827,
-      roughness: 0.85,
-      metalness: 0.2
+    // Emergency Red Beacon Light (pulsing warning atmosphere)
+    this.emergencyBeaconLight = new THREE.PointLight(0xef4444, 1.8, 220);
+    this.emergencyBeaconLight.position.set(MAP_SIZE.width / 2, 28, MAP_SIZE.height / 2);
+    this.scene.add(this.emergencyBeaconLight);
+
+    const beaconGeo = new THREE.CylinderGeometry(1.5, 2.5, 5, 8);
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    this.emergencyBeaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+    this.emergencyBeaconMesh.position.copy(this.emergencyBeaconLight.position);
+    this.scene.add(this.emergencyBeaconMesh);
+
+    // 7. Tactical Ground (PBR with Wet Puddles & Roughness Map)
+    const { diffuse, roughness } = getTacticalGroundTexture('rooftop');
+    this.groundMaterial = new THREE.MeshStandardMaterial({
+      map: diffuse,
+      roughnessMap: roughness,
+      metalness: 0.15,
+      roughness: 0.8
     });
-    this.groundMesh = new THREE.Mesh(groundGeo, groundMat);
-    this.groundMesh.position.set(MAP_SIZE.width / 2, -0.5, MAP_SIZE.height / 2);
+
+    const groundGeo = new THREE.PlaneGeometry(MAP_SIZE.width, MAP_SIZE.height, 32, 32);
+    groundGeo.rotateX(-Math.PI / 2);
+    this.groundMesh = new THREE.Mesh(groundGeo, this.groundMaterial);
+    this.groundMesh.position.set(MAP_SIZE.width / 2, -0.2, MAP_SIZE.height / 2);
     this.groundMesh.receiveShadow = true;
     this.scene.add(this.groundMesh);
 
-    this.helipadGroup = new THREE.Group();
-    this.build3DHelipad();
-    this.scene.add(this.helipadGroup);
-
-    this.backgroundCityGroup = new THREE.Group();
-    this.buildCitySkyline();
-    this.scene.add(this.backgroundCityGroup);
-
-    this.boundaryGroup = new THREE.Group();
-    this.buildPerimeterBarriers();
-    this.scene.add(this.boundaryGroup);
-
+    // 8. Obstacles & Environment Backdrops
     this.obstaclesGroup = new THREE.Group();
     this.scene.add(this.obstaclesGroup);
 
-    // 7. Player 3D Mesh
-    this.playerGroup = new THREE.Group();
-    const { body, head, visor, armor, leftLeg, rightLeg, leftArm, rightArm, weaponGroup, shield } = this.buildPlayerModel();
-    this.playerBody = body;
-    this.playerHead = head;
-    this.playerVisor = visor;
-    this.playerArmor = armor;
-    this.playerLeftLeg = leftLeg;
-    this.playerRightLeg = rightLeg;
-    this.playerLeftArm = leftArm;
-    this.playerRightArm = rightArm;
-    this.playerWeaponGroup = weaponGroup;
-    this.playerShieldMesh = shield;
-    this.scene.add(this.playerGroup);
+    this.cityBackdropGroup = new THREE.Group();
+    this.buildCitySkyline();
+    this.scene.add(this.cityBackdropGroup);
 
-    // 8. Laser Beams Group
+    // 9. Commando Model Rig
+    this.commandoRig = createCommandoModel();
+    this.scene.add(this.commandoRig.rootGroup);
+
+    // Holographic Energy Shield
+    const shieldGeo = new THREE.SphereGeometry(24, 24, 16);
+    const shieldMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.45
+    });
+    this.playerShieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+    this.playerShieldMesh.visible = false;
+    this.scene.add(this.playerShieldMesh);
+
+    // 10. Atmospheric 3D Rain Streaks
+    this.initAtmosphericWeather();
+
+    // 11. Spent Brass Casings Pool
+    const casingGeo = new THREE.CylinderGeometry(0.5, 0.5, 2.5, 6);
+    casingGeo.rotateZ(Math.PI / 2);
+    const casingMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.2 });
+    for (let i = 0; i < 30; i++) {
+      const casing = new THREE.Mesh(casingGeo, casingMat);
+      casing.visible = false;
+      this.scene.add(casing);
+      this.casingMeshes.push(casing);
+    }
+
+    // 12. Lasers Group
     this.lasersGroup = new THREE.Group();
     this.scene.add(this.lasersGroup);
 
-    // 9. Particle Points System
+    // 13. Particles
     this.particlePositions = new Float32Array(this.max3DParticles * 3);
     this.particleColors = new Float32Array(this.max3DParticles * 3);
     this.particleGeo = new THREE.BufferGeometry();
     this.particleGeo.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3));
     this.particleGeo.setAttribute('color', new THREE.BufferAttribute(this.particleColors, 3));
+
     this.particleMat = new THREE.PointsMaterial({
-      size: 4,
+      size: 4.5,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      map: getGlowSpriteTexture(),
+      depthWrite: false
     });
     this.particlePoints = new THREE.Points(this.particleGeo, this.particleMat);
     this.scene.add(this.particlePoints);
   }
 
-  // --- CAMERA MODES ---
-  public setCameraView(mode: CameraViewMode) {
-    this.cameraMode = mode;
+  /**
+   * Initializes atmospheric 3D rain streaks falling across the battlefield
+   */
+  private initAtmosphericWeather() {
+    const rainCount = 600;
+    const rainPositions = new Float32Array(rainCount * 3);
+    for (let i = 0; i < rainCount; i++) {
+      rainPositions[i * 3] = (Math.random() - 0.5) * 800;
+      rainPositions[i * 3 + 1] = Math.random() * 300;
+      rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 800;
+    }
+    this.rainGeo = new THREE.BufferGeometry();
+    this.rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+
+    const rainMat = new THREE.PointsMaterial({
+      color: 0x94a3b8,
+      size: 2.2,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+    this.rainPoints = new THREE.Points(this.rainGeo, rainMat);
+    this.scene.add(this.rainPoints);
   }
 
-  // --- 3D ENVIRONMENT BUILDERS ---
-  private build3DHelipad() {
-    const cx = MAP_SIZE.width / 2;
-    const cz = MAP_SIZE.height / 2;
-
-    // Helipad elevated concrete foundation
-    const padGeo = new THREE.CylinderGeometry(150, 154, 4, 36);
-    const padMat = new THREE.MeshStandardMaterial({
-      color: 0x1f2937,
-      roughness: 0.75,
-      metalness: 0.25
-    });
-    const padMesh = new THREE.Mesh(padGeo, padMat);
-    padMesh.position.set(cx, 1.5, cz);
-    padMesh.receiveShadow = true;
-    this.helipadGroup.add(padMesh);
-
-    // Outer Yellow Ring
-    const ringGeo = new THREE.RingGeometry(130, 138, 48);
-    ringGeo.rotateX(-Math.PI / 2);
-    const ringMat = new THREE.MeshStandardMaterial({
-      color: 0xfacc15,
-      emissive: 0x854d0e,
-      roughness: 0.5,
-      metalness: 0.3
-    });
-    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.position.set(cx, 3.6, cz);
-    ringMesh.receiveShadow = true;
-    this.helipadGroup.add(ringMesh);
-
-    // Inner Dashed Ring
-    const innerRingGeo = new THREE.RingGeometry(86, 92, 32);
-    innerRingGeo.rotateX(-Math.PI / 2);
-    const innerRingMat = new THREE.MeshStandardMaterial({
-      color: 0xeab308,
-      roughness: 0.5
-    });
-    const innerRingMesh = new THREE.Mesh(innerRingGeo, innerRingMat);
-    innerRingMesh.position.set(cx, 3.65, cz);
-    this.helipadGroup.add(innerRingMesh);
-
-    // Letter 'H' in center of Helipad
-    const hMat = new THREE.MeshStandardMaterial({
-      color: 0xfacc15,
-      emissive: 0x713f12,
-      roughness: 0.4
-    });
-    // Left bar
-    const barLeft = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 70), hMat);
-    barLeft.position.set(cx - 24, 3.7, cz);
-    this.helipadGroup.add(barLeft);
-    // Right bar
-    const barRight = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 70), hMat);
-    barRight.position.set(cx + 24, 3.7, cz);
-    this.helipadGroup.add(barRight);
-    // Center bar
-    const barMid = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 12), hMat);
-    barMid.position.set(cx, 3.7, cz);
-    this.helipadGroup.add(barMid);
-
-    // 4 Perimeter Helipad Warning Beacon Lights
-    const beaconLightColors = [0xef4444, 0xef4444, 0xef4444, 0xef4444];
-    const beaconAngles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
-    beaconAngles.forEach((angle, idx) => {
-      const bx = cx + Math.cos(angle) * 145;
-      const bz = cz + Math.sin(angle) * 145;
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.8, 2.2, 12, 12),
-        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 })
-      );
-      pole.position.set(bx, 6, bz);
-      pole.castShadow = true;
-      this.helipadGroup.add(pole);
-
-      const lamp = new THREE.Mesh(
-        new THREE.SphereGeometry(2.5, 12, 12),
-        new THREE.MeshStandardMaterial({
-          color: beaconLightColors[idx],
-          emissive: beaconLightColors[idx],
-          emissiveIntensity: 1.2
-        })
-      );
-      lamp.position.set(bx, 13, bz);
-      this.helipadGroup.add(lamp);
-    });
-  }
-
+  /**
+   * Builds atmospheric city silhouettes in the background
+   */
   private buildCitySkyline() {
-    // Distant 3D skyscrapers silhouette around the rooftop
     const buildingMat = new THREE.MeshStandardMaterial({
-      color: 0x070b14,
+      color: 0x090d16,
       roughness: 0.9,
       metalness: 0.1
     });
-    const windowMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+    const windowMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
-    const count = 36;
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      const dist = 1450 + Math.random() * 350;
-      const bx = MAP_SIZE.width / 2 + Math.cos(angle) * dist;
-      const bz = MAP_SIZE.height / 2 + Math.sin(angle) * dist;
-      const bW = 120 + Math.random() * 160;
-      const bD = 120 + Math.random() * 160;
-      const bH = 300 + Math.random() * 650;
+    for (let i = 0; i < 28; i++) {
+      const bw = 70 + Math.random() * 90;
+      const bh = 140 + Math.random() * 260;
+      const bd = 70 + Math.random() * 90;
+      const bGeo = new THREE.BoxGeometry(bw, bh, bd);
+      const bMesh = new THREE.Mesh(bGeo, buildingMat);
 
-      const tower = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), buildingMat);
-      tower.position.set(bx, bH / 2 - 200, bz);
-      this.backgroundCityGroup.add(tower);
+      const angle = (i / 28) * Math.PI * 2;
+      const dist = 1400 + Math.random() * 300;
+      bMesh.position.set(
+        MAP_SIZE.width / 2 + Math.cos(angle) * dist,
+        bh / 2 - 80,
+        MAP_SIZE.height / 2 + Math.sin(angle) * dist
+      );
+      this.cityBackdropGroup.add(bMesh);
 
-      // Add a red aircraft beacon atop tall buildings
-      if (bH > 600) {
-        const beacon = new THREE.Mesh(
-          new THREE.SphereGeometry(3, 8, 8),
-          new THREE.MeshBasicMaterial({ color: 0xff0000 })
-        );
-        beacon.position.set(bx, bH - 195, bz);
-        this.backgroundCityGroup.add(beacon);
+      // Random glowing windows on skyline
+      if (Math.random() > 0.4) {
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(12, 18), windowMat);
+        win.position.set(bMesh.position.x, bMesh.position.y + 30, bMesh.position.z + bd / 2 + 1);
+        this.cityBackdropGroup.add(win);
       }
     }
   }
 
-  private buildPerimeterBarriers() {
-    // Industrial safety guardrails along the map borders
-    const fenceMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      metalness: 0.8,
-      roughness: 0.3
-    });
-    const railMat = new THREE.MeshStandardMaterial({
-      color: 0xfacc15,
-      metalness: 0.4,
-      roughness: 0.4
-    });
-
-    const w = MAP_SIZE.width;
-    const h = MAP_SIZE.height;
-    const segments = 24;
-
-    // Top & Bottom Rails
-    for (let i = 0; i < segments; i++) {
-      const x = (i / segments) * w + (w / segments) / 2;
-      // Top
-      const postTop = new THREE.Mesh(new THREE.BoxGeometry(4, 26, 4), fenceMat);
-      postTop.position.set(x, 13, 20);
-      postTop.castShadow = true;
-      this.boundaryGroup.add(postTop);
-
-      const railTop = new THREE.Mesh(new THREE.BoxGeometry(w / segments, 4, 3), railMat);
-      railTop.position.set(x, 22, 20);
-      this.boundaryGroup.add(railTop);
-
-      // Bottom
-      const postBot = new THREE.Mesh(new THREE.BoxGeometry(4, 26, 4), fenceMat);
-      postBot.position.set(x, 13, h - 20);
-      postBot.castShadow = true;
-      this.boundaryGroup.add(postBot);
-
-      const railBot = new THREE.Mesh(new THREE.BoxGeometry(w / segments, 4, 3), railMat);
-      railBot.position.set(x, 22, h - 20);
-      this.boundaryGroup.add(railBot);
+  /**
+   * Sets the camera perspective mode
+   */
+  public setCameraView(mode: CameraViewMode) {
+    this.cameraMode = mode;
+    if (mode === 'isometric') {
+      this.camera.fov = 46;
+    } else if (mode === 'topdown') {
+      this.camera.fov = 52;
+    } else if (mode === 'action') {
+      this.camera.fov = 58;
     }
+    this.camera.updateProjectionMatrix();
   }
 
-  // --- PLAYER 3D MODEL BUILDER ---
-  private buildPlayerModel() {
-    // Humanoid tactical soldier
-    // Body / Torso
-    const bodyGeo = new THREE.CylinderGeometry(7, 6, 16, 12);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.6,
-      metalness: 0.4
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 18;
-    body.castShadow = true;
-    this.playerGroup.add(body);
-
-    // Armor Vest
-    const armorGeo = new THREE.BoxGeometry(16, 13, 11);
-    const armorMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      roughness: 0.4,
-      metalness: 0.6
-    });
-    const armor = new THREE.Mesh(armorGeo, armorMat);
-    armor.position.y = 19;
-    armor.castShadow = true;
-    this.playerGroup.add(armor);
-
-    // Head with Tactical Helmet
-    const headGeo = new THREE.SphereGeometry(5.2, 14, 14);
-    const helmetMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.3,
-      metalness: 0.7
-    });
-    const head = new THREE.Mesh(headGeo, helmetMat);
-    head.position.y = 29;
-    head.castShadow = true;
-    this.playerGroup.add(head);
-
-    // Visor / NVG Goggles (Glowing Cyan / Green)
-    const visorGeo = new THREE.BoxGeometry(7.2, 2.8, 3.8);
-    const visorMat = new THREE.MeshStandardMaterial({
-      color: 0x06b6d4,
-      emissive: 0x0891b2,
-      emissiveIntensity: 1.5,
-      roughness: 0.1
-    });
-    const visor = new THREE.Mesh(visorGeo, visorMat);
-    visor.position.set(0, 29.5, 4.2);
-    this.playerGroup.add(visor);
-
-    // Legs
-    const legGeo = new THREE.CylinderGeometry(2.4, 2.2, 13, 10);
-    const legMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.7
-    });
-    const leftLeg = new THREE.Mesh(legGeo, legMat);
-    leftLeg.position.set(-4.5, 6.5, 0);
-    leftLeg.castShadow = true;
-    this.playerGroup.add(leftLeg);
-
-    const rightLeg = new THREE.Mesh(legGeo, legMat);
-    rightLeg.position.set(4.5, 6.5, 0);
-    rightLeg.castShadow = true;
-    this.playerGroup.add(rightLeg);
-
-    // Arms
-    const armGeo = new THREE.CylinderGeometry(2.2, 2.0, 12, 10);
-    const armMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      roughness: 0.6
-    });
-    const leftArm = new THREE.Mesh(armGeo, armMat);
-    leftArm.position.set(-9, 18, 4);
-    leftArm.rotation.x = Math.PI / 3;
-    leftArm.castShadow = true;
-    this.playerGroup.add(leftArm);
-
-    const rightArm = new THREE.Mesh(armGeo, armMat);
-    rightArm.position.set(9, 18, 4);
-    rightArm.rotation.x = Math.PI / 3;
-    rightArm.castShadow = true;
-    this.playerGroup.add(rightArm);
-
-    // 3D Weapon Group (Attached in hands)
-    const weaponGroup = new THREE.Group();
-    weaponGroup.position.set(3, 17, 12);
-    const gunBody = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 5, 20),
-      new THREE.MeshStandardMaterial({ color: 0x09090b, metalness: 0.85, roughness: 0.2 })
-    );
-    gunBody.castShadow = true;
-    weaponGroup.add(gunBody);
-
-    const gunBarrel = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.2, 1.2, 10, 8),
-      new THREE.MeshStandardMaterial({ color: 0x27272a, metalness: 0.9, roughness: 0.1 })
-    );
-    gunBarrel.rotation.x = Math.PI / 2;
-    gunBarrel.position.set(0, 1, 14);
-    gunBarrel.castShadow = true;
-    weaponGroup.add(gunBarrel);
-
-    // Tactical Laser Sight emitter line
-    const laserLineGeo = new THREE.CylinderGeometry(0.3, 0.3, 300, 6);
-    laserLineGeo.rotateX(Math.PI / 2);
-    const laserLineMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444,
-      transparent: true,
-      opacity: 0.65
-    });
-    const laserLine = new THREE.Mesh(laserLineGeo, laserLineMat);
-    laserLine.position.set(0, 1, 160);
-    weaponGroup.add(laserLine);
-
-    this.playerGroup.add(weaponGroup);
-
-    // Energy Shield Dome (Active when shield buff is on)
-    const shieldGeo = new THREE.SphereGeometry(22, 24, 24);
-    const shieldMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.8,
-      transparent: true,
-      opacity: 0,
-      wireframe: true
-    });
-    const shield = new THREE.Mesh(shieldGeo, shieldMat);
-    shield.position.y = 18;
-    this.playerGroup.add(shield);
-
-    return { body, head, visor, armor, leftLeg, rightLeg, leftArm, rightArm, weaponGroup, shield };
+  public resize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+    this.renderer.setSize(width, height, false);
+    this.composer.setSize(width, height);
+    this.bloomPass.setSize(width, height);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
   }
 
-  // --- ZOMBIE 3D MODEL BUILDER ---
-  private getOrCreateZombieGroup(z: Zombie): THREE.Group {
-    let grp = this.zombiesMap.get(z.id);
-    if (grp) return grp;
-
-    grp = new THREE.Group();
-    const isBoss = Boolean(z.isBoss);
-    const scale = isBoss ? (z.radius > 45 ? 2.6 : 2.0) : (z.type === 'tank' ? 1.4 : z.type === 'runner' ? 0.9 : 1.1);
-
-    const skinColor = isBoss ? 0x7f1d1d : z.type === 'spitter' ? 0x15803d : z.type === 'tank' ? 0x374151 : 0x166534;
-    const eyeColor = isBoss ? 0xfacc15 : z.type === 'spitter' ? 0x4ade80 : 0xef4444;
-
-    // Torso / Hunched spine
-    const torsoGeo = new THREE.CylinderGeometry(6 * scale, 5 * scale, 15 * scale, 10);
-    const torsoMat = new THREE.MeshStandardMaterial({
-      color: skinColor,
-      roughness: 0.8,
-      metalness: 0.1
-    });
-    const torso = new THREE.Mesh(torsoGeo, torsoMat);
-    torso.position.y = 16 * scale;
-    torso.rotation.x = Math.PI * 0.15; // Hunched posture
-    torso.castShadow = true;
-    grp.add(torso);
-
-    // Head
-    const headGeo = new THREE.SphereGeometry(4.8 * scale, 12, 12);
-    const headMat = new THREE.MeshStandardMaterial({
-      color: skinColor,
-      roughness: 0.75
-    });
-    const head = new THREE.Mesh(headGeo, headMat);
-    head.position.set(0, 26 * scale, 4 * scale);
-    head.castShadow = true;
-    grp.add(head);
-
-    // Glowing Menacing Eyes
-    const eyeGeo = new THREE.SphereGeometry(1.1 * scale, 6, 6);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColor });
-    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(-1.8 * scale, 26.5 * scale, 8 * scale);
-    grp.add(leftEye);
-
-    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(1.8 * scale, 26.5 * scale, 8 * scale);
-    grp.add(rightEye);
-
-    // Flailing Claws / Outstretched Arms
-    const armGeo = new THREE.CylinderGeometry(1.8 * scale, 1.5 * scale, 13 * scale, 8);
-    const armMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.8 });
-
-    const leftArm = new THREE.Mesh(armGeo, armMat);
-    leftArm.position.set(-8 * scale, 18 * scale, 7 * scale);
-    leftArm.rotation.x = Math.PI * 0.45;
-    leftArm.rotation.z = Math.PI * 0.1;
-    leftArm.castShadow = true;
-    grp.add(leftArm);
-
-    const rightArm = new THREE.Mesh(armGeo, armMat);
-    rightArm.position.set(8 * scale, 18 * scale, 7 * scale);
-    rightArm.rotation.x = Math.PI * 0.45;
-    rightArm.rotation.z = -Math.PI * 0.1;
-    rightArm.castShadow = true;
-    grp.add(rightArm);
-
-    // Legs
-    const legGeo = new THREE.CylinderGeometry(2.0 * scale, 1.8 * scale, 12 * scale, 8);
-    const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-    const leftLeg = new THREE.Mesh(legGeo, legMat);
-    leftLeg.position.set(-3.5 * scale, 6 * scale, 0);
-    leftLeg.castShadow = true;
-    grp.add(leftLeg);
-
-    const rightLeg = new THREE.Mesh(legGeo, legMat);
-    rightLeg.position.set(3.5 * scale, 6 * scale, 0);
-    rightLeg.castShadow = true;
-    grp.add(rightLeg);
-
-    // Boss Spikes & Core
-    if (isBoss) {
-      const spikeMat = new THREE.MeshStandardMaterial({
-        color: 0x991b1b,
-        emissive: 0xef4444,
-        emissiveIntensity: 0.6,
-        roughness: 0.4
-      });
-      for (let s = 0; s < 4; s++) {
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(2.5 * scale, 14 * scale, 6), spikeMat);
-        spike.position.set((s % 2 === 0 ? -1 : 1) * 9 * scale, 22 * scale + (s > 1 ? 6 : 0), -4 * scale);
-        spike.rotation.x = -Math.PI * 0.35;
-        spike.rotation.z = (s % 2 === 0 ? -1 : 1) * 0.4;
-        grp.add(spike);
-      }
-    }
-
-    this.scene.add(grp);
-    this.zombiesMap.set(z.id, grp);
-    return grp;
-  }
-
-  // --- DROP ITEMS 3D BUILDER ---
-  private getOrCreateDropGroup(d: DropItem): THREE.Group {
-    let grp = this.dropsMap.get(d.id);
-    if (grp) return grp;
-
-    grp = new THREE.Group();
-    if (d.type === 'gold_coin') {
-      // Golden Coin
-      const coin = new THREE.Mesh(
-        new THREE.CylinderGeometry(5, 5, 1.5, 16),
-        new THREE.MeshStandardMaterial({
-          color: 0xfacc15,
-          emissive: 0x854d0e,
-          metalness: 0.9,
-          roughness: 0.15
-        })
-      );
-      coin.rotation.x = Math.PI / 2;
-      grp.add(coin);
-    } else if (d.type === 'gold_ingot') {
-      // Gold Ingot
-      const ingot = new THREE.Mesh(
-        new THREE.BoxGeometry(10, 4, 6),
-        new THREE.MeshStandardMaterial({
-          color: 0xfde047,
-          emissive: 0xa16207,
-          metalness: 0.95,
-          roughness: 0.1
-        })
-      );
-      grp.add(ingot);
-    } else if (d.type === 'diamond_gem') {
-      // Sparkling Blue Diamond
-      const gem = new THREE.Mesh(
-        new THREE.OctahedronGeometry(6, 0),
-        new THREE.MeshStandardMaterial({
-          color: 0x38bdf8,
-          emissive: 0x0284c7,
-          emissiveIntensity: 1.2,
-          metalness: 0.2,
-          roughness: 0.1
-        })
-      );
-      grp.add(gem);
-    } else if (d.type === 'boss_chest') {
-      // Epic Golden Boss Chest
-      const chestBase = new THREE.Mesh(
-        new THREE.BoxGeometry(14, 8, 10),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5, metalness: 0.4 })
-      );
-      chestBase.position.y = 4;
-      grp.add(chestBase);
-
-      const chestLid = new THREE.Mesh(
-        new THREE.CylinderGeometry(5.2, 5.2, 14, 16, 1, false, 0, Math.PI),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, metalness: 0.8, roughness: 0.2 })
-      );
-      chestLid.rotation.z = Math.PI / 2;
-      chestLid.position.y = 8;
-      grp.add(chestLid);
-    } else if (d.type === 'medkit') {
-      // Medkit Box with Red Cross
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(9, 7, 5),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 })
-      );
-      box.position.y = 3.5;
-      grp.add(box);
-      const crossH = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 1.5, 5.2),
-        new THREE.MeshBasicMaterial({ color: 0xef4444 })
-      );
-      crossH.position.y = 3.5;
-      grp.add(crossH);
-      const crossV = new THREE.Mesh(
-        new THREE.BoxGeometry(1.5, 5, 5.2),
-        new THREE.MeshBasicMaterial({ color: 0xef4444 })
-      );
-      crossV.position.y = 3.5;
-      grp.add(crossV);
-    } else {
-      // Ammo Box
-      const ammo = new THREE.Mesh(
-        new THREE.BoxGeometry(8, 6, 6),
-        new THREE.MeshStandardMaterial({ color: 0x15803d, metalness: 0.6, roughness: 0.4 })
-      );
-      ammo.position.y = 3;
-      grp.add(ammo);
-    }
-
-    this.scene.add(grp);
-    this.dropsMap.set(d.id, grp);
-    return grp;
-  }
-
-  // --- COMPANION DRONES 3D BUILDER ---
-  private getOrCreateDroneGroup(id: string, colorHex: string): THREE.Group {
-    let grp = this.dronesMap.get(id);
-    if (grp) return grp;
-
-    grp = new THREE.Group();
-    // Drone central orb
-    const orb = new THREE.Mesh(
-      new THREE.SphereGeometry(4.5, 12, 12),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 })
-    );
-    grp.add(orb);
-
-    // Glowing Ring
-    const col = parseInt(colorHex.replace('#', '0x')) || 0x38bdf8;
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(6.5, 0.9, 8, 20),
-      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.5 })
-    );
-    ring.rotation.x = Math.PI / 2;
-    grp.add(ring);
-
-    this.scene.add(grp);
-    this.dronesMap.set(id, grp);
-    return grp;
-  }
-
-  // --- OBSTACLES BUILDER ---
-  public syncObstacles(obstacles: Obstacle[]) {
-    // Clear and build 3D obstacles
-    while (this.obstaclesGroup.children.length > 0) {
-      const obj = this.obstaclesGroup.children[0];
-      this.obstaclesGroup.remove(obj);
-    }
-
-    const containerMat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a8a,
-      roughness: 0.6,
-      metalness: 0.4
-    });
-    const sandbagMat = new THREE.MeshStandardMaterial({
-      color: 0x78350f,
-      roughness: 0.95
-    });
-    const barrelMat = new THREE.MeshStandardMaterial({
-      color: 0xb91c1c,
-      roughness: 0.5,
-      metalness: 0.5
-    });
-
-    obstacles.forEach(obs => {
-      let mesh: THREE.Mesh;
-      if (obs.type === 'crate' || obs.type === 'vehicle' || obs.type === 'server' || obs.type === 'barrier') {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 36, obs.height), containerMat);
-        mesh.position.set(obs.x + obs.width / 2, 18, obs.y + obs.height / 2);
-      } else if (obs.type === 'sandbag') {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 16, obs.height), sandbagMat);
-        mesh.position.set(obs.x + obs.width / 2, 8, obs.y + obs.height / 2);
-      } else if (obs.type === 'barrel') {
-        mesh = new THREE.Mesh(new THREE.CylinderGeometry(obs.width / 2, obs.width / 2, 24, 14), barrelMat);
-        mesh.position.set(obs.x + obs.width / 2, 12, obs.y + obs.height / 2);
-      } else {
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 24, obs.height), containerMat);
-        mesh.position.set(obs.x + obs.width / 2, 12, obs.y + obs.height / 2);
-      }
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.obstaclesGroup.add(mesh);
-    });
-  }
-
-  // --- MAP ENVIRONMENT THEME UPDATE ---
-  public setMapEnvironment(mapId: MapEnvironmentId) {
-    if (this.currentMapId === mapId) return;
-    this.currentMapId = mapId;
-
-    if (mapId === 'street') {
-      this.scene.background = new THREE.Color('#0a0a0a');
-      this.scene.fog = new THREE.FogExp2('#0a0a0a', 0.0014);
-      this.ambientLight.color.set(0xf59e0b);
-      this.ambientLight.intensity = 0.35;
-      (this.groundMesh.material as THREE.MeshStandardMaterial).color.set(0x18181b);
-    } else if (mapId === 'bunker') {
-      this.scene.background = new THREE.Color('#022c22');
-      this.scene.fog = new THREE.FogExp2('#022c22', 0.0015);
-      this.ambientLight.color.set(0x10b981);
-      this.ambientLight.intensity = 0.4;
-      (this.groundMesh.material as THREE.MeshStandardMaterial).color.set(0x064e3b);
-    } else if (mapId === 'hospital') {
-      this.scene.background = new THREE.Color('#1a0505');
-      this.scene.fog = new THREE.FogExp2('#1a0505', 0.0016);
-      this.ambientLight.color.set(0xef4444);
-      this.ambientLight.intensity = 0.4;
-      (this.groundMesh.material as THREE.MeshStandardMaterial).color.set(0x2d0606);
-    } else {
-      // Rooftop (Default)
-      this.scene.background = new THREE.Color('#030712');
-      this.scene.fog = new THREE.FogExp2('#030712', 0.0012);
-      this.ambientLight.color.set(0x38bdf8);
-      this.ambientLight.intensity = 0.45;
-      (this.groundMesh.material as THREE.MeshStandardMaterial).color.set(0x111827);
-    }
-  }
-
-  // --- RAYCASTING SCREEN -> 3D GROUND PLANE ---
+  /**
+   * Raycasts screen coordinates onto the 3D ground plane
+   */
   public getGroundIntersection(screenX: number, screenY: number): { x: number; y: number } | null {
-    const rect = this.canvas.getBoundingClientRect();
-    const ndcX = ((screenX - rect.left) / rect.width) * 2 - 1;
-    const ndcY = -(((screenY - rect.top) / rect.height) * 2 - 1);
+    const ndcX = (screenX / this.width) * 2 - 1;
+    const ndcY = -(screenY / this.height) * 2 + 1;
 
     this.raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.camera);
     const target = new THREE.Vector3();
@@ -817,7 +362,80 @@ export class ThreeRenderer {
     return null;
   }
 
-  // --- MAIN 3D RENDER LOOP ---
+  /**
+   * Projects 3D world coordinates to 2D screen pixels for HUD, HP bars, Floating damage numbers
+   */
+  public projectToScreen(worldX: number, worldY: number, heightOffset = 0): { x: number; y: number } | null {
+    const v = new THREE.Vector3(worldX, heightOffset, worldY);
+    v.project(this.camera);
+    if (v.z > 1) return null; // Behind camera
+    return {
+      x: ((v.x + 1) * this.width) / 2,
+      y: ((-v.y + 1) * this.height) / 2
+    };
+  }
+
+  /**
+   * Synchronizes 3D Obstacles on map change
+   */
+  public syncObstacles(obstacles: Obstacle[]) {
+    while (this.obstaclesGroup.children.length > 0) {
+      this.obstaclesGroup.remove(this.obstaclesGroup.children[0]);
+    }
+
+    const containerTex = getContainerTexture('#1e3a8a');
+    const containerMat = new THREE.MeshStandardMaterial({
+      map: containerTex,
+      roughness: 0.6,
+      metalness: 0.5
+    });
+
+    const sandbagMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.95 });
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.4, roughness: 0.5 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+
+    obstacles.forEach(obs => {
+      let mesh: THREE.Mesh;
+      if (obs.type === 'crate' || obs.type === 'vehicle' || obs.type === 'server' || obs.type === 'barrier') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 36, obs.height), containerMat);
+        mesh.position.set(obs.x + obs.width / 2, 18, obs.y + obs.height / 2);
+      } else if (obs.type === 'sandbag') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 14, obs.height), sandbagMat);
+        mesh.position.set(obs.x + obs.width / 2, 7, obs.y + obs.height / 2);
+      } else if (obs.type === 'barrel') {
+        mesh = new THREE.Mesh(new THREE.CylinderGeometry(obs.width / 2, obs.width / 2, 26, 12), barrelMat);
+        mesh.position.set(obs.x + obs.width / 2, 13, obs.y + obs.height / 2);
+      } else {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(obs.width, 24, obs.height), concreteMat);
+        mesh.position.set(obs.x + obs.width / 2, 12, obs.y + obs.height / 2);
+      }
+
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.obstaclesGroup.add(mesh);
+    });
+  }
+
+  /**
+   * Ejects a spent brass bullet casing from the rifle
+   */
+  private ejectBrassCasing(x: number, y: number, z: number, angle: number) {
+    const casing = this.casingMeshes[this.nextCasingIdx];
+    this.nextCasingIdx = (this.nextCasingIdx + 1) % this.casingMeshes.length;
+
+    casing.visible = true;
+    casing.position.set(
+      x - Math.sin(angle) * 3,
+      y + 1,
+      z + Math.cos(angle) * 3
+    );
+    casing.rotation.y = angle + Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+    casing.rotation.x = (Math.random() - 0.5) * 0.5;
+  }
+
+  /**
+   * Main Render Loop Update
+   */
   public update(
     gameState: {
       player: PlayerStats;
@@ -826,217 +444,257 @@ export class ThreeRenderer {
       bullets: Bullet[];
       particles: Particle[];
       drops: DropItem[];
-      turrets?: ActiveTurret[];
-      activeDrones?: ActiveDroneState[];
-      laserBeams?: Array<any>;
-      bossHazards?: BossHazard[];
+      turrets: ActiveTurret[];
+      activeDrones: ActiveDroneState[];
+      laserBeams: SweepingLaser[];
+      bossHazards: BossHazard[];
       activeBuffs: ActiveBuffs;
       currentMapId: MapEnvironmentId;
       screenShake: number;
     },
     currentTime: number,
-    isFiring: boolean
+    isFiring = false
   ) {
-    const { player: p, currentWeapon: wep } = gameState;
+    const p = gameState.player;
 
-    // 1. Update Map Theme
-    this.setMapEnvironment(gameState.currentMapId);
-
-    // 2. Update Player 3D Position & Rotation
-    this.playerGroup.position.set(p.x, 0, p.y);
-    this.playerGroup.rotation.y = -p.angle;
-
-    // Tactical Flashlight update
-    this.playerFlashlight.position.set(p.x, 22, p.y);
-    const targetDist = 200;
-    this.playerFlashlightTarget.position.set(
-      p.x + Math.cos(p.angle) * targetDist,
-      5,
-      p.y + Math.sin(p.angle) * targetDist
-    );
-
-    // Directional shadow-casting light tracks player
-    this.dirLight.position.set(p.x + 350, 650, p.y + 250);
-    this.dirLight.target.position.set(p.x, 0, p.y);
-    this.dirLight.target.updateMatrixWorld();
-
-    // Player walking leg animation
-    const isMoving = p.speed > 0.5 && (Math.abs(p.walkFrame || 0) > 0.05);
-    const legSwing = Math.sin((p.walkFrame || 0) * 1.5) * 0.45;
-    this.playerLeftLeg.rotation.x = legSwing;
-    this.playerRightLeg.rotation.x = -legSwing;
-
-    // Player shield visual
-    const shieldActive = gameState.activeBuffs.shieldTimer > 0;
-    const shieldMat = this.playerShieldMesh.material as THREE.MeshStandardMaterial;
-    shieldMat.opacity = shieldActive ? 0.45 + Math.sin(currentTime / 120) * 0.15 : 0;
-    if (shieldActive) {
-      this.playerShieldMesh.rotation.y += 0.04;
+    // Check Map Change
+    if (gameState.currentMapId !== this.currentMapId) {
+      this.currentMapId = gameState.currentMapId;
+      const { diffuse, roughness } = getTacticalGroundTexture(this.currentMapId);
+      this.groundMaterial.map = diffuse;
+      this.groundMaterial.roughnessMap = roughness;
+      this.groundMaterial.needsUpdate = true;
     }
 
-    // Muzzle flash
-    if (isFiring) {
-      this.muzzleFlashLight.intensity = 4.5;
-      this.muzzleFlashLight.position.set(
-        p.x + Math.cos(p.angle) * 35,
-        18,
-        p.y + Math.sin(p.angle) * 35
-      );
+    // 1. Commando Movement & Aim
+    const isMoving = Math.hypot(p.x - this.lastPlayerPos.x, p.y - this.lastPlayerPos.y) > 0.4;
+    this.lastPlayerPos = { x: p.x, y: p.y };
+
+    this.commandoRig.rootGroup.position.set(p.x, 0, p.y);
+    this.commandoRig.rootGroup.rotation.y = -p.angle + Math.PI / 2;
+    this.commandoRig.animate(isMoving, currentTime, isFiring);
+
+    // Shield mesh
+    if (gameState.activeBuffs.shieldTimer > 0) {
+      this.playerShieldMesh.visible = true;
+      this.playerShieldMesh.position.set(p.x, 18, p.y);
+      this.playerShieldMesh.rotation.y += 0.03;
+      this.playerShieldMesh.rotation.x += 0.01;
     } else {
-      this.muzzleFlashLight.intensity = Math.max(0, this.muzzleFlashLight.intensity - 0.5);
+      this.playerShieldMesh.visible = false;
     }
 
-    // 3. Update Camera smoothly tracking player
-    const shakeOffset = gameState.screenShake > 0 ? (Math.random() - 0.5) * gameState.screenShake * 1.5 : 0;
+    // 2. Tactical Flashlight & Volumetric Shaft
+    const aimTargetX = p.x + Math.cos(p.angle) * 360;
+    const aimTargetZ = p.y + Math.sin(p.angle) * 360;
+
+    this.flashlight.position.set(p.x, 22, p.y);
+    this.flashlightTarget.position.set(aimTargetX, 0, aimTargetZ);
+
+    this.volumetricLight.update(p.x, 20, p.y, aimTargetX, aimTargetZ);
+
+    // Muzzle Flash
+    if (isFiring) {
+      this.muzzleFlashLight.position.set(
+        p.x + Math.cos(p.angle) * 16,
+        20,
+        p.y + Math.sin(p.angle) * 16
+      );
+      this.muzzleFlashLight.intensity = 4.8;
+      this.ejectBrassCasing(p.x, 20, p.y, p.angle);
+    } else {
+      this.muzzleFlashLight.intensity = THREE.MathUtils.lerp(this.muzzleFlashLight.intensity, 0, 0.4);
+    }
+
+    // Emergency Red Beacon pulse
+    const beaconPulse = Math.sin(currentTime * 0.005);
+    this.emergencyBeaconLight.intensity = 1.2 + beaconPulse * 0.8;
+    this.emergencyBeaconMesh.rotation.y += 0.08;
+
+    // 3. Camera Rigging & Tracking
+    const shakeX = (Math.random() - 0.5) * (gameState.screenShake || 0) * 1.5;
+    const shakeZ = (Math.random() - 0.5) * (gameState.screenShake || 0) * 1.5;
+
     if (this.cameraMode === 'isometric') {
-      // 50° Angled Cinematic Isometric View
-      const camDistZ = 340;
+      // Classic Diablo IV / Alien Shooter isometric diagonal angle
+      const camDist = 320;
       const camHeight = 380;
-      this.camera.position.set(p.x + shakeOffset, camHeight, p.y + camDistZ);
+      this.camera.position.set(
+        p.x + shakeX,
+        camHeight,
+        p.y + camDist + shakeZ
+      );
       this.camera.lookAt(p.x, 15, p.y);
     } else if (this.cameraMode === 'topdown') {
-      // Steep Tactical Top-down
-      this.camera.position.set(p.x + shakeOffset, 550, p.y + 80);
+      // High tactical top-down
+      this.camera.position.set(p.x + shakeX, 520, p.y + shakeZ + 0.1);
       this.camera.lookAt(p.x, 0, p.y);
     } else {
-      // Action Over-the-Shoulder / Close Cam
-      const camDistZ = 220;
-      const camHeight = 240;
-      this.camera.position.set(p.x + shakeOffset, camHeight, p.y + camDistZ);
-      this.camera.lookAt(p.x, 18, p.y - 20);
+      // Action Chase Camera behind the soldier's shoulder
+      const backDist = 180;
+      const backX = p.x - Math.cos(p.angle) * backDist + shakeX;
+      const backZ = p.y - Math.sin(p.angle) * backDist + shakeZ;
+      this.camera.position.set(backX, 120, backZ);
+      this.camera.lookAt(p.x + Math.cos(p.angle) * 120, 20, p.y + Math.sin(p.angle) * 120);
     }
 
-    // 4. Update Companion Drones
-    const activeDroneIds = new Set<string>();
-    gameState.activeDrones.forEach(d => {
-      activeDroneIds.add(d.id);
-      const droneGrp = this.getOrCreateDroneGroup(d.id, '#38bdf8');
-      const hoverBob = Math.sin((currentTime / 220) + (d.hoverOffset || 0)) * 4;
-      droneGrp.position.set(d.x, 26 + hoverBob, d.y);
-      droneGrp.rotation.y += 0.05;
-    });
-    // Remove inactive drones
-    for (const [id, grp] of this.dronesMap.entries()) {
-      if (!activeDroneIds.has(id)) {
-        this.scene.remove(grp);
-        this.dronesMap.delete(id);
+    // Moon Light follows player for consistent soft shadows
+    this.moonLight.position.set(p.x + 350, 750, p.y + 250);
+    this.moonLight.target.position.set(p.x, 0, p.y);
+    this.moonLight.target.updateMatrixWorld();
+
+    // 4. Update Atmospheric Rain
+    if (this.rainPoints && this.rainGeo) {
+      const rainPos = this.rainGeo.attributes.position.array as Float32Array;
+      for (let i = 0; i < rainPos.length / 3; i++) {
+        rainPos[i * 3 + 1] -= 8.5; // fall speed
+        if (rainPos[i * 3 + 1] < 0) {
+          rainPos[i * 3 + 1] = 250;
+          rainPos[i * 3] = p.x + (Math.random() - 0.5) * 600;
+          rainPos[i * 3 + 2] = p.y + (Math.random() - 0.5) * 600;
+        }
       }
+      this.rainGeo.attributes.position.needsUpdate = true;
     }
 
-    // 5. Update Zombies & Bosses
-    const activeZombieIds = new Set<string>();
+    // 5. Update Zombies
+    const currentZombieIds = new Set<string>();
     gameState.zombies.forEach(z => {
-      activeZombieIds.add(z.id);
-      const zGrp = this.getOrCreateZombieGroup(z);
-      zGrp.position.set(z.x, 0, z.y);
-      zGrp.rotation.y = -z.angle;
-
-      // Zombie walking shamble / bobbing animation
-      const shambleBob = Math.sin(currentTime * 0.008 + (z.x * 0.05)) * 2.2;
-      zGrp.position.y = Math.max(0, shambleBob);
-
-      // Boss aura pulse
-      if (z.isBoss) {
-        zGrp.rotation.y += Math.sin(currentTime * 0.005) * 0.02;
+      currentZombieIds.add(z.id);
+      let rig = this.zombiesMap.get(z.id);
+      if (!rig) {
+        rig = createZombieModel(z);
+        this.scene.add(rig.rootGroup);
+        this.zombiesMap.set(z.id, rig);
       }
+
+      rig.rootGroup.position.set(z.x, 0, z.y);
+      rig.rootGroup.rotation.y = -z.angle + Math.PI / 2;
+
+      const speedMultiplier = z.type === 'runner' ? 1.6 : z.type === 'tank' ? 0.7 : 1.0;
+      rig.animate(currentTime, speedMultiplier);
     });
+
     // Remove dead zombies
-    for (const [id, grp] of this.zombiesMap.entries()) {
-      if (!activeZombieIds.has(id)) {
-        this.scene.remove(grp);
+    this.zombiesMap.forEach((rig, id) => {
+      if (!currentZombieIds.has(id)) {
+        this.scene.remove(rig.rootGroup);
         this.zombiesMap.delete(id);
       }
-    }
-
-    // 6. Update Bullets
-    const activeBulletIds = new Set<string>();
-    gameState.bullets.forEach((b, idx) => {
-      const bId = `b_${idx}`;
-      activeBulletIds.add(bId);
-      let bMesh = this.bulletsMap.get(bId);
-      if (!bMesh) {
-        const bulletColor = parseInt(b.color.replace('#', '0x')) || 0xfacc15;
-        bMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(b.radius * 0.9, b.radius * 0.9, b.radius * 5, 8),
-          new THREE.MeshBasicMaterial({ color: bulletColor })
-        );
-        bMesh.rotation.x = Math.PI / 2;
-        this.scene.add(bMesh);
-        this.bulletsMap.set(bId, bMesh);
-      }
-      bMesh.position.set(b.x, 16, b.y);
-      const bulletAngle = Math.atan2(b.vy, b.vx);
-      bMesh.rotation.z = -bulletAngle + Math.PI / 2;
     });
-    for (const [id, mesh] of this.bulletsMap.entries()) {
-      if (!activeBulletIds.has(id)) {
+
+    // 6. Update Bullets (Glowing 3D Tracers)
+    const currentBulletIds = new Set<string>();
+    gameState.bullets.forEach(b => {
+      currentBulletIds.add(b.id);
+      const bulletAngle = Math.atan2(b.vy, b.vx);
+      let mesh = this.bulletsMap.get(b.id);
+      if (!mesh) {
+        const tracerGeo = new THREE.CylinderGeometry(0.8, 0.8, 12, 6);
+        tracerGeo.rotateX(Math.PI / 2);
+        const bulletColor = b.isPlasma ? 0x38bdf8 : (b.color ? new THREE.Color(b.color).getHex() : 0xfacc15);
+        const tracerMat = new THREE.MeshBasicMaterial({ color: bulletColor });
+        mesh = new THREE.Mesh(tracerGeo, tracerMat);
+        this.scene.add(mesh);
+        this.bulletsMap.set(b.id, mesh);
+      }
+
+      mesh.position.set(b.x, 16, b.y);
+      mesh.rotation.y = -bulletAngle - Math.PI / 2;
+    });
+
+    this.bulletsMap.forEach((mesh, id) => {
+      if (!currentBulletIds.has(id)) {
         this.scene.remove(mesh);
         this.bulletsMap.delete(id);
       }
-    }
-
-    // 7. Update Drops
-    const activeDropIds = new Set<string>();
-    gameState.drops.forEach(d => {
-      activeDropIds.add(d.id);
-      const dGrp = this.getOrCreateDropGroup(d);
-      const bounce = (d.bounceZ || 0) * 0.5;
-      const hover = Math.sin(currentTime * 0.005 + (d.pulse || 0)) * 3;
-      dGrp.position.set(d.x, 4 + bounce + hover, d.y);
-      dGrp.rotation.y += 0.04;
     });
-    for (const [id, grp] of this.dropsMap.entries()) {
-      if (!activeDropIds.has(id)) {
-        this.scene.remove(grp);
-        this.dropsMap.delete(id);
-      }
-    }
 
-    // 8. Update 3D Particles
-    const pCount = Math.min(gameState.particles.length, this.max3DParticles);
-    for (let i = 0; i < pCount; i++) {
+    // 7. Update Particles
+    let pIdx = 0;
+    const limit = Math.min(gameState.particles.length, this.max3DParticles);
+    for (let i = 0; i < limit; i++) {
       const pt = gameState.particles[i];
-      this.particlePositions[i * 3] = pt.x;
-      this.particlePositions[i * 3 + 1] = 10 + (pt.radius || 2);
-      this.particlePositions[i * 3 + 2] = pt.y;
+      if (pt.alpha <= 0) continue;
 
-      const c = new THREE.Color(pt.color);
-      this.particleColors[i * 3] = c.r;
-      this.particleColors[i * 3 + 1] = c.g;
-      this.particleColors[i * 3 + 2] = c.b;
+      this.particlePositions[pIdx * 3] = pt.x;
+      this.particlePositions[pIdx * 3 + 1] = Math.max(1, 15 + Math.sin(pt.life || 0) * 6);
+      this.particlePositions[pIdx * 3 + 2] = pt.y;
+
+      const c = new THREE.Color(pt.color || '#f59e0b');
+      this.particleColors[pIdx * 3] = c.r * pt.alpha;
+      this.particleColors[pIdx * 3 + 1] = c.g * pt.alpha;
+      this.particleColors[pIdx * 3 + 2] = c.b * pt.alpha;
+
+      pIdx++;
     }
-    // Zero out remaining points
-    for (let i = pCount; i < this.max3DParticles; i++) {
-      this.particlePositions[i * 3 + 1] = -1000;
+
+    // Clear remaining slots
+    for (let i = pIdx; i < this.max3DParticles; i++) {
+      this.particlePositions[i * 3 + 1] = -999;
     }
     this.particleGeo.attributes.position.needsUpdate = true;
     this.particleGeo.attributes.color.needsUpdate = true;
 
-    // 9. Render the 3D Scene
-    this.renderer.render(this.scene, this.camera);
+    // 8. Update Drone Companions
+    const activeDroneIds = new Set<string>();
+    gameState.activeDrones.forEach(d => {
+      activeDroneIds.add(d.id);
+      let drone = this.dronesMap.get(d.id);
+      if (!drone) {
+        drone = this.buildDroneModel();
+        this.scene.add(drone);
+        this.dronesMap.set(d.id, drone);
+      }
+      const hoverBob = Math.sin(currentTime * 0.006 + (d.hoverOffset || 0)) * 3;
+      drone.position.set(d.x, 26 + hoverBob, d.y);
+      drone.rotation.y += 0.04;
+    });
+
+    this.dronesMap.forEach((drone, id) => {
+      if (!activeDroneIds.has(id)) {
+        this.scene.remove(drone);
+        this.dronesMap.delete(id);
+      }
+    });
+
+    // 9. Post-Processed Render (with UnrealBloom)
+    this.composer.render();
   }
 
-  // --- SCREEN PROJECTION ---
-  public projectToScreen(worldX: number, worldY: number, heightY: number = 0): { x: number; y: number } {
-    const v = new THREE.Vector3(worldX, heightY, worldY);
-    v.project(this.camera);
-    return {
-      x: (v.x * 0.5 + 0.5) * this.width,
-      y: (-(v.y * 0.5) + 0.5) * this.height
-    };
+  /**
+   * Builds high-tech Companion Drone model
+   */
+  private buildDroneModel(): THREE.Group {
+    const grp = new THREE.Group();
+    const coreGeo = new THREE.SphereGeometry(3.5, 12, 12);
+    const coreMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    grp.add(core);
+
+    const eyeGeo = new THREE.SphereGeometry(1.4, 8, 8);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(0, 0, 3);
+    grp.add(eye);
+
+    // Quad rotors
+    for (let r = 0; r < 4; r++) {
+      const angle = (r / 4) * Math.PI * 2;
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 7), coreMat);
+      arm.rotateZ(Math.PI / 2);
+      arm.position.set(Math.cos(angle) * 4.5, 0, Math.sin(angle) * 4.5);
+      arm.rotation.y = angle;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2, 0.3, 6, 12), eyeMat);
+      ring.position.set(Math.cos(angle) * 7.5, 0, Math.sin(angle) * 7.5);
+      ring.rotateX(Math.PI / 2);
+      grp.add(arm, ring);
+    }
+    return grp;
   }
 
-  // --- RESIZE ---
-  public resize(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height, false);
-  }
-
-  // --- CLEANUP ---
   public destroy() {
+    this.scene.clear();
     this.renderer.dispose();
   }
 }
