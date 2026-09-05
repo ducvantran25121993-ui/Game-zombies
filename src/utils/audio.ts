@@ -583,6 +583,116 @@ class SoundEngine {
     osc.stop(t + 0.6);
   }
 
+  // Level Up Roguelike Chord Fanfare
+  public playLevelUp() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.08);
+      gain.gain.setValueAtTime(0.35 * this.sfxVolume, t + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.45);
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(t + idx * 0.08);
+      osc.stop(t + idx * 0.08 + 0.45);
+    });
+  }
+
+  // Air Raid Siren for Red Alert Swarms
+  public playSiren() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.linearRampToValueAtTime(750, t + 0.6);
+    osc.frequency.linearRampToValueAtTime(400, t + 1.2);
+    gain.gain.setValueAtTime(0.35 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.4);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 1.4);
+  }
+
+  // Chain Lightning Thunder
+  public playThunder() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.playNoise(0.35, 0.45 * this.sfxVolume, 900);
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.3);
+    gain.gain.setValueAtTime(0.4 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
+
+  // Heavy Airdrop Jet Flyby
+  public playAirdrop() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.playNoise(0.8, 0.4 * this.sfxVolume, 600);
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.linearRampToValueAtTime(280, t + 0.4);
+    osc.frequency.linearRampToValueAtTime(80, t + 0.9);
+    gain.gain.setValueAtTime(0.3 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.9);
+  }
+
+  // Explosive Barrel Detonation
+  public playBarrelExplode() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    this.playExplosion();
+    this.playNoise(0.4, 0.5 * this.sfxVolume, 300);
+  }
+
+  // Squelch / Flesh Dismemberment
+  public playMeatSquish() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    gain.gain.setValueAtTime(0.3 * this.sfxVolume, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  }
+
   // Background Synth Tension Loop
   public startMusic() {
     if (this.isMusicPlaying) return;

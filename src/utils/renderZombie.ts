@@ -415,6 +415,19 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     ctx.stroke();
   }
 
+  // 10. IMPACT HIT FLASH (Combat Juice: Brilliant arcade white flash on projectile impact)
+  if (z.hitFlashTimer && z.hitFlashTimer > 0) {
+    const flashAlpha = Math.min(1, z.hitFlashTimer / 80);
+    ctx.save();
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.75 * flashAlpha})`;
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.restore(); // Restore body transformation
   ctx.restore(); // Restore global translation & rotation
 };

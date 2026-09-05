@@ -40,6 +40,10 @@ export function renderDrops({ ctx, drops, time }: RenderDropsParams) {
       renderDiamondGem(ctx, item, time);
     } else if (item.type === 'boss_chest') {
       renderBossChest(ctx, item, time);
+    } else if (item.type === 'exp_gem') {
+      renderExpGem(ctx, item, time);
+    } else if (item.type === 'airdrop_crate') {
+      renderAirdropCrate(ctx, item, time);
     } else {
       renderTacticalPowerUp(ctx, item, time);
     }
@@ -419,4 +423,121 @@ function renderBossChest(ctx: CanvasRenderingContext2D, item: DropItem, time: nu
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('👑', 0, -h / 2 - 8 + bob);
+}
+
+// ----------------------------------------------------
+// 5. RENDER GLOWING EXP CRYSTAL GEM (Vampire Survivors Style)
+// ----------------------------------------------------
+function renderExpGem(ctx: CanvasRenderingContext2D, item: DropItem, time: number) {
+  const r = item.radius || 10;
+  const pulse = Math.sin(time * 0.008 + item.pulse) * 2;
+
+  // Outer Cyan Halo
+  const halo = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 2.2 + pulse);
+  halo.addColorStop(0, 'rgba(56, 189, 248, 0.6)');
+  halo.addColorStop(0.5, 'rgba(14, 165, 233, 0.25)');
+  halo.addColorStop(1, 'rgba(14, 165, 233, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2.2 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Diamond Octagon Crystal
+  ctx.save();
+  ctx.rotate(Math.PI / 4);
+  const grad = ctx.createLinearGradient(-r, -r, r, r);
+  grad.addColorStop(0, '#e0f2fe');
+  grad.addColorStop(0.3, '#38bdf8');
+  grad.addColorStop(0.8, '#0284c7');
+  grad.addColorStop(1, '#0369a1');
+  ctx.fillStyle = grad;
+  ctx.fillRect(-r * 0.65, -r * 0.65, r * 1.3, r * 1.3);
+
+  // Inner Highlight
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-r * 0.35, -r * 0.35, r * 0.45, r * 0.45);
+  ctx.restore();
+
+  // Outer Border
+  ctx.strokeStyle = '#bae6fd';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// ----------------------------------------------------
+// 6. RENDER AIRDROP SUPPLY CRATE (Heavy Military Drop)
+// ----------------------------------------------------
+function renderAirdropCrate(ctx: CanvasRenderingContext2D, item: DropItem, time: number) {
+  const r = item.radius || 24;
+  const w = r * 1.8;
+  const h = r * 1.4;
+
+  // Strobe Danger Beacon Light
+  const strobe = Math.floor(time / 200) % 2 === 0;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, -h / 2 - 4, 4, 0, Math.PI * 2);
+  ctx.fillStyle = strobe ? '#ef4444' : '#7f1d1d';
+  ctx.shadowColor = '#ef4444';
+  ctx.shadowBlur = strobe ? 16 : 4;
+  ctx.fill();
+  ctx.restore();
+
+  // Parachute Strings if falling
+  if (item.bounceZ && item.bounceZ > 10) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, -h / 2);
+    ctx.lineTo(-w * 0.8, -h / 2 - 30);
+    ctx.moveTo(w / 2, -h / 2);
+    ctx.lineTo(w * 0.8, -h / 2 - 30);
+    ctx.stroke();
+
+    // Parachute canopy
+    ctx.fillStyle = '#eab308';
+    ctx.beginPath();
+    ctx.arc(0, -h / 2 - 30, w * 0.9, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = '#ca8a04';
+    ctx.stroke();
+  }
+
+  // Heavy Metal Crate Body (Olive Green / Military Gold)
+  const crateGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+  crateGrad.addColorStop(0, '#15803d');
+  crateGrad.addColorStop(0.5, '#166534');
+  crateGrad.addColorStop(1, '#14532d');
+  ctx.fillStyle = crateGrad;
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+  } else {
+    ctx.rect(-w / 2, -h / 2, w, h);
+  }
+  ctx.fill();
+
+  // Reinforced Steel Corners & Straps
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Cross Straps
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, 0);
+  ctx.lineTo(w / 2, 0);
+  ctx.moveTo(0, -h / 2);
+  ctx.lineTo(0, h / 2);
+  ctx.stroke();
+
+  // Supply Icon
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⚡ AIR', 0, 0);
 }

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayerStats, Weapon, WeaponType, GameDifficulty, 
   GameMode, ActiveBuffs, MapEnvironmentId, EquipmentSlotId, EquipmentItem,
-  Mission, GameRecordStats, Zombie, DropItem, GameViewMode
+  Mission, GameRecordStats, Zombie, DropItem, GameViewMode,
+  RoguelikeSkill, ArenaEventState
 } from './types/game';
 import { INITIAL_WEAPONS, MAP_SIZE, UPGRADES_CONFIG } from './utils/constants';
 import { soundManager } from './utils/audio';
@@ -10,6 +11,7 @@ import { WARRIOR_CLASSES } from './data/warriors';
 import { INITIAL_DRONES, CompanionDroneConfig } from './data/drones';
 import { INITIAL_EQUIPMENT } from './data/equipment';
 import { loadRecordStats, saveRecordStats, loadSavedMissions, saveMissions } from './data/missions';
+import { getRandomSkillDraft } from './data/skills';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
 import { ShopModal } from './components/ShopModal';
@@ -18,6 +20,7 @@ import { GameOverModal } from './components/GameOverModal';
 import { PauseModal } from './components/PauseModal';
 import { StartScreen } from './components/StartScreen';
 import { MissionsModal } from './components/MissionsModal';
+import { SkillDraftModal } from './components/SkillDraftModal';
 
 export const App: React.FC = () => {
   // Screen States
@@ -25,6 +28,9 @@ export const App: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isMissionsOpen, setIsMissionsOpen] = useState(false);
+  const [isSkillDraftOpen, setIsSkillDraftOpen] = useState(false);
+  const [draftSkills, setDraftSkills] = useState<RoguelikeSkill[]>([]);
+  const [currentArenaEvent, setCurrentArenaEvent] = useState<ArenaEventState | null>(null);
   const [isMuted, setIsMuted] = useState(false);
 
   // Missions, Records & Radar
@@ -65,6 +71,10 @@ export const App: React.FC = () => {
     invincibleTimer: 0,
     warriorSkin: 'commando',
     walkFrame: 0,
+    level: 1,
+    exp: 0,
+    maxExp: 100,
+    roguelikeSkills: {},
     upgrades: {
       maxHpLevel: 0,
       armorLevel: 0,
@@ -233,6 +243,27 @@ export const App: React.FC = () => {
     setPlayer(p => ({ ...p, gold: p.gold + mission.rewardGold }));
   };
 
+  const handleLevelUp = useCallback(() => {
+    const currentSkills = player.roguelikeSkills || {};
+    const drafted = getRandomSkillDraft(currentSkills);
+    if (drafted.length > 0) {
+      setDraftSkills(drafted);
+      setIsSkillDraftOpen(true);
+    }
+  }, [player.roguelikeSkills]);
+
+  const handleSelectSkill = useCallback((skill: RoguelikeSkill) => {
+    setIsSkillDraftOpen(false);
+    setPlayer(prev => {
+      const skills = { ...(prev.roguelikeSkills || {}) };
+      skills[skill.id] = (skills[skill.id] || 0) + 1;
+      return {
+        ...prev,
+        roguelikeSkills: skills
+      };
+    });
+  }, []);
+
   // Sync real-time mission progress
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -314,6 +345,10 @@ export const App: React.FC = () => {
       invincibleTimer: 0,
       warriorSkin: warriorId,
       walkFrame: 0,
+      level: 1,
+      exp: 0,
+      maxExp: 100,
+      roguelikeSkills: {},
       upgrades: {
         maxHpLevel: 0,
         armorLevel: 0,
@@ -760,7 +795,7 @@ export const App: React.FC = () => {
             mode={mode}
             selectedMapId={selectedMapId}
             onMapChange={handleMapChange}
-            isPaused={isPaused}
+            isPaused={isPaused || isSkillDraftOpen}
             isShopOpen={isShopOpen}
             onGameOver={handleGameOver}
             touchMoveInput={touchMoveInput}
@@ -771,6 +806,8 @@ export const App: React.FC = () => {
             onRadarUpdate={(zombies, drops) => setRadarData({ zombies, drops })}
             onBossKilled={handleBossKilled}
             onUltimateUsed={handleUltimateUsed}
+            onLevelUp={handleLevelUp}
+            onArenaEventChange={(event) => setCurrentArenaEvent(event)}
           />
 
           {/* Top & Bottom HUD Display */}
@@ -801,6 +838,7 @@ export const App: React.FC = () => {
             radarData={radarData}
             onOpenMissions={() => setIsMissionsOpen(true)}
             unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
+            currentArenaEvent={currentArenaEvent}
             onThrowGrenade={() => {
               if (player.grenadeCount > 0) {
                 // Triggered through simulated key or direct state
@@ -904,6 +942,16 @@ export const App: React.FC = () => {
           warriorSkin={player.warriorSkin}
           onRestart={() => handleStartGame(difficulty, mode)}
           onGoHome={() => setGameState('start')}
+        />
+      )}
+
+      {/* 4. ROGUELIKE SKILL DRAFT MODAL */}
+      {isSkillDraftOpen && (
+        <SkillDraftModal
+          skills={draftSkills}
+          currentSkills={player.roguelikeSkills || {}}
+          playerLevel={player.level || 1}
+          onSelectSkill={handleSelectSkill}
         />
       )}
 

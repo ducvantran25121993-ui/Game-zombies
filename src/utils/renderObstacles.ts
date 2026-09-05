@@ -246,33 +246,48 @@ export const renderObstacles = ({ ctx, obstacles, time }: RenderObstaclesParams)
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // Bright Red cylindrical top
-        ctx.fillStyle = '#dc2626';
+        // Bright Red cylindrical top with danger gradient
+        const barrelGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, rad);
+        barrelGrad.addColorStop(0, '#ef4444');
+        barrelGrad.addColorStop(0.7, '#dc2626');
+        barrelGrad.addColorStop(1, '#991b1b');
+        ctx.fillStyle = barrelGrad;
         ctx.beginPath();
         ctx.arc(0, 0, rad - 2, 0, Math.PI * 2);
         ctx.fill();
 
         // Top metal reinforcement rib
-        ctx.strokeStyle = '#f87171';
+        ctx.strokeStyle = '#fca5a5';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(0, 0, rad - 6, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Flammable Warning Hazard Symbol / Flame
-        ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 13px sans-serif';
+        // Flammable Warning Hazard Symbol
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('⚡', 0, 0);
+        ctx.fillText('🔥', 0, -1);
 
-        // Pulsing danger glow if low HP
-        if ((obs.hp || 30) < 20) {
-          ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-          ctx.lineWidth = 2;
+        // Flammable text below symbol
+        ctx.font = '900 6px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('TNT', 0, 8);
+
+        // Pulsing ignition danger glow if damaged / low HP
+        const hp = obs.hp ?? 40;
+        const maxHp = obs.maxHp ?? 40;
+        if (hp < maxHp) {
+          const pulse = Math.sin(time * 0.03) * 3;
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+          ctx.shadowColor = '#f97316';
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
-          ctx.arc(0, 0, rad + 4 + Math.sin(time * 0.02) * 2, 0, Math.PI * 2);
+          ctx.arc(0, 0, rad + 3 + pulse, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.shadowBlur = 0;
         }
         break;
       }

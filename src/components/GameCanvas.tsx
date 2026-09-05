@@ -3,7 +3,8 @@ import {
   PlayerStats, Weapon, WeaponType, Zombie, Bullet, 
   Particle, Decal, DropItem, ActiveTurret, FloatingText, 
   Obstacle, ActiveBuffs, GameDifficulty, GameMode, PowerUpType,
-  MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook, GameViewMode
+  MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook, GameViewMode,
+  ArenaEventState, EnvironmentalHazardZone, DynamicArenaEventType
 } from '../types/game';
 import { MAP_SIZE, ZOMBIE_TEMPLATES, BOSS_SKILL_DATABASE } from '../utils/constants';
 import { soundManager } from '../utils/audio';
@@ -72,6 +73,8 @@ interface GameCanvasProps {
   onUltimateUsed?: () => void;
   onRadarUpdate?: (zombies: Zombie[], drops: DropItem[]) => void;
   onBossKilled?: () => void;
+  onLevelUp?: () => void;
+  onArenaEventChange?: (event: ArenaEventState | null) => void;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -109,7 +112,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   viewMode = '2d',
   onUltimateUsed,
   onRadarUpdate,
-  onBossKilled
+  onBossKilled,
+  onLevelUp,
+  onArenaEventChange
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,6 +131,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const onBossKilledRef = useRef(onBossKilled);
   onBossKilledRef.current = onBossKilled;
+
+  const onLevelUpRef = useRef(onLevelUp);
+  onLevelUpRef.current = onLevelUp;
+
+  const onArenaEventChangeRef = useRef(onArenaEventChange);
+  onArenaEventChangeRef.current = onArenaEventChange;
 
   // Synchronized refs for props to ensure the high-frequency animation loop is never restarted on re-render
   const touchMoveInputRef = useRef(touchMoveInput);
@@ -209,8 +220,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     waveHazard: { id: string; nameVi: string; descVi: string; color: string; bannerTimer: number; nextEventTime: number } | null;
     hazardStrikes: Array<{ id: string; x: number; y: number; radius: number; timer: number; maxTimer: number; type: 'lightning' | 'meteor' | 'spore'; damage: number }>;
     lightningFlashAlpha: number;
+    chainLightningTimer: number;
+    dynamicEventTimer: number;
+    currentArenaEvent: ArenaEventState | null;
+    environmentalZones: EnvironmentalHazardZone[];
+    vampiricKillCounter: number;
   }>({
-    player: { ...player, ultimateCharge: player.ultimateCharge || 0 },
+    player: { 
+      ...player, 
+      level: player.level || 1,
+      exp: player.exp || 0,
+      maxExp: player.maxExp || 100,
+      roguelikeSkills: { ...(player.roguelikeSkills || {}) },
+      ultimateCharge: player.ultimateCharge || 0 
+    },
     currentWeapon: { ...currentWeapon },
     weapons: { ...weapons },
     currentMapId: (selectedMapId as MapEnvironmentId) || 'rooftop',
@@ -252,7 +275,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     titanEmpPulses: [],
     waveHazard: null,
     hazardStrikes: [],
-    lightningFlashAlpha: 0
+    lightningFlashAlpha: 0,
+    chainLightningTimer: 3500,
+    dynamicEventTimer: 35000,
+    currentArenaEvent: null,
+    environmentalZones: [
+      { id: 'toxic_1', type: 'toxic_pool', x: 650, y: 700, radius: 130, damage: 35, pulseTimer: 0, color: '#22c55e' },
+      { id: 'toxic_2', type: 'toxic_pool', x: 1950, y: 1300, radius: 140, damage: 35, pulseTimer: 0, color: '#22c55e' },
+      { id: 'electric_1', type: 'electric_leak', x: 1300, y: 550, radius: 125, damage: 45, pulseTimer: 0, color: '#38bdf8' },
+      { id: 'electric_2', type: 'electric_leak', x: 1400, y: 1450, radius: 130, damage: 45, pulseTimer: 0, color: '#38bdf8' }
+    ],
+    vampiricKillCounter: 0
   });
 
   // Sync props to stateRef when weapons/player change from Shop or UI
@@ -266,6 +299,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       p.maxArmor = player.maxArmor;
       p.speed = player.speed;
       p.grenadeCount = player.grenadeCount;
+      p.level = player.level || 1;
+      p.exp = player.exp || 0;
+      p.maxExp = player.maxExp || 100;
+      p.roguelikeSkills = { ...(player.roguelikeSkills || {}) };
       p.upgrades = { ...player.upgrades };
       p.warriorSkin = player.warriorSkin;
       if (player.equipment) {
@@ -1520,7 +1557,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const isAutoFiring = Boolean(autoAim && closestZombie && !state.isReloading);
       const isFiring = state.isMouseDown || touchAim.isShooting || isAutoFiring;
       if (isFiring && !state.isReloading) {
-        if (currentTime - lastShotTime >= wep.fireRate) {
+        const fireRateMultiplier = (p.roguelikeSkills?.adrenaline_rush || 0) > 0 ? 0.72 : 1.0;
+        if (currentTime - lastShotTime >= wep.fireRate * fireRateMultiplier) {
           if (wep.currentMag > 0) {
             wep.currentMag -= 1;
             lastShotTime = currentTime;
@@ -1608,6 +1646,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 color: wep.bulletColor,
                 isExplosive: wep.id === 'rpg',
                 isPlasma: wep.id === 'plasma',
+                knockback: wep.knockback
+              });
+            }
+
+            // Roguelike Skill: Twin Shot (Bonus parallel bullet)
+            if ((p.roguelikeSkills?.twin_shot || 0) > 0) {
+              const perpAngle = p.angle + Math.PI / 2;
+              const offDist = 12;
+              state.bullets.push({
+                id: Math.random().toString(),
+                x: muzzleX + Math.cos(perpAngle) * offDist,
+                y: muzzleY + Math.sin(perpAngle) * offDist,
+                vx: Math.cos(p.angle) * wep.bulletSpeed,
+                vy: Math.sin(p.angle) * wep.bulletSpeed,
+                damage: Math.round(finalDmg * 0.85),
+                pierceLeft: wep.pierce,
+                rangeLeft: wep.bulletRange,
+                radius: 4,
+                color: '#facc15',
+                isPlasma: true,
                 knockback: wep.knockback
               });
             }
@@ -2200,6 +2258,229 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
+      // ==========================================
+      // DYNAMIC ARENA EVENTS ENGINE (Sự kiện chiến trường ngẫu nhiên)
+      // ==========================================
+      state.dynamicEventTimer -= dt;
+      if (state.dynamicEventTimer <= 0) {
+        state.dynamicEventTimer = 42000 + Math.random() * 15000; // Next event in 42-57s
+        const eventTypes: DynamicArenaEventType[] = ['airdrop', 'blackout', 'swarm_alert'];
+        const chosenType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+        if (chosenType === 'airdrop') {
+          soundManager.playAirdrop();
+          state.currentArenaEvent = {
+            type: 'airdrop',
+            titleVi: 'TIẾP TẾ HÀNG KHÔNG!',
+            descVi: 'Thùng cứu trợ vũ khí & đạn dược vừa được thả dù xuống gần bạn!',
+            timer: 15000,
+            color: '#38bdf8'
+          };
+          // Drop airdrop crate nearby
+          const dropX = Math.max(100, Math.min(MAP_SIZE.width - 100, p.x + (Math.random() - 0.5) * 350));
+          const dropY = Math.max(100, Math.min(MAP_SIZE.height - 100, p.y + (Math.random() - 0.5) * 350));
+          state.drops.push({
+            id: Math.random().toString(),
+            x: dropX,
+            y: dropY,
+            type: 'airdrop_crate',
+            value: 500,
+            radius: 20,
+            pulse: 0,
+            createdAt: currentTime,
+            bounceZ: 60,
+            vz: 1.5
+          });
+          // Parachute flare particles
+          for (let f = 0; f < 20; f++) {
+            state.particles.push({
+              x: dropX + (Math.random() - 0.5) * 40,
+              y: dropY + (Math.random() - 0.5) * 40,
+              vx: (Math.random() - 0.5) * 2,
+              vy: -1 - Math.random() * 2,
+              radius: 4,
+              color: '#38bdf8',
+              alpha: 0.9,
+              life: 0,
+              maxLife: 60,
+              decay: 0.016,
+              shape: 'smoke'
+            });
+          }
+        } else if (chosenType === 'blackout') {
+          soundManager.playThunder();
+          state.currentArenaEvent = {
+            type: 'blackout',
+            titleVi: 'MẤT ĐIỆN TOÀN KHU VỰC!',
+            descVi: 'Toàn bộ lưới điện tê liệt! Tầm nhìn thu hẹp về phạm vi đèn pin!',
+            timer: 18000,
+            color: '#f59e0b'
+          };
+          state.screenShake = 14;
+        } else if (chosenType === 'swarm_alert') {
+          soundManager.playSiren();
+          state.currentArenaEvent = {
+            type: 'swarm_alert',
+            titleVi: 'BÁO ĐỘNG ĐỎ: ĐÀN ZOMBIE ĐỘT KÍCH!',
+            descVi: 'Còi báo động vang rền! Một bầy zombie hung tợn đang tràn vào!',
+            timer: 16000,
+            color: '#ef4444'
+          };
+          // Spawn extra aggressive runner zombies
+          for (let s = 0; s < 7; s++) {
+            const spawnAngle = Math.random() * Math.PI * 2;
+            const spawnDist = 450 + Math.random() * 150;
+            const sx = Math.max(50, Math.min(MAP_SIZE.width - 50, p.x + Math.cos(spawnAngle) * spawnDist));
+            const sy = Math.max(50, Math.min(MAP_SIZE.height - 50, p.y + Math.sin(spawnAngle) * spawnDist));
+            const tmpl = ZOMBIE_TEMPLATES.runner;
+            state.zombies.push({
+              id: Math.random().toString(),
+              x: sx,
+              y: sy,
+              type: 'runner',
+              hp: tmpl.hp,
+              maxHp: tmpl.hp,
+              speed: tmpl.speed * 1.15,
+              baseSpeed: tmpl.speed * 1.15,
+              damage: tmpl.damage,
+              radius: tmpl.radius,
+              color: tmpl.color,
+              scoreValue: tmpl.score,
+              goldValue: tmpl.gold,
+              angle: 0,
+              animationFrame: Math.random() * 10,
+              frozenTimer: 0,
+              burnTimer: 0,
+              poisonTimer: 0,
+              attackCooldown: 0
+            });
+          }
+        }
+
+        if (onArenaEventChangeRef.current) {
+          onArenaEventChangeRef.current(state.currentArenaEvent);
+        }
+      }
+
+      // Update active Arena Event countdown
+      if (state.currentArenaEvent) {
+        state.currentArenaEvent.timer -= dt;
+        if (state.currentArenaEvent.timer <= 0) {
+          state.currentArenaEvent = null;
+          if (onArenaEventChangeRef.current) {
+            onArenaEventChangeRef.current(null);
+          }
+        }
+      }
+
+      // ==========================================
+      // ENVIRONMENTAL HAZARD ZONES (Khu vực nguy hiểm môi trường)
+      // ==========================================
+      state.environmentalZones.forEach(zone => {
+        zone.pulseTimer = (zone.pulseTimer || 0) + dt;
+        
+        // Damage zombies walking into toxic pool or electric leak
+        state.zombies.forEach(z => {
+          if (z.hp <= 0) return;
+          const dist = Math.hypot(z.x - zone.x, z.y - zone.y);
+          if (dist < zone.radius + z.radius) {
+            z.hp -= (zone.damage * dt) / 1000;
+            z.hitFlashTimer = 60;
+            if (zone.type === 'toxic_pool') {
+              z.speed = Math.max(0.6, z.speed * 0.96); // Slow in slime
+            }
+          }
+        });
+
+        // Damage player if walking carelessly into the hazard
+        const distToPlayer = Math.hypot(p.x - zone.x, p.y - zone.y);
+        if (distToPlayer < zone.radius + p.radius && p.invincibleTimer <= 0) {
+          p.hp = Math.max(1, p.hp - (zone.damage * dt * 0.4) / 1000);
+          if (Math.random() < 0.1) {
+            soundManager.playPlayerHurt();
+          }
+        }
+      });
+
+      // ==========================================
+      // ROGUELIKE SKILLS PASSIVES & TIMERS
+      // ==========================================
+      // 1. Chain Lightning Skill
+      if ((p.roguelikeSkills?.chain_lightning || 0) > 0) {
+        state.chainLightningTimer -= dt;
+        if (state.chainLightningTimer <= 0) {
+          state.chainLightningTimer = 3200;
+          // Find up to 4 alive zombies within 380px of player
+          const nearbyZombies = state.zombies
+            .filter(z => z.hp > 0 && Math.hypot(z.x - p.x, z.y - p.y) < 400)
+            .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))
+            .slice(0, 4);
+
+          if (nearbyZombies.length > 0) {
+            soundManager.playThunder();
+            let prevX = p.x;
+            let prevY = p.y;
+            nearbyZombies.forEach(z => {
+              state.laserBeams.push({
+                x1: prevX,
+                y1: prevY,
+                x2: z.x,
+                y2: z.y,
+                color: '#38bdf8',
+                alpha: 1.2
+              });
+              z.hp -= 130;
+              z.hitFlashTimer = 120;
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: z.x,
+                y: z.y - 20,
+                text: '⚡ 130 SÉT ĐÁNH!',
+                color: '#38bdf8',
+                alpha: 1,
+                life: 35,
+                isCrit: true
+              });
+              prevX = z.x;
+              prevY = z.y;
+            });
+          }
+        }
+      }
+
+      // 2. Frost Aura & Fire Aura
+      if ((p.roguelikeSkills?.frost_aura || 0) > 0 || (p.roguelikeSkills?.fire_aura || 0) > 0) {
+        const frostLvl = p.roguelikeSkills?.frost_aura || 0;
+        const fireLvl = p.roguelikeSkills?.fire_aura || 0;
+
+        state.zombies.forEach(z => {
+          if (z.hp <= 0) return;
+          const dist = Math.hypot(z.x - p.x, z.y - p.y);
+          if (frostLvl > 0 && dist < 190) {
+            z.speed = Math.min(z.speed, 1.2); // Chill slowdown
+          }
+          if (fireLvl > 0 && dist < 170) {
+            z.hp -= (45 * dt) / 1000;
+            z.hitFlashTimer = 40;
+            if (Math.random() < 0.15) {
+              state.particles.push({
+                x: z.x + (Math.random() - 0.5) * 12,
+                y: z.y + (Math.random() - 0.5) * 12,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -1.5 - Math.random() * 2,
+                radius: 3,
+                color: '#f97316',
+                alpha: 0.9,
+                life: 0,
+                maxLife: 20,
+                decay: 0.05,
+                shape: 'spark'
+              });
+            }
+          }
+        });
+      }
+
       // Decay Lightning Flash
       if (state.lightningFlashAlpha > 0) {
         state.lightningFlashAlpha = Math.max(0, state.lightningFlashAlpha - dt * 0.0032);
@@ -2326,10 +2607,33 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if ((obs.hp || 0) > 0) {
               if (b.x > obs.x && b.x < obs.x + obs.width && b.y > obs.y && b.y < obs.y + obs.height) {
                 obs.hp = (obs.hp || 0) - b.damage;
-                if (obs.isExplosive && obs.hp <= 0) {
-                  const blastRad = obs.type === 'vehicle' ? 260 : 200;
-                  const blastDmg = obs.type === 'vehicle' ? 450 : 350;
+                if (obs.isExplosive && obs.hp <= 0 && !obs.exploded) {
+                  obs.exploded = true;
+                  const blastRad = obs.type === 'vehicle' ? 270 : 220;
+                  const blastDmg = obs.type === 'vehicle' ? 500 : 420;
+                  soundManager.playBarrelExplode();
+                  state.screenShake = 22;
                   triggerExplosion(obs.x + obs.width / 2, obs.y + obs.height / 2, blastRad, blastDmg);
+                  // Spawn barrel metal debris & fire smoke
+                  for (let db = 0; db < 12; db++) {
+                    const dbAngle = Math.random() * Math.PI * 2;
+                    const dbSpeed = 3 + Math.random() * 6;
+                    state.particles.push({
+                      x: obs.x + obs.width / 2,
+                      y: obs.y + obs.height / 2,
+                      vx: Math.cos(dbAngle) * dbSpeed,
+                      vy: Math.sin(dbAngle) * dbSpeed,
+                      radius: 3.5,
+                      color: db % 2 === 0 ? '#ef4444' : '#1c1917',
+                      alpha: 1,
+                      life: 0,
+                      maxLife: 30,
+                      decay: 0.033,
+                      shape: 'gib',
+                      angle: Math.random() * Math.PI * 2,
+                      vAngle: (Math.random() - 0.5) * 0.3
+                    });
+                  }
                 }
                 // Impact sparks
                 for (let s = 0; s < 3; s++) {
@@ -2416,11 +2720,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               const finalDmg = rawDmg;
 
               z.hp -= finalDmg;
+              z.hitFlashTimer = 110; // Combat Juice: Instant visual white/red hit flash
               b.pierceLeft -= 1;
 
-              // Knockback (Bosses barely flinch - 0.05x knockback)
+              // Knockback (Bosses barely flinch - 0.05x knockback, regular minions punchy 1.4x knockback)
               const knockAngle = Math.atan2(b.vy, b.vx);
-              const knockMult = z.isBoss ? 0.05 : 1.0;
+              const knockMult = z.isBoss ? 0.05 : 1.4;
               z.x += Math.cos(knockAngle) * (b.knockback * knockMult);
               z.y += Math.sin(knockAngle) * (b.knockback * knockMult);
 
@@ -2453,7 +2758,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 isCrit
               });
 
-              // Explosive bullet
+              // Roguelike Skill: Ricochet
+              if ((p.roguelikeSkills?.ricochet || 0) > 0 && !b.isRicochet) {
+                const bounceTarget = state.zombies.find(other => other.id !== z.id && other.hp > 0 && Math.hypot(other.x - z.x, other.y - z.y) < 280);
+                if (bounceTarget) {
+                  const bAngle = Math.atan2(bounceTarget.y - z.y, bounceTarget.x - z.x);
+                  state.bullets.push({
+                    id: Math.random().toString(),
+                    x: z.x,
+                    y: z.y,
+                    vx: Math.cos(bAngle) * 15,
+                    vy: Math.sin(bAngle) * 15,
+                    damage: Math.round(finalDmg * 0.75),
+                    pierceLeft: 1,
+                    rangeLeft: 300,
+                    radius: 4,
+                    color: '#38bdf8',
+                    knockback: 3,
+                    isRicochet: true
+                  });
+                }
+              }
+
+              // Roguelike Skill: Explosive Rounds (35% chance to detonate upon bullet impact)
+              if ((p.roguelikeSkills?.explosive_rounds || 0) > 0 && !b.isExplosive && Math.random() < 0.35) {
+                triggerExplosion(b.x, b.y, 130, Math.round(finalDmg * 0.85));
+              }
+
+              // Explosive bullet (e.g. RPG)
               if (b.isExplosive) {
                 triggerExplosion(b.x, b.y, 160, b.damage);
                 b.pierceLeft = 0;
@@ -2499,6 +2831,30 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         // Death check
         if (z.hp <= 0) {
           soundManager.playZombieHit();
+          soundManager.playMeatSquish();
+
+          // Combat Juice: Dismemberment & Gore Gibs (Bones, Flesh Chunks, Organic Spatter)
+          const gibCount = z.isBoss ? 16 : 8;
+          for (let g = 0; g < gibCount; g++) {
+            const gAngle = Math.random() * Math.PI * 2;
+            const gSpeed = 2.5 + Math.random() * 5.5;
+            const shapeType = g % 3 === 0 ? 'bone' : g % 3 === 1 ? 'gib' : 'flesh';
+            state.particles.push({
+              x: z.x,
+              y: z.y,
+              vx: Math.cos(gAngle) * gSpeed,
+              vy: Math.sin(gAngle) * gSpeed,
+              radius: shapeType === 'bone' ? 3.5 : shapeType === 'gib' ? 4.5 : 3,
+              color: shapeType === 'bone' ? '#f8fafc' : '#881337',
+              alpha: 1,
+              life: 0,
+              maxLife: 35,
+              decay: 0.028,
+              shape: shapeType,
+              angle: Math.random() * Math.PI * 2,
+              vAngle: (Math.random() - 0.5) * 0.25
+            });
+          }
 
           // Blood puddle decal
           state.decals.push({
@@ -2515,6 +2871,40 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           p.combo += 1;
           p.comboTimer = 3500; // ms
           p.multiplier = 1 + Math.min(3, p.combo * 0.1);
+
+          // Roguelike Skill: Vampiric Leech (Heal 12 HP & 6 Armor every 6 kills)
+          if ((p.roguelikeSkills?.vampiric_leech || 0) > 0) {
+            state.vampiricKillCounter = (state.vampiricKillCounter || 0) + 1;
+            if (state.vampiricKillCounter >= 6) {
+              state.vampiricKillCounter = 0;
+              p.hp = Math.min(p.maxHp, p.hp + 12);
+              p.armor = Math.min(p.maxArmor, p.armor + 6);
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 30,
+                text: '🩸 +12 HP HÚT MÁU!',
+                color: '#ef4444',
+                alpha: 1,
+                life: 45,
+                isCrit: true
+              });
+            }
+          }
+
+          // Drop Roguelike EXP Gem
+          state.drops.push({
+            id: Math.random().toString(),
+            x: z.x + (Math.random() - 0.5) * 16,
+            y: z.y + (Math.random() - 0.5) * 16,
+            type: 'exp_gem',
+            value: z.isBoss ? 120 : (z.type === 'tank' ? 40 : 18),
+            radius: z.isBoss ? 16 : 10,
+            pulse: Math.random() * Math.PI * 2,
+            createdAt: currentTime,
+            bounceZ: 18 + Math.random() * 12,
+            vz: 2.5
+          });
 
           // Ultimate charge on kill
           p.ultimateCharge = Math.min(100, (p.ultimateCharge || 0) + (z.isBoss ? 12 : 2.5));
@@ -2939,6 +3329,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
               p.hp -= dmg;
 
+              // Roguelike Skill: Shockwave Armor (Push back all nearby zombies & damage them when taking hit)
+              if ((p.roguelikeSkills?.shockwave_armor || 0) > 0) {
+                soundManager.playExplosion();
+                state.screenShake = 16;
+                state.zombies.forEach(other => {
+                  const od = Math.hypot(other.x - p.x, other.y - p.y);
+                  if (od < 220 && other.hp > 0) {
+                    const pAngle = Math.atan2(other.y - p.y, other.x - p.x);
+                    other.x += Math.cos(pAngle) * 90;
+                    other.y += Math.sin(pAngle) * 90;
+                    other.hp -= 95;
+                    other.hitFlashTimer = 110;
+                  }
+                });
+                state.floatingTexts.push({
+                  id: Math.random().toString(),
+                  x: p.x,
+                  y: p.y - 30,
+                  text: '💥 SÓNG XUNG KÍCH GIÁP!',
+                  color: '#6366f1',
+                  alpha: 1,
+                  life: 45,
+                  isCrit: true
+                });
+              }
+
               // Game Over check
               if (p.hp <= 0) {
                 p.hp = 0;
@@ -3032,15 +3448,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           item.x += Math.cos(suckAngle) * pullSpeed;
           item.y += Math.sin(suckAngle) * pullSpeed;
 
-          // Golden trail spark particles when flying towards player
-          if ((item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag') && Math.random() < 0.35) {
+          // Trail spark particles when flying towards player
+          if ((item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag' || item.type === 'exp_gem') && Math.random() < 0.35) {
             state.particles.push({
               x: item.x,
               y: item.y,
               vx: (Math.random() - 0.5) * 2,
               vy: (Math.random() - 0.5) * 2,
               radius: 1.5,
-              color: '#fef08a',
+              color: item.type === 'exp_gem' ? '#38bdf8' : '#fef08a',
               alpha: 0.9,
               life: 0,
               maxLife: 10,
@@ -3052,7 +3468,94 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         // Pickup item when player touches it
         if (dist < p.radius + item.radius) {
-          if (item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag' || item.type === 'diamond_gem') {
+          if (item.type === 'exp_gem') {
+            soundManager.playGoldPickup();
+            const expGain = item.value || 18;
+            p.exp = (p.exp || 0) + expGain;
+
+            // Check Level Up!
+            if (p.exp >= p.maxExp) {
+              p.exp -= p.maxExp;
+              p.level = (p.level || 1) + 1;
+              p.maxExp = Math.round(p.maxExp * 1.35);
+              soundManager.playLevelUp();
+              state.screenShake = 16;
+              // Level up celebratory spark burst
+              for (let lp = 0; lp < 20; lp++) {
+                const la = (lp / 20) * Math.PI * 2;
+                state.particles.push({
+                  x: p.x,
+                  y: p.y,
+                  vx: Math.cos(la) * 4.5,
+                  vy: Math.sin(la) * 4.5,
+                  radius: 3.5,
+                  color: '#38bdf8',
+                  alpha: 1,
+                  life: 0,
+                  maxLife: 25,
+                  decay: 0.04,
+                  shape: 'spark'
+                });
+              }
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 45,
+                text: `⭐ LÊN CẤP ${p.level}! CHỌN KỸ NĂNG MỚI!`,
+                color: '#38bdf8',
+                alpha: 1,
+                life: 65,
+                isCrit: true
+              });
+
+              if (onLevelUpRef.current) {
+                onLevelUpRef.current();
+              }
+            }
+
+            setPlayer(prev => ({
+              ...prev,
+              level: p.level,
+              exp: p.exp,
+              maxExp: p.maxExp
+            }));
+
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: p.x + (Math.random() - 0.5) * 20,
+              y: p.y - 20,
+              text: `+${expGain} EXP`,
+              color: '#38bdf8',
+              alpha: 1,
+              life: 30,
+              isCrit: false
+            });
+          } else if (item.type === 'airdrop_crate') {
+            soundManager.playPowerUp();
+            p.gold += 350;
+            p.grenadeCount = Math.min(6, (p.grenadeCount || 0) + 2);
+            p.armor = Math.min(p.maxArmor, p.armor + 35);
+            (Object.values(state.weapons) as Weapon[]).forEach(w => {
+              if (w.reserveAmmo !== -1) w.reserveAmmo = w.magSize * 4;
+            });
+            setPlayer(prev => ({
+              ...prev,
+              gold: p.gold,
+              grenadeCount: p.grenadeCount,
+              armor: p.armor
+            }));
+            setWeapons(prev => ({ ...prev }));
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: p.x,
+              y: p.y - 35,
+              text: '📦 TIẾP TẾ CHIẾN ĐẤU: +350 VÀNG, ĐẠN DƯỢC & +2 LỰU ĐẠN!',
+              color: '#38bdf8',
+              alpha: 1,
+              life: 70,
+              isCrit: true
+            });
+          } else if (item.type === 'gold_coin' || item.type === 'gold_ingot' || item.type === 'coin_bag' || item.type === 'diamond_gem') {
             // GOLD & GEM PICKUP
             soundManager.playGoldPickup();
             p.gold += item.value;
@@ -3385,6 +3888,73 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.restore();
       });
 
+      // Render Dynamic Environmental Hazard Zones (Toxic Slime Pools & High-Voltage Electric Leaks)
+      state.environmentalZones.forEach(zone => {
+        ctx.save();
+        ctx.translate(zone.x, zone.y);
+        const pulse = Math.sin((currentTime * 0.004) + (zone.id === 'toxic_1' ? 0 : 2)) * 0.12;
+        const rad = zone.radius * (1 + pulse);
+
+        if (zone.type === 'toxic_pool') {
+          // Toxic Slime puddle gradient
+          const grad = ctx.createRadialGradient(0, 0, rad * 0.15, 0, 0, rad);
+          grad.addColorStop(0, 'rgba(34, 197, 94, 0.65)');
+          grad.addColorStop(0.65, 'rgba(21, 128, 61, 0.45)');
+          grad.addColorStop(1, 'rgba(22, 101, 52, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, rad, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.6)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Biohazard Symbol
+          ctx.font = 'bold 18px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#86efac';
+          ctx.shadowColor = '#22c55e';
+          ctx.shadowBlur = 8;
+          ctx.fillText('☣', 0, 0);
+        } else {
+          // Electric Leak puddle gradient
+          const grad = ctx.createRadialGradient(0, 0, rad * 0.15, 0, 0, rad);
+          grad.addColorStop(0, 'rgba(56, 189, 248, 0.65)');
+          grad.addColorStop(0.65, 'rgba(14, 116, 144, 0.4)');
+          grad.addColorStop(1, 'rgba(8, 145, 178, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, rad, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(125, 211, 252, 0.65)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Electric Sparks dancing around
+          for (let sp = 0; sp < 4; sp++) {
+            const spAng = (currentTime * 0.003) + (sp * Math.PI / 2);
+            const spDist = rad * 0.55;
+            ctx.fillStyle = '#e0f2fe';
+            ctx.beginPath();
+            ctx.arc(Math.cos(spAng) * spDist, Math.sin(spAng) * spDist, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Electric Symbol
+          ctx.font = 'bold 18px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#7dd3fc';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.fillText('⚡', 0, 0);
+        }
+        ctx.restore();
+      });
+
       // Render Detailed Environmental Obstacles (Vehicles, Trees, Streetlights, HVAC, Servers, Barrels)
       renderObstacles({
         ctx,
@@ -3604,6 +4174,51 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.save();
           ctx.globalAlpha = Math.max(0, pt.alpha);
           ctx.fillStyle = pt.color;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        } else if (pt.shape === 'gib') {
+          pt.vx *= 0.92;
+          pt.vy *= 0.92;
+          if (pt.vAngle && pt.angle !== undefined) pt.angle += pt.vAngle;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, pt.alpha);
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.angle || 0);
+          ctx.fillStyle = '#881337'; // Dark rotting flesh
+          ctx.beginPath();
+          ctx.ellipse(0, 0, pt.radius, pt.radius * 0.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#dc2626'; // Fresh blood core
+          ctx.beginPath();
+          ctx.arc(0, 0, pt.radius * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        } else if (pt.shape === 'bone') {
+          pt.vx *= 0.94;
+          pt.vy *= 0.94;
+          if (pt.vAngle && pt.angle !== undefined) pt.angle += pt.vAngle;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, pt.alpha);
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.angle || 0);
+          ctx.fillStyle = '#f8fafc'; // Ivory bone shard
+          ctx.fillRect(-pt.radius, -1.2, pt.radius * 2, 2.4);
+          ctx.beginPath();
+          ctx.arc(-pt.radius, 0, 2, 0, Math.PI * 2);
+          ctx.arc(pt.radius, 0, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        } else if (pt.shape === 'flesh') {
+          pt.vx *= 0.93;
+          pt.vy *= 0.93;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, pt.alpha);
+          ctx.fillStyle = '#b91c1c';
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
           ctx.fill();

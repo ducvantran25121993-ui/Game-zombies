@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem, GameViewMode } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem, GameViewMode, ArenaEventState } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
@@ -37,6 +37,7 @@ interface HUDProps {
   radarData?: { zombies: Zombie[]; drops: DropItem[] };
   onOpenMissions?: () => void;
   unclaimedMissionsCount?: number;
+  currentArenaEvent?: ArenaEventState | null;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -66,7 +67,8 @@ export const HUD: React.FC<HUDProps> = ({
   onToggleAutoAim,
   radarData,
   onOpenMissions,
-  unclaimedMissionsCount = 0
+  unclaimedMissionsCount = 0,
+  currentArenaEvent = null
 }) => {
   const hpPercent = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
   const armorPercent = Math.max(0, Math.min(100, (player.armor / player.maxArmor) * 100));
@@ -187,6 +189,18 @@ export const HUD: React.FC<HUDProps> = ({
                   style={{ width: `${armorPercent}%` }}
                 />
               </div>
+
+              {/* Roguelike Level & EXP Progress Bar */}
+              <div className="flex items-center justify-between text-[6.5px] sm:text-[8px] font-bold leading-none text-cyan-300">
+                <span>LV {player.level || 1}</span>
+                <span className="font-mono text-zinc-400">{Math.floor(player.exp || 0)}/{player.maxExp || 100}</span>
+              </div>
+              <div className="h-1 w-full bg-neutral-900 rounded-full overflow-hidden border border-cyan-950/60">
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-sky-300 transition-all duration-200 rounded-full"
+                  style={{ width: `${Math.max(0, Math.min(100, ((player.exp || 0) / (player.maxExp || 100)) * 100))}%` }}
+                />
+              </div>
             </div>
           </div>
 
@@ -289,6 +303,29 @@ export const HUD: React.FC<HUDProps> = ({
             );
           })()}
         </div>
+
+        {/* Dynamic Arena Event Banner Alert */}
+        {currentArenaEvent && (
+          <div 
+            className="w-full px-2.5 py-1 rounded-xl border flex items-center justify-between gap-2 shadow-lg backdrop-blur-md animate-pulse pointer-events-none select-none transition-all duration-300"
+            style={{ 
+              borderColor: currentArenaEvent.color,
+              backgroundColor: 'rgba(9, 9, 11, 0.94)'
+            }}
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs sm:text-sm font-black tracking-wide uppercase truncate" style={{ color: currentArenaEvent.color }}>
+                {currentArenaEvent.titleVi}
+              </span>
+              <span className="text-[9px] sm:text-xs text-zinc-300 hidden sm:inline truncate">
+                — {currentArenaEvent.descVi}
+              </span>
+            </div>
+            <span className="font-mono text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded bg-black/70 text-zinc-200 border border-zinc-700 shrink-0">
+              {Math.ceil(currentArenaEvent.timer / 1000)}s
+            </span>
+          </div>
+        )}
 
         {/* ROW 2: Boss Bar & Tactical Controls (Zoom 0.7x, Auto-Aim, Mute, Pause) ON THE SAME LINE */}
         <div className="flex items-center justify-between gap-1 sm:gap-2 w-full">

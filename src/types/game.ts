@@ -65,6 +65,7 @@ export interface Zombie {
   burnTimer: number;
   poisonTimer: number;
   attackCooldown: number;
+  hitFlashTimer?: number;
   // Boss specific
   isBoss?: boolean;
   bossPhase?: number;
@@ -162,7 +163,7 @@ export interface Particle {
   life: number;
   maxLife: number;
   decay: number;
-  shape?: 'circle' | 'spark' | 'smoke' | 'fire' | 'shell' | 'blood';
+  shape?: 'circle' | 'spark' | 'smoke' | 'fire' | 'shell' | 'blood' | 'gib' | 'bone' | 'flesh';
   angle?: number;
   vAngle?: number;
 }
@@ -182,6 +183,8 @@ export type PowerUpType =
   | 'coin_bag'
   | 'diamond_gem'
   | 'boss_chest'
+  | 'exp_gem'
+  | 'airdrop_crate'
   | 'medkit' 
   | 'ammo' 
   | 'nuke' 
@@ -262,6 +265,50 @@ export interface Obstacle {
   variant?: string;
   color?: string;
   isBurning?: boolean;
+  exploded?: boolean;
+}
+
+export type RoguelikeSkillId = 
+  | 'ricochet'
+  | 'explosive_rounds'
+  | 'chain_lightning'
+  | 'frost_aura'
+  | 'vampiric_leech'
+  | 'fire_aura'
+  | 'twin_shot'
+  | 'adrenaline_rush'
+  | 'shockwave_armor';
+
+export interface RoguelikeSkill {
+  id: RoguelikeSkillId;
+  nameVi: string;
+  descVi: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'legendary';
+  color: string;
+  maxLevel: number;
+}
+
+export type DynamicArenaEventType = 'airdrop' | 'blackout' | 'swarm_alert' | 'red_alert' | null;
+
+export interface ArenaEventState {
+  type: DynamicArenaEventType;
+  titleVi: string;
+  descVi: string;
+  timer: number; // remaining ms
+  maxTimer?: number;
+  color: string;
+}
+
+export interface EnvironmentalHazardZone {
+  id: string;
+  type: 'toxic_pool' | 'electric_leak';
+  x: number;
+  y: number;
+  radius: number;
+  damage: number;
+  pulseTimer: number;
+  color: string;
 }
 
 export interface PlayerStats {
@@ -290,6 +337,11 @@ export interface PlayerStats {
   invincibleTimer: number;
   warriorSkin?: string;
   walkFrame?: number;
+  // Level & Roguelike EXP
+  level: number;
+  exp: number;
+  maxExp: number;
+  roguelikeSkills?: Record<string, number>;
   // Ultimate Skill
   ultimateCharge: number; // 0 to 100
   isUltimateActive?: boolean;
