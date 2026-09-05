@@ -30,6 +30,91 @@ export function processBossCombatAI(
   const distToPlayer = Math.hypot(p.x - boss.x, p.y - boss.y);
   const angleToPlayer = Math.atan2(p.y - boss.y, p.x - boss.x);
 
+  // 0. MULTI-PHASE BOSS: ENRAGE TRANSITION AT 50% HP
+  if (!boss.enrageTriggered && boss.hp <= boss.maxHp * 0.5) {
+    boss.enrageTriggered = true;
+    boss.isEnraged = true;
+    boss.bossPhase = 2;
+    boss.speed = boss.baseSpeed * 1.38;
+    ctx.screenShake = Math.max(ctx.screenShake || 0, 26);
+    soundManager.playBossRoar();
+
+    // Shockwave explosion effect
+    for (let i = 0; i < 32; i++) {
+      const a = (i / 32) * Math.PI * 2;
+      ctx.particles.push({
+        x: boss.x,
+        y: boss.y,
+        vx: Math.cos(a) * 7.5,
+        vy: Math.sin(a) * 7.5,
+        radius: 4.5,
+        color: '#ef4444',
+        alpha: 1,
+        life: 0,
+        maxLife: 35,
+        decay: 0.03,
+        shape: 'fire'
+      });
+    }
+
+    ctx.floatingTexts.push({
+      id: Math.random().toString(),
+      x: boss.x,
+      y: boss.y - boss.radius - 28,
+      text: '🔥 TRÙM CUỒNG NỘ! GIAI ĐOẠN 2!',
+      color: '#ef4444',
+      alpha: 1,
+      life: 80,
+      isCrit: true
+    });
+
+    // Summon 4 enraged red runner minions
+    for (let m = 0; m < 4; m++) {
+      const mAngle = (m / 4) * Math.PI * 2;
+      const mx = boss.x + Math.cos(mAngle) * (boss.radius + 35);
+      const my = boss.y + Math.sin(mAngle) * (boss.radius + 35);
+      ctx.zombies.push({
+        id: Math.random().toString(),
+        type: 'runner',
+        x: mx,
+        y: my,
+        radius: 16,
+        hp: 140,
+        maxHp: 140,
+        speed: 3.9,
+        baseSpeed: 3.9,
+        damage: 24,
+        scoreValue: 45,
+        goldValue: 15,
+        color: '#ef4444',
+        angle: 0,
+        animationFrame: 0,
+        frozenTimer: 0,
+        burnTimer: 0,
+        poisonTimer: 0,
+        attackCooldown: 0,
+        isBoss: false
+      });
+    }
+  }
+
+  // Active Enrage Aura & Particle Emitter
+  if (boss.isEnraged && Math.random() < 0.35) {
+    ctx.particles.push({
+      x: boss.x + (Math.random() - 0.5) * boss.radius * 1.4,
+      y: boss.y + (Math.random() - 0.5) * boss.radius * 1.4,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -1.5 - Math.random() * 3,
+      radius: 3 + Math.random() * 3,
+      color: Math.random() > 0.5 ? '#ef4444' : '#f97316',
+      alpha: 0.9,
+      life: 0,
+      maxLife: 20,
+      decay: 0.05,
+      shape: 'fire'
+    });
+  }
+
   // 1. UPDATE BOSS TIMERS & TEMPORARY SPECIAL STATES
   if (boss.shieldTimer && boss.shieldTimer > 0) {
     boss.shieldTimer -= dt;

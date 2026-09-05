@@ -525,7 +525,7 @@ export const App: React.FC = () => {
     });
   };
 
-  const handleBuySupply = (type: 'heal' | 'armor' | 'grenade' | 'turret') => {
+  const handleBuySupply = (type: 'heal' | 'armor' | 'grenade' | 'turret' | 'trap') => {
     if (type === 'heal' && player.gold >= 100 && player.hp < player.maxHp) {
       soundManager.playPowerUp();
       setPlayer(prev => ({ ...prev, gold: prev.gold - 100, hp: Math.min(prev.maxHp, prev.hp + 50) }));
@@ -537,7 +537,10 @@ export const App: React.FC = () => {
       setPlayer(prev => ({ ...prev, gold: prev.gold - 180, grenadeCount: prev.grenadeCount + 3 }));
     } else if (type === 'turret' && player.gold >= 350) {
       soundManager.playPowerUp();
-      setPlayer(prev => ({ ...prev, gold: prev.gold - 350 }));
+      setPlayer(prev => ({ ...prev, gold: prev.gold - 350, turretInventory: (prev.turretInventory || 0) + 1 }));
+    } else if (type === 'trap' && player.gold >= 250) {
+      soundManager.playPowerUp();
+      setPlayer(prev => ({ ...prev, gold: prev.gold - 250, trapInventory: (prev.trapInventory || 0) + 1 }));
     }
   };
 

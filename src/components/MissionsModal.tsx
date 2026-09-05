@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Mission, GameRecordStats } from '../types/game';
+import React, { useState, useEffect } from 'react';
+import { Mission, GameRecordStats, Achievement } from '../types/game';
 import { 
   Award, CheckCircle2, ChevronRight, DollarSign, 
-  Flame, Skull, Trophy, X, Zap, Target, Crosshair, Shield, Sparkles 
+  Flame, Skull, Trophy, X, Zap, Target, Crosshair, Shield, Sparkles, BookOpen 
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { BestiaryViewer } from './BestiaryViewer';
+import { AchievementsViewer } from './AchievementsViewer';
 
 interface MissionsModalProps {
   isOpen: boolean;
@@ -12,6 +14,9 @@ interface MissionsModalProps {
   missions: Mission[];
   onClaimReward: (missionId: string) => void;
   recordStats: GameRecordStats;
+  achievements?: Achievement[];
+  onClaimAchievement?: (achievementId: string) => void;
+  initialTab?: 'missions' | 'achievements' | 'bestiary' | 'records';
 }
 
 export const MissionsModal: React.FC<MissionsModalProps> = ({
@@ -19,13 +24,23 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
   onClose,
   missions,
   onClaimReward,
-  recordStats
+  recordStats,
+  achievements = [],
+  onClaimAchievement = () => {},
+  initialTab = 'missions'
 }) => {
-  const [activeTab, setActiveTab] = useState<'missions' | 'records'>('missions');
+  const [activeTab, setActiveTab] = useState<'missions' | 'achievements' | 'bestiary' | 'records'>(initialTab);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
   const completedUnclaimedCount = missions.filter(m => m.completed && !m.claimed).length;
+  const completedUnclaimedAchievements = achievements.filter(a => a.completed && !a.claimed).length;
 
   const getMissionIcon = (iconName: string) => {
     switch (iconName) {
@@ -43,7 +58,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="bg-neutral-950 border border-neutral-800 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative"
+        className="bg-neutral-950 border border-neutral-800 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-neutral-800/80 bg-neutral-900/60">
@@ -51,10 +66,10 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
             <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
             <div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase">
-                THÀNH TÍCH & KỶ LỤC CHIẾN BĂNG
+                TRUNG TÂM CHỈ HUY & HỒ SƠ CHIẾN TÁC
               </h2>
               <p className="text-[10px] sm:text-xs text-neutral-400">
-                Hoàn thành nhiệm vụ chiến trường để nhận thưởng Vàng quý giá
+                Tra cứu sổ tay quái vật, thành tựu danh hiệu, nhiệm vụ và kỷ lục sống sót
               </p>
             </div>
           </div>
@@ -67,10 +82,10 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
         </div>
 
         {/* Tab switcher */}
-        <div className="flex items-center border-b border-neutral-800 bg-neutral-950 px-3 pt-2 gap-2">
+        <div className="flex items-center border-b border-neutral-800 bg-neutral-950 px-2 sm:px-3 pt-2 gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('missions')}
-            className={`px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all relative ${
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all shrink-0 relative ${
               activeTab === 'missions'
                 ? 'bg-neutral-900 text-amber-400 border-t-2 border-amber-500'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -85,20 +100,57 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('achievements')}
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all shrink-0 relative ${
+              activeTab === 'achievements'
+                ? 'bg-neutral-900 text-yellow-400 border-t-2 border-yellow-500'
+                : 'text-neutral-400 hover:text-neutral-200'
+            }`}
+          >
+            <span>THÀNH TỰU ({achievements.filter(a => a.completed).length}/{achievements.length})</span>
+            {completedUnclaimedAchievements > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-[9px] text-black font-bold animate-pulse">
+                {completedUnclaimedAchievements}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('bestiary')}
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all shrink-0 relative ${
+              activeTab === 'bestiary'
+                ? 'bg-neutral-900 text-rose-400 border-t-2 border-rose-500'
+                : 'text-neutral-400 hover:text-neutral-200'
+            }`}
+          >
+            <span className="flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5" />
+              SỔ TAY QUÁI VẬT
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('records')}
-            className={`px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all relative ${
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-black uppercase rounded-t-xl transition-all shrink-0 relative ${
               activeTab === 'records'
                 ? 'bg-neutral-900 text-sky-400 border-t-2 border-sky-500'
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <span>KỶ LỤC CÁ NHÂN</span>
+            <span>KỶ LỤC</span>
           </button>
         </div>
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5">
-          {activeTab === 'missions' ? (
+          {activeTab === 'bestiary' ? (
+            <BestiaryViewer />
+          ) : activeTab === 'achievements' ? (
+            <AchievementsViewer 
+              achievements={achievements}
+              onClaimAchievement={onClaimAchievement}
+            />
+          ) : activeTab === 'missions' ? (
             missions.map(m => {
               const progressPct = Math.min(100, Math.round((m.current / m.target) * 100));
               return (

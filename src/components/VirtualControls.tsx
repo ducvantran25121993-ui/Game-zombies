@@ -423,6 +423,48 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
               })}
             </div>
 
+            {/* Tactical Gadgets Row (Grenade Cycle / Deploy Turret / Deploy Trap) */}
+            <div className="flex items-center gap-1.5 w-full justify-end">
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); onThrowGrenade(); }}
+                onClick={onThrowGrenade}
+                disabled={grenadesLeft <= 0}
+                className={`px-2 py-1.5 rounded-lg border text-[10px] font-black flex items-center gap-1 shadow-md active:scale-95 backdrop-blur-md pointer-events-auto ${
+                  grenadesLeft > 0 
+                    ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white'
+                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-600 opacity-60'
+                }`}
+                title="Ném Lựu đạn (G)"
+              >
+                <Bomb className="w-3 h-3" />
+                <span>NÉM ({grenadesLeft})</span>
+              </button>
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('cycle-grenade')); }}
+                onClick={() => window.dispatchEvent(new CustomEvent('cycle-grenade'))}
+                className="px-2 py-1.5 rounded-lg border border-purple-500/60 bg-neutral-950/80 text-purple-300 text-[10px] font-black active:scale-95 shadow-md pointer-events-auto"
+                title="Đổi loại lựu đạn: Frag / Băng / Lỗ đen [X]"
+              >
+                ĐỔI [X]
+              </button>
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('deploy-turret')); }}
+                onClick={() => window.dispatchEvent(new CustomEvent('deploy-turret'))}
+                className="px-2 py-1.5 rounded-lg border border-indigo-500/60 bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-200 text-[10px] font-black active:scale-95 shadow-md pointer-events-auto"
+                title="Đặt Tháp súng tự động [T]"
+              >
+                🛡️ THÁP
+              </button>
+              <button
+                onTouchStart={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('deploy-trap')); }}
+                onClick={() => window.dispatchEvent(new CustomEvent('deploy-trap'))}
+                className="px-2 py-1.5 rounded-lg border border-sky-500/60 bg-sky-950/80 hover:bg-sky-900/90 text-sky-200 text-[10px] font-black active:scale-95 shadow-md pointer-events-auto"
+                title="Đặt Bẫy điện [Y]"
+              >
+                ⚡ BẪY
+              </button>
+            </div>
+
             {/* Dash and Ultimate Action Cluster */}
             <div className="flex items-center gap-2 w-full">
               <button

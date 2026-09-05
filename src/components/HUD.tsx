@@ -243,20 +243,62 @@ export const HUD: React.FC<HUDProps> = ({
             )}
           </button>
 
-          {/* Quick Grenade Button in Top Bar */}
-          <button
-            onClick={onThrowGrenade}
-            disabled={player.grenadeCount <= 0}
-            className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 ${
-              player.grenadeCount > 0
-                ? 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20'
-                : 'bg-neutral-950/70 border-neutral-800 text-neutral-600 opacity-60'
-            }`}
-            title="Ném Lựu đạn nổ diện rộng (Phím G hoặc E)"
-          >
-            <Bomb className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-            <span className="font-mono">x{player.grenadeCount}</span>
-          </button>
+          {/* Tactical Gadgets & Grenade Controls */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Quick Grenade Button */}
+            <button
+              onClick={onThrowGrenade}
+              disabled={player.grenadeCount <= 0}
+              className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 ${
+                player.grenadeCount > 0
+                  ? (player.selectedGrenadeType === 'cryo'
+                      ? 'bg-gradient-to-r from-sky-600 to-cyan-500 border-sky-400 text-white shadow-sky-500/20'
+                      : player.selectedGrenadeType === 'vortex'
+                      ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 border-purple-400 text-white shadow-purple-500/20'
+                      : 'bg-gradient-to-r from-red-600 to-amber-600 border-red-400 text-white shadow-red-500/20')
+                  : 'bg-neutral-950/70 border-neutral-800 text-neutral-600 opacity-60'
+              }`}
+              title={`Ném Lựu đạn (${player.selectedGrenadeType === 'cryo' ? 'Hàn Băng' : player.selectedGrenadeType === 'vortex' ? 'Lỗ Đen' : 'Nổ Mảnh'}) [Phím G]` }
+            >
+              <Bomb className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+              <span className="font-mono">
+                {player.selectedGrenadeType === 'cryo' ? '❄️' : player.selectedGrenadeType === 'vortex' ? '🌀' : '💥'}x{player.grenadeCount}
+              </span>
+            </button>
+
+            {/* Cycle Grenade Variant Button */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('cycle-grenade'))}
+              className="px-1.5 py-1 rounded-xl border border-purple-500/60 bg-neutral-950/80 hover:bg-neutral-900 text-purple-300 text-[8px] sm:text-[9px] font-bold active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden xs:flex items-center gap-0.5"
+              title="Đổi loại Lựu đạn: Mảnh -> Băng -> Lỗ đen [Phím X]"
+            >
+              <span className="font-mono">[X]</span>
+            </button>
+
+            {/* Deploy Sentry Turret Button */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('deploy-turret'))}
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-purple-500/50 bg-purple-950/80 hover:bg-purple-900 text-purple-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden md:flex items-center gap-1"
+              title="Đặt Tháp súng tự động Sentry [Phím T] (350 Vàng nếu không có sẵn)"
+            >
+              <span>🛡️ THÁP [T]</span>
+              {(player.turretInventory || 0) > 0 && (
+                <span className="bg-purple-600 px-1 rounded text-[8px] font-mono text-white">x{player.turretInventory}</span>
+              )}
+            </button>
+
+            {/* Deploy Electric Trap Button */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('deploy-trap'))}
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-sky-500/50 bg-sky-950/80 hover:bg-sky-900 text-sky-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden md:flex items-center gap-1"
+              title="Đặt Bẫy điện từ trường [Phím Y] (250 Vàng nếu không có sẵn)"
+            >
+              <span>⚡ BẪY [Y]</span>
+              {(player.trapInventory || 0) > 0 && (
+                <span className="bg-sky-600 px-1 rounded text-[8px] font-mono text-white">x{player.trapInventory}</span>
+              )}
+            </button>
+          </div>
 
           {/* Missions & Achievements Button */}
           {onOpenMissions && (

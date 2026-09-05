@@ -4,7 +4,7 @@ import {
   Particle, Decal, DropItem, ActiveTurret, FloatingText, 
   Obstacle, ActiveBuffs, GameDifficulty, GameMode, PowerUpType,
   MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook, GameViewMode,
-  ArenaEventState, EnvironmentalHazardZone, DynamicArenaEventType
+  ArenaEventState, EnvironmentalHazardZone, DynamicArenaEventType, TacticalGrenadeType
 } from '../types/game';
 import { MAP_SIZE, ZOMBIE_TEMPLATES, BOSS_SKILL_DATABASE } from '../utils/constants';
 import { soundManager } from '../utils/audio';
@@ -980,6 +980,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (key === 'g' || key === 'e') {
         handleGrenade();
       }
+      // Cycle Tactical Grenade Variant (X)
+      if (key === 'x') {
+        handleCycleGrenade();
+      }
+      // Deploy Sentry Turret (T)
+      if (key === 't') {
+        handleDeployTurret();
+      }
+      // Deploy Electric Trap (Y)
+      if (key === 'y') {
+        handleDeployTrap();
+      }
       // Ultimate Skill (F or U)
       if (key === 'f' || key === 'u') {
         handleUltimate();
@@ -1006,13 +1018,37 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       handleUltimate();
     };
 
+    const handleCycleGrenadeEvent = () => {
+      handleCycleGrenade();
+    };
+
+    const handleThrowGrenadeEvent = () => {
+      handleGrenade();
+    };
+
+    const handleDeployTurretEvent = () => {
+      handleDeployTurret();
+    };
+
+    const handleDeployTrapEvent = () => {
+      handleDeployTrap();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('trigger-ultimate', handleTriggerUltimateEvent);
+    window.addEventListener('cycle-grenade', handleCycleGrenadeEvent);
+    window.addEventListener('throw-grenade', handleThrowGrenadeEvent);
+    window.addEventListener('deploy-turret', handleDeployTurretEvent);
+    window.addEventListener('deploy-trap', handleDeployTrapEvent);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('trigger-ultimate', handleTriggerUltimateEvent);
+      window.removeEventListener('cycle-grenade', handleCycleGrenadeEvent);
+      window.removeEventListener('throw-grenade', handleThrowGrenadeEvent);
+      window.removeEventListener('deploy-turret', handleDeployTurretEvent);
+      window.removeEventListener('deploy-trap', handleDeployTrapEvent);
     };
   }, []);
 
@@ -1127,19 +1163,330 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     p.invincibleTimer = 220;
   };
 
+  const handleCycleGrenade = () => {
+    const state = stateRef.current;
+    const p = state.player;
+    const current = p.selectedGrenadeType || 'frag';
+    const next: TacticalGrenadeType = current === 'frag' ? 'cryo' : current === 'cryo' ? 'vortex' : 'frag';
+    p.selectedGrenadeType = next;
+    setPlayer(prev => ({ ...prev, selectedGrenadeType: next }));
+    soundManager.playEmptyClick();
+
+    const title = next === 'frag' 
+      ? '💥 LỰU ĐẠN NỔ MẢNH (FRAG) [G]' 
+      : next === 'cryo' 
+        ? '❄️ LỰU ĐẠN HÀN BĂNG (CRYO) [G]' 
+        : '🌀 LỰU ĐẠN LỖ ĐEN (VORTEX) [G]';
+    const color = next === 'frag' ? '#f97316' : next === 'cryo' ? '#38bdf8' : '#c084fc';
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x: p.x,
+      y: p.y - 35,
+      text: title,
+      color,
+      alpha: 1,
+      life: 50,
+      isCrit: true
+    });
+  };
+
+  const handleDeployTurret = () => {
+    const state = stateRef.current;
+    const p = state.player;
+    if ((p.turretInventory || 0) <= 0) {
+      if (p.gold >= 350) {
+        p.gold -= 350;
+        setPlayer(prev => ({ ...prev, gold: prev.gold - 350 }));
+      } else {
+        soundManager.playEmptyClick();
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: p.x,
+          y: p.y - 30,
+          text: '⚠️ CẦN 350 VÀNG ĐỂ ĐẶT THÁP SÚNG [T]!',
+          color: '#ef4444',
+          alpha: 1,
+          life: 45
+        });
+        return;
+      }
+    } else {
+      p.turretInventory = (p.turretInventory || 1) - 1;
+      setPlayer(prev => ({ ...prev, turretInventory: (prev.turretInventory || 1) - 1 }));
+    }
+
+    soundManager.playDroneDeploy();
+    state.turrets.push({
+      id: Math.random().toString(),
+      x: p.x,
+      y: p.y,
+      angle: p.angle,
+      duration: 35000,
+      maxDuration: 35000,
+      hp: 300,
+      maxHp: 300,
+      type: 'sentry',
+      range: 480,
+      lastShotTime: 0,
+      pulseTimer: 0
+    });
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x: p.x,
+      y: p.y - 35,
+      text: '🛡️ TRIỂN KHAI THÁP SÚNG TỰ ĐỘNG (SENTRY)!',
+      color: '#a855f7',
+      alpha: 1,
+      life: 50,
+      isCrit: true
+    });
+
+    window.dispatchEvent(new CustomEvent('achievement-event', { detail: { type: 'deploy_turret' } }));
+  };
+
+  const handleDeployTrap = () => {
+    const state = stateRef.current;
+    const p = state.player;
+    if ((p.trapInventory || 0) <= 0) {
+      if (p.gold >= 250) {
+        p.gold -= 250;
+        setPlayer(prev => ({ ...prev, gold: prev.gold - 250 }));
+      } else {
+        soundManager.playEmptyClick();
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: p.x,
+          y: p.y - 30,
+          text: '⚠️ CẦN 250 VÀNG ĐỂ ĐẶT BẪY ĐIỆN [Y]!',
+          color: '#ef4444',
+          alpha: 1,
+          life: 45
+        });
+        return;
+      }
+    } else {
+      p.trapInventory = (p.trapInventory || 1) - 1;
+      setPlayer(prev => ({ ...prev, trapInventory: (prev.trapInventory || 1) - 1 }));
+    }
+
+    soundManager.playPlasmaShot();
+    state.turrets.push({
+      id: Math.random().toString(),
+      x: p.x,
+      y: p.y,
+      angle: 0,
+      duration: 30000,
+      maxDuration: 30000,
+      hp: 250,
+      maxHp: 250,
+      type: 'electric_trap',
+      range: 220,
+      slowRadius: 220,
+      lastShotTime: 0,
+      pulseTimer: 0
+    });
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x: p.x,
+      y: p.y - 35,
+      text: '⚡ KÍCH HOẠT BẪY ĐIỆN TỬ TRƯỜNG CAO THẾ!',
+      color: '#38bdf8',
+      alpha: 1,
+      life: 50,
+      isCrit: true
+    });
+
+    window.dispatchEvent(new CustomEvent('achievement-event', { detail: { type: 'deploy_turret' } }));
+  };
+
   const handleGrenade = () => {
     const state = stateRef.current;
     const p = state.player;
-    if (p.grenadeCount <= 0) return;
+    if (p.grenadeCount <= 0) {
+      soundManager.playEmptyClick();
+      state.floatingTexts.push({
+        id: Math.random().toString(),
+        x: p.x,
+        y: p.y - 30,
+        text: '⚠️ HẾT LỰU ĐẠN! MUA THÊM TẠI SHOP (B)',
+        color: '#ef4444',
+        alpha: 1,
+        life: 40
+      });
+      return;
+    }
 
     p.grenadeCount -= 1;
     setPlayer(prev => ({ ...prev, grenadeCount: prev.grenadeCount - 1 }));
 
-    // Create huge area explosion at mouse target or ahead of player
-    const targetX = p.x + Math.cos(p.angle) * 160;
-    const targetY = p.y + Math.sin(p.angle) * 160;
+    // Create tactical blast at mouse target or ahead of player
+    const targetX = p.x + Math.cos(p.angle) * 170;
+    const targetY = p.y + Math.sin(p.angle) * 170;
 
-    triggerExplosion(targetX, targetY, 220, 380);
+    const gType = p.selectedGrenadeType || 'frag';
+    if (gType === 'cryo') {
+      triggerCryoBlast(targetX, targetY, 280, 260);
+    } else if (gType === 'vortex') {
+      triggerVortexBlackHole(targetX, targetY, 340, 320);
+    } else {
+      triggerExplosion(targetX, targetY, 240, 420);
+      // Spawn 12 lethal shrapnel bullets flying outwards
+      for (let s = 0; s < 12; s++) {
+        const sAng = (s / 12) * Math.PI * 2;
+        state.bullets.push({
+          id: Math.random().toString(),
+          x: targetX,
+          y: targetY,
+          vx: Math.cos(sAng) * 14,
+          vy: Math.sin(sAng) * 14,
+          damage: 90,
+          pierceLeft: 2,
+          rangeLeft: 200,
+          radius: 3.5,
+          color: '#fbbf24',
+          knockback: 4
+        });
+      }
+    }
+  };
+
+  const triggerCryoBlast = (x: number, y: number, radius: number, damage: number) => {
+    const state = stateRef.current;
+    soundManager.playDronePlasma();
+    state.screenShake = 16;
+
+    // Cyan frost decal
+    state.decals.push({
+      x,
+      y,
+      radius: radius * 0.75,
+      color: '#0284c7',
+      alpha: 0.85,
+      type: 'crater'
+    });
+
+    // Cyan Ice shards particles
+    for (let i = 0; i < 45; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 8;
+      state.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 3 + Math.random() * 4,
+        color: Math.random() > 0.4 ? '#38bdf8' : '#e0f2fe',
+        alpha: 1,
+        life: 0,
+        maxLife: 35 + Math.random() * 20,
+        decay: 0.025,
+        shape: 'spark'
+      });
+    }
+
+    let frozenCount = 0;
+    state.zombies.forEach(z => {
+      const dist = Math.hypot(z.x - x, z.y - y);
+      if (dist <= radius) {
+        z.hp -= damage;
+        z.frozenTimer = 5000;
+        z.speed = Math.max(0.4, z.baseSpeed * 0.2);
+        z.hitFlashTimer = 100;
+        frozenCount++;
+        state.floatingTexts.push({
+          id: Math.random().toString(),
+          x: z.x,
+          y: z.y - 12,
+          text: `❄️ -${damage} (ĐÓNG BĂNG 5s)`,
+          color: '#38bdf8',
+          alpha: 1,
+          life: 45,
+          isCrit: true
+        });
+      }
+    });
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x,
+      y: y - 30,
+      text: '❄️ VỤ NỔ HÀN BĂNG CRYO!',
+      color: '#7dd3fc',
+      alpha: 1,
+      life: 55,
+      isCrit: true
+    });
+
+    if (frozenCount > 0) {
+      window.dispatchEvent(new CustomEvent('achievement-event', { detail: { type: 'freeze', count: frozenCount } }));
+    }
+  };
+
+  const triggerVortexBlackHole = (x: number, y: number, radius: number, damage: number) => {
+    const state = stateRef.current;
+    soundManager.playPlasmaShot();
+    state.screenShake = 16;
+
+    // Create vortex hazard in bossHazards
+    state.bossHazards.push({
+      id: Math.random().toString(),
+      x,
+      y,
+      radius,
+      timer: 3500,
+      maxTimer: 3500,
+      damage,
+      type: 'acid_pool'
+    });
+
+    // Swirling black hole particles
+    for (let i = 0; i < 35; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 3 + Math.random() * 6;
+      state.particles.push({
+        x: x + Math.cos(ang) * (radius * 0.8),
+        y: y + Math.sin(ang) * (radius * 0.8),
+        vx: -Math.cos(ang) * spd,
+        vy: -Math.sin(ang) * spd,
+        radius: 3.5,
+        color: Math.random() > 0.5 ? '#c084fc' : '#3b82f6',
+        alpha: 1,
+        life: 0,
+        maxLife: 40,
+        decay: 0.025,
+        shape: 'spark'
+      });
+    }
+
+    // Pull all nearby zombies violently into the singularity!
+    let sucked = 0;
+    state.zombies.forEach(z => {
+      const dist = Math.hypot(z.x - x, z.y - y);
+      if (dist <= radius) {
+        const pullAngle = Math.atan2(y - z.y, x - z.x);
+        z.x += Math.cos(pullAngle) * 90;
+        z.y += Math.sin(pullAngle) * 90;
+        z.hp -= Math.round(damage * 0.6);
+        z.hitFlashTimer = 80;
+        sucked++;
+      }
+    });
+
+    state.floatingTexts.push({
+      id: Math.random().toString(),
+      x,
+      y: y - 35,
+      text: '🌀 LỖ ĐEN VORTEX! HÚT TOÀN BỘ BẦY ĐÀN!',
+      color: '#c084fc',
+      alpha: 1,
+      life: 60,
+      isCrit: true
+    });
+
+    window.dispatchEvent(new CustomEvent('achievement-event', { detail: { type: 'vortex', count: sucked } }));
   };
 
   const triggerExplosion = (x: number, y: number, radius: number, damage: number) => {
@@ -1633,6 +1980,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               const vx = Math.cos(finalAngle) * wep.bulletSpeed;
               const vy = Math.sin(finalAngle) * wep.bulletSpeed;
 
+              const isEvo = wep.isEvolved;
+              const isFreezeBullet = isEvo && wep.id === 'shotgun';
+              const isLightningBullet = isEvo && wep.id === 'minigun';
+              const isNapalm = isEvo && wep.id === 'flamethrower';
+              const isHealBullet = isEvo && wep.id === 'sniper';
+              const isCyberRebound = isEvo && wep.id === 'ak47';
+              const isApocalypseRpg = isEvo && wep.id === 'rpg';
+              const isQuantumNova = isEvo && wep.id === 'plasma';
+              const isExorcistMagnum = isEvo && wep.id === 'pistol';
+
               state.bullets.push({
                 id: Math.random().toString(),
                 x: muzzleX,
@@ -1640,13 +1997,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 vx,
                 vy,
                 damage: finalDmg,
-                pierceLeft: wep.pierce,
-                rangeLeft: wep.bulletRange,
-                radius: wep.id === 'rpg' ? 7 : wep.id === 'sniper' ? 5 : 3.5,
+                pierceLeft: isHealBullet ? 99 : isCyberRebound ? 3 : wep.pierce,
+                rangeLeft: wep.bulletRange * (isCyberRebound ? 1.4 : 1),
+                radius: wep.id === 'rpg' || isApocalypseRpg ? 8 : wep.id === 'sniper' ? 5.5 : isQuantumNova ? 7 : 3.5,
                 color: wep.bulletColor,
-                isExplosive: wep.id === 'rpg',
-                isPlasma: wep.id === 'plasma',
-                knockback: wep.knockback
+                isExplosive: wep.id === 'rpg' || isApocalypseRpg,
+                isPlasma: wep.id === 'plasma' || isQuantumNova,
+                isFreezeBullet,
+                isLightningBullet,
+                isNapalm,
+                isHealBullet,
+                isCrit: isExorcistMagnum || (Math.random() * 100 < ((p.upgrades.critChanceLevel || 0) * 8 + 10)),
+                splitOnDeath: isApocalypseRpg,
+                splitCount: 5,
+                ricochetLeft: isCyberRebound ? 3 : 0,
+                knockback: wep.knockback * (isEvo ? 1.35 : 1)
               });
             }
 
@@ -1839,43 +2204,106 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      // 5. UPDATE TURRETS
+      // 5. UPDATE TURRETS & ELECTRIC TRAPS
       state.turrets.forEach(turret => {
         turret.duration -= dt;
-        // Find nearest zombie
-        let nearestZombie: Zombie | null = null;
-        let nearestDist = turret.range;
+        turret.pulseTimer = (turret.pulseTimer || 0) + dt;
 
-        state.zombies.forEach(z => {
-          const d = Math.hypot(z.x - turret.x, z.y - turret.y);
-          if (d < nearestDist) {
-            nearestDist = d;
-            nearestZombie = z;
+        if (turret.type === 'electric_trap') {
+          // Electric Trap pulses every 550ms
+          const trapRadius = turret.slowRadius || turret.range || 220;
+          if (turret.pulseTimer > 550) {
+            turret.pulseTimer = 0;
+            let hitZombies = 0;
+
+            state.zombies.forEach(z => {
+              if (z.hp <= 0) return;
+              const d = Math.hypot(z.x - turret.x, z.y - turret.y);
+              if (d <= trapRadius) {
+                hitZombies++;
+                z.hp -= 70;
+                z.speed = Math.min(z.speed, 0.7); // 65% slow
+                z.hitFlashTimer = 80;
+
+                // Electric laser zap from trap to zombie
+                state.laserBeams.push({
+                  x1: turret.x,
+                  y1: turret.y,
+                  x2: z.x,
+                  y2: z.y,
+                  color: '#38bdf8',
+                  alpha: 1
+                });
+
+                for (let sp = 0; sp < 2; sp++) {
+                  state.particles.push({
+                    x: z.x,
+                    y: z.y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: 2.5,
+                    color: '#38bdf8',
+                    alpha: 1,
+                    life: 0,
+                    maxLife: 12,
+                    decay: 0.08,
+                    shape: 'spark'
+                  });
+                }
+              }
+            });
+
+            if (hitZombies > 0) {
+              soundManager.playPlasmaShot();
+            }
           }
-        });
+        } else {
+          // Sentry Turret autonomous targeting
+          let nearestZombie: Zombie | null = null;
+          let nearestDist = turret.range || 480;
 
-        if (nearestZombie && currentTime - turret.lastShotTime > 140) {
-          turret.lastShotTime = currentTime;
-          const targetAngle = Math.atan2((nearestZombie as Zombie).y - turret.y, (nearestZombie as Zombie).x - turret.x);
-          turret.angle = targetAngle;
-
-          soundManager.playShoot('rifle');
-          state.bullets.push({
-            id: Math.random().toString(),
-            x: turret.x + Math.cos(targetAngle) * 20,
-            y: turret.y + Math.sin(targetAngle) * 20,
-            vx: Math.cos(targetAngle) * 16,
-            vy: Math.sin(targetAngle) * 16,
-            damage: 30,
-            pierceLeft: 1,
-            rangeLeft: turret.range,
-            radius: 3,
-            color: '#a855f7',
-            knockback: 3
+          state.zombies.forEach(z => {
+            if (z.hp <= 0) return;
+            const d = Math.hypot(z.x - turret.x, z.y - turret.y);
+            if (d < nearestDist) {
+              nearestDist = d;
+              nearestZombie = z;
+            }
           });
+
+          if (nearestZombie) {
+            const targetAngle = Math.atan2((nearestZombie as Zombie).y - turret.y, (nearestZombie as Zombie).x - turret.x);
+            turret.angle = targetAngle;
+
+            if (currentTime - turret.lastShotTime > 150) {
+              turret.lastShotTime = currentTime;
+              soundManager.playShoot('rifle');
+
+              // Twin rapid heavy armor piercing bullets
+              [-4, 4].forEach(offset => {
+                const perp = targetAngle + Math.PI / 2;
+                const bx = turret.x + Math.cos(targetAngle) * 22 + Math.cos(perp) * offset;
+                const by = turret.y + Math.sin(targetAngle) * 22 + Math.sin(perp) * offset;
+
+                state.bullets.push({
+                  id: Math.random().toString(),
+                  x: bx,
+                  y: by,
+                  vx: Math.cos(targetAngle) * 17,
+                  vy: Math.sin(targetAngle) * 17,
+                  damage: 38,
+                  pierceLeft: 1,
+                  rangeLeft: turret.range,
+                  radius: 3.5,
+                  color: '#c084fc',
+                  knockback: 3
+                });
+              });
+            }
+          }
         }
       });
-      state.turrets = state.turrets.filter(t => t.duration > 0);
+      state.turrets = state.turrets.filter(t => t.duration > 0 && (t.hp === undefined || t.hp > 0));
 
       // 5.5 UPDATE COMPANION DRONES (Follow formation + autonomous combat AI)
       const unlockedConfigs = (dronesRef.current || []).filter(d => d.unlocked);
@@ -2780,6 +3208,56 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 }
               }
 
+              // Evolved Bullet: Blizzard Freeze
+              if (b.isFreezeBullet) {
+                z.frozenTimer = 3500;
+                z.speed = Math.max(0.4, z.baseSpeed * 0.25);
+                window.dispatchEvent(new CustomEvent('achievement-event', { detail: { type: 'freeze', count: 1 } }));
+              }
+
+              // Evolved Bullet: Storm Minigun Chain Lightning
+              if (b.isLightningBullet) {
+                const chainTargets = state.zombies
+                  .filter(other => other.id !== z.id && other.hp > 0 && Math.hypot(other.x - z.x, other.y - z.y) < 240)
+                  .slice(0, 2);
+                chainTargets.forEach(ct => {
+                  ct.hp -= Math.round(finalDmg * 0.65);
+                  ct.hitFlashTimer = 70;
+                  state.laserBeams.push({
+                    x1: z.x,
+                    y1: z.y,
+                    x2: ct.x,
+                    y2: ct.y,
+                    color: '#c084fc',
+                    alpha: 1
+                  });
+                });
+              }
+
+              // Evolved Bullet: Napalm Hellfire
+              if (b.isNapalm) {
+                z.burnTimer = 4500;
+                triggerExplosion(b.x, b.y, 90, Math.round(finalDmg * 0.45));
+              }
+
+              // Evolved Bullet: Bloodhunter Sniper Vampiric Leech
+              if (b.isHealBullet) {
+                p.hp = Math.min(p.maxHp, p.hp + 6);
+                setPlayer(prev => ({ ...prev, hp: p.hp }));
+              }
+
+              // Evolved Bullet: Cyber Rebound Ricochet
+              if (b.ricochetLeft && b.ricochetLeft > 0) {
+                b.ricochetLeft -= 1;
+                const bounceTarget = state.zombies.find(other => other.id !== z.id && other.hp > 0 && Math.hypot(other.x - z.x, other.y - z.y) < 320);
+                if (bounceTarget) {
+                  const bAngle = Math.atan2(bounceTarget.y - z.y, bounceTarget.x - z.x);
+                  b.vx = Math.cos(bAngle) * 18;
+                  b.vy = Math.sin(bAngle) * 18;
+                  b.damage = Math.round(b.damage * 0.85);
+                }
+              }
+
               // Roguelike Skill: Explosive Rounds (35% chance to detonate upon bullet impact)
               if ((p.roguelikeSkills?.explosive_rounds || 0) > 0 && !b.isExplosive && Math.random() < 0.35) {
                 triggerExplosion(b.x, b.y, 130, Math.round(finalDmg * 0.85));
@@ -2871,6 +3349,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           p.combo += 1;
           p.comboTimer = 3500; // ms
           p.multiplier = 1 + Math.min(3, p.combo * 0.1);
+
+          // Track Bestiary Kills
+          try {
+            const rawBestiary = localStorage.getItem('zombie_bestiary_kills_v1');
+            const killMap = rawBestiary ? JSON.parse(rawBestiary) : {};
+            killMap[z.type] = (killMap[z.type] || 0) + 1;
+            localStorage.setItem('zombie_bestiary_kills_v1', JSON.stringify(killMap));
+          } catch {
+            // ignore
+          }
+
+          // Dispatch achievement kill event
+          window.dispatchEvent(new CustomEvent('achievement-event', {
+            detail: {
+              type: 'kill',
+              zombieType: z.type,
+              isBoss: Boolean(z.isBoss),
+              isEnraged: Boolean(z.isEnraged)
+            }
+          }));
 
           // Roguelike Skill: Vampiric Leech (Heal 12 HP & 6 Armor every 6 kills)
           if ((p.roguelikeSkills?.vampiric_leech || 0) > 0) {

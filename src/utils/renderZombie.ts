@@ -79,6 +79,29 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
       ctx.stroke();
     }
 
+    // MULTI-PHASE ENRAGED PHASE 2 AURA (Crimson Fire & Demonic Spikes)
+    if (z.isEnraged) {
+      const enragePulse = Math.sin(time * 0.014) * 6;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 25;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 20 + enragePulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Pulsing demonic rune spikes orbiting the enraged boss
+      for (let s = 0; s < 6; s++) {
+        const spikeAng = (s / 6) * Math.PI * 2 + time * 0.004;
+        const sx = Math.cos(spikeAng) * (r + 20 + enragePulse);
+        const sy = Math.sin(spikeAng) * (r + 20 + enragePulse);
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     // CLONE DISTORTION
     if (z.isClone) {
       ctx.strokeStyle = '#818cf8';
@@ -404,15 +427,32 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
   }
 
   // 9. FROZEN ICE CRYSTAL OVERLAY
-  if (isFrozen) {
-    ctx.strokeStyle = '#e0f2fe';
-    ctx.lineWidth = 2;
+  if (isFrozen || (z.frozenTimer && z.frozenTimer > 0)) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.strokeStyle = '#bae6fd';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 10;
     ctx.beginPath();
+    ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ice crystals
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.7, 0);
+    ctx.lineTo(r * 0.7, 0);
+    ctx.moveTo(0, -r * 0.7);
+    ctx.lineTo(0, r * 0.7);
     ctx.moveTo(-r * 0.5, -r * 0.5);
     ctx.lineTo(r * 0.5, r * 0.5);
     ctx.moveTo(r * 0.5, -r * 0.5);
     ctx.lineTo(-r * 0.5, r * 0.5);
     ctx.stroke();
+    ctx.restore();
   }
 
   // 10. IMPACT HIT FLASH (Combat Juice: Brilliant arcade white flash on projectile impact)

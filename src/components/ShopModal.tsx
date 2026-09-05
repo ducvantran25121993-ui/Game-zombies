@@ -22,7 +22,7 @@ interface ShopModalProps {
   onUpgradeWeapon: (weaponId: WeaponType) => void;
   onBuyAmmo: (weaponId: WeaponType) => void;
   onBuyPerk: (perkId: string) => void;
-  onBuySupply: (type: 'heal' | 'armor' | 'grenade' | 'turret') => void;
+  onBuySupply: (type: 'heal' | 'armor' | 'grenade' | 'turret' | 'trap') => void;
   onSelectWarriorSkin?: (id: string) => void;
   unlockedWarriors?: string[];
   onUnlockWarrior?: (id: string, cost: number) => void;
@@ -946,7 +946,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                     </div>
                     <div>
                       <h3 className="font-bold text-base text-white">Tháp Pháo Tự Động Sentry Gun</h3>
-                      <p className="text-xs text-neutral-400">Triển khai 1 tháp súng tự động ngắm bắn zombie trong 30 giây</p>
+                      <p className="text-xs text-neutral-400">Triển khai 1 tháp súng tự động ngắm bắn zombie trong 30 giây (hoặc bấm [T])</p>
                     </div>
                   </div>
                 </div>
@@ -959,7 +959,33 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                       : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
                   }`}
                 >
-                  <DollarSign className="w-4 h-4" /> TRIỂN KHAI TRỤ SÚNG (350 Vàng)
+                  <DollarSign className="w-4 h-4" /> MUA TRỤ SÚNG (350 Vàng)
+                </button>
+              </div>
+
+              {/* Electric Shock Field Trap */}
+              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl text-sky-400">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-white">Bẫy Điện Từ Trường (Electric Trap)</h3>
+                      <p className="text-xs text-neutral-400">Đặt bẫy phóng điện làm chậm 65% và giật sét zombie xung quanh trong 30s (hoặc bấm [Y])</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onBuySupply('trap')}
+                  disabled={player.gold < 250}
+                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                    player.gold >= 250
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-600/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                  }`}
+                >
+                  <DollarSign className="w-4 h-4" /> MUA BẪY ĐIỆN (250 Vàng)
                 </button>
               </div>
             </div>

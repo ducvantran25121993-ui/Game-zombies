@@ -31,6 +31,10 @@ export interface Weapon {
   bulletColor: string;
   icon: string;
   soundType: 'pistol' | 'shotgun' | 'rifle' | 'sniper' | 'heavy' | 'rocket' | 'plasma' | 'fire';
+  isEvolved?: boolean;
+  evolvedNameVi?: string;
+  evolvedKey?: string;
+  evolvedDescVi?: string;
 }
 
 export type ZombieType = 
@@ -69,6 +73,9 @@ export interface Zombie {
   // Boss specific
   isBoss?: boolean;
   bossPhase?: number;
+  isEnraged?: boolean;
+  enrageTriggered?: boolean;
+  enrageTimer?: number;
   bossAttackTimer?: number;
   bossSpecialState?: 'idle' | 'charging' | 'slamming' | 'spawning' | 'invisible' | 'shielded' | 'laser';
   chargeTarget?: { x: number; y: number };
@@ -149,6 +156,11 @@ export interface Bullet {
   splitCount?: number;
   isVoidWave?: boolean;
   waveWidth?: number;
+  isFreezeBullet?: boolean;
+  isLightningBullet?: boolean;
+  ricochetLeft?: number;
+  isHealBullet?: boolean;
+  isNapalm?: boolean;
   knockback: number;
 }
 
@@ -211,8 +223,11 @@ export interface DropItem {
   rotation?: number;
 }
 
+export type TacticalGrenadeType = 'frag' | 'cryo' | 'vortex';
+
 export interface ActiveTurret {
   id: string;
+  type?: 'sentry' | 'electric_trap';
   x: number;
   y: number;
   hp: number;
@@ -221,6 +236,7 @@ export interface ActiveTurret {
   lastShotTime: number;
   duration: number;
   range: number;
+  slowRadius?: number;
 }
 
 export interface FloatingText {
@@ -327,6 +343,13 @@ export interface PlayerStats {
   dashCooldown: number;
   dashTimer: number;
   grenadeCount: number;
+  selectedGrenadeType?: TacticalGrenadeType;
+  fragGrenades?: number;
+  cryoGrenades?: number;
+  vortexGrenades?: number;
+  turretInventory?: number;
+  trapInventory?: number;
+  evolvedWeapons?: string[];
   gold: number;
   score: number;
   kills: number;
@@ -465,5 +488,47 @@ export interface GameRecordStats {
 }
 
 export type GameViewMode = '3d-iso' | '3d-top' | '3d-action' | '2d';
+
+export interface WeaponEvolutionConfig {
+  weaponId: WeaponType;
+  requiredSkillId: string;
+  evolvedId: string;
+  evolvedNameVi: string;
+  evolvedTitleVi: string;
+  descVi: string;
+  bonusDescVi: string[];
+  bulletColor: string;
+  damageMultiplier: number;
+  fireRateMultiplier: number;
+}
+
+export interface BestiaryEntry {
+  id: ZombieType;
+  nameVi: string;
+  typeCategory: 'normal' | 'elite' | 'boss';
+  descVi: string;
+  weaknessVi: string;
+  threatLevel: number; // 1 to 5
+  baseHp: number;
+  baseSpeed: number;
+  baseDamage: number;
+  specialAbilityVi: string;
+  recommendedWeaponVi: string;
+  iconColor: string;
+}
+
+export interface Achievement {
+  id: string;
+  titleVi: string;
+  descVi: string;
+  icon: string;
+  category: 'combat' | 'boss' | 'survival' | 'arsenal';
+  progress: number;
+  maxProgress: number;
+  completed: boolean;
+  claimed: boolean;
+  rewardGold: number;
+}
+
 
 
