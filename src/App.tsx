@@ -36,10 +36,9 @@ export const App: React.FC = () => {
   const [currentArenaEvent, setCurrentArenaEvent] = useState<ArenaEventState | null>(null);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Missions, Records & Radar
+  // Missions & Records
   const [missions, setMissions] = useState<Mission[]>(() => loadSavedMissions());
   const [recordStats, setRecordStats] = useState<GameRecordStats>(() => loadRecordStats());
-  const [radarData, setRadarData] = useState<{ zombies: Zombie[]; drops: DropItem[] }>({ zombies: [], drops: [] });
 
   // Selected / Tracked Tactical Mission
   const SELECTED_MISSION_KEY = 'zombie_outbreak_selected_mission_id';
@@ -950,7 +949,6 @@ export const App: React.FC = () => {
             autoAimEnabled={autoAimEnabled}
             cameraZoomMode={cameraZoomMode}
             viewMode={viewMode}
-            onRadarUpdate={(zombies, drops) => setRadarData({ zombies, drops })}
             onBossKilled={handleBossKilled}
             onUltimateUsed={handleUltimateUsed}
             onLevelUp={handleLevelUp}
@@ -982,7 +980,6 @@ export const App: React.FC = () => {
             onToggleViewMode={handleToggleViewMode}
             autoAimEnabled={autoAimEnabled}
             onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
-            radarData={radarData}
             onOpenMissions={handleOpenMissions}
             unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
             selectedMission={missions.find(m => m.id === selectedMissionId) || null}

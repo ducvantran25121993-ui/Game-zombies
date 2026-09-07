@@ -3,11 +3,10 @@ import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie,
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
-  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X, Target, Pause, Compass
+  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X, Target, Pause
 } from 'lucide-react';
 import { WARRIOR_CLASSES } from '../data/warriors';
 import { MAP_ENVIRONMENTS } from '../data/maps';
-import { MiniMapRadar } from './MiniMapRadar';
 
 interface HUDProps {
   player: PlayerStats;
@@ -34,7 +33,6 @@ interface HUDProps {
   onToggleViewMode?: () => void;
   autoAimEnabled?: boolean;
   onToggleAutoAim?: () => void;
-  radarData?: { zombies: Zombie[]; drops: DropItem[] };
   onOpenMissions?: () => void;
   unclaimedMissionsCount?: number;
   currentArenaEvent?: ArenaEventState | null;
@@ -66,7 +64,6 @@ export const HUD: React.FC<HUDProps> = ({
   onToggleViewMode,
   autoAimEnabled = true,
   onToggleAutoAim,
-  radarData,
   onOpenMissions,
   unclaimedMissionsCount = 0,
   currentArenaEvent = null,
@@ -99,9 +96,6 @@ export const HUD: React.FC<HUDProps> = ({
   }, [currentWeapon, player.gold]);
 
   const canAffordAnything = Boolean(affordableLockedWeapon || canUpgradeCurrent);
-
-  // Radar visibility state (allows player to show/hide to prevent obscuring other HUD elements)
-  const [showRadar, setShowRadar] = useState(true);
 
   // Detect touch devices to avoid rendering desktop-only widgets over virtual sticks
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -379,22 +373,6 @@ export const HUD: React.FC<HUDProps> = ({
                 </button>
               )}
 
-              {/* Tactical Radar Toggle Button */}
-              {radarData && (
-                <button
-                  onClick={() => setShowRadar(prev => !prev)}
-                  className={`px-1.5 py-0.5 rounded-lg border text-[8.5px] font-black flex items-center gap-0.5 backdrop-blur-md shadow-sm transition-all active:scale-95 pointer-events-auto ${
-                    showRadar
-                      ? 'bg-sky-500/25 border-sky-400/80 text-sky-300'
-                      : 'bg-neutral-900/90 border-neutral-700 text-neutral-500 hover:text-neutral-300'
-                  }`}
-                  title={showRadar ? 'Ẩn Radar để mở rộng tầm nhìn toàn cảnh' : 'Bật Radar GPS'}
-                >
-                  <Compass className={`w-2.5 h-2.5 ${showRadar ? 'text-sky-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '8s' }} />
-                  <span>RADAR</span>
-                </button>
-              )}
-
               <button
                 onClick={onToggleMute}
                 className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto"
@@ -589,22 +567,6 @@ export const HUD: React.FC<HUDProps> = ({
               </button>
             )}
 
-            {/* Tactical Radar Toggle Button */}
-            {radarData && (
-              <button
-                onClick={() => setShowRadar(prev => !prev)}
-                className={`px-1.5 py-0.5 sm:py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-1 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
-                  showRadar
-                    ? 'bg-sky-500/25 border-sky-400/80 text-sky-300'
-                    : 'bg-neutral-900/90 border-neutral-700 text-neutral-500 hover:text-neutral-300'
-                }`}
-                title={showRadar ? 'Ẩn Radar để mở rộng tầm nhìn' : 'Bật Radar GPS'}
-              >
-                <Compass className={`w-2.5 h-2.5 ${showRadar ? 'text-sky-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '8s' }} />
-                <span className="hidden xs:inline">RADAR</span>
-              </button>
-            )}
-
             <button
               onClick={onToggleMute}
               className="p-1 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto"
@@ -662,16 +624,6 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         )}
       </div>
-
-      {/* TACTICAL MINIMAP RADAR (Self-docked, draggable, anti-overlap) */}
-      {radarData && showRadar && (
-        <MiniMapRadar
-          player={player}
-          zombies={radarData.zombies}
-          drops={radarData.drops}
-          onClose={() => setShowRadar(false)}
-        />
-      )}
 
       {/* FLOATING PROMPT: AUTO-DISMISSES AFTER 5 SECONDS */}
       {notification && (

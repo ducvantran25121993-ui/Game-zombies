@@ -73,7 +73,6 @@ interface GameCanvasProps {
   cameraZoomMode?: 'wide' | 'ultrawide' | 'normal';
   viewMode?: GameViewMode;
   onUltimateUsed?: () => void;
-  onRadarUpdate?: (zombies: Zombie[], drops: DropItem[]) => void;
   onBossKilled?: () => void;
   onLevelUp?: () => void;
   onArenaEventChange?: (event: ArenaEventState | null) => void;
@@ -113,7 +112,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   cameraZoomMode = 'wide',
   viewMode = '2d',
   onUltimateUsed,
-  onRadarUpdate,
   onBossKilled,
   onLevelUp,
   onArenaEventChange
@@ -127,9 +125,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const onUltimateUsedRef = useRef(onUltimateUsed);
   onUltimateUsedRef.current = onUltimateUsed;
-
-  const onRadarUpdateRef = useRef(onRadarUpdate);
-  onRadarUpdateRef.current = onRadarUpdate;
 
   const onBossKilledRef = useRef(onBossKilled);
   onBossKilledRef.current = onBossKilled;
@@ -1716,14 +1711,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       const p = state.player;
       const wep = state.currentWeapon;
-
-      // Periodic Radar Map Sync
-      if (currentTime - lastRadarSync > 90) {
-        lastRadarSync = currentTime;
-        if (onRadarUpdateRef.current) {
-          onRadarUpdateRef.current(state.zombies, state.drops);
-        }
-      }
 
       // Realtime periodic synchronization of Gold, Score, HP, Armor, Grenades, Ultimate back to React App State
       if (currentTime - lastStateSync > 60) {
