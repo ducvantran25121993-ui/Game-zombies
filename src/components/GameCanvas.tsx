@@ -4762,8 +4762,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 10. WIDE TACTICAL CAMERA TRACKING & OPTIMIZED PERSPECTIVE
       // Wide FOV view on mobile to see surrounding hordes and battlefield clearly
       const currentZoomMode = cameraZoomModeRef.current;
-      const isMobileLandscape = canvas.height < 520 && canvas.width > canvas.height;
-      let baseZoom = isMobileLandscape ? 0.60 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+      const isMobileLandscape = canvas.height < 560 && canvas.width > canvas.height;
+      let baseZoom = isMobileLandscape ? 0.54 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
       if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
       else if (currentZoomMode === 'normal') baseZoom *= 1.25;
       const zoom = baseZoom;
@@ -5552,8 +5552,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const screenY = clientY - rect.top;
 
     const currentZoomMode = cameraZoomModeRef.current;
-    const isMobileLandscape = canvas.height < 520 && canvas.width > canvas.height;
-    let baseZoom = isMobileLandscape ? 0.60 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+    const isMobileLandscape = canvas.height < 560 && canvas.width > canvas.height;
+    let baseZoom = isMobileLandscape ? 0.54 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
     if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
     else if (currentZoomMode === 'normal') baseZoom *= 1.25;
     const zoom = baseZoom;

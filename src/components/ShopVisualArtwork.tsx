@@ -639,3 +639,520 @@ export const EquipmentVisualArtwork: React.FC<{
       return null;
   }
 };
+
+// ==========================================
+// 4. SKILL PERK VISUAL ARTWORK (KỸ NĂNG BỔ TRỢ)
+// ==========================================
+export const SkillPerkVisualArtwork: React.FC<{
+  perkId: string;
+  level?: number;
+  color?: string;
+  className?: string;
+}> = ({ perkId, level = 1, color = '#f59e0b', className = 'w-full h-full' }) => {
+  switch (perkId) {
+    case 'maxHpLevel':
+      // Cybernetic Biovital Heart Core with ECG pulse & vascular nanite conduits
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ambient Glow Aura */}
+          <circle cx="80" cy="45" r="34" fill="#ef4444" opacity="0.12" />
+          
+          {/* Top Vascular Conduits (Aorta & Superior Vena Cava) */}
+          <path d="M68 28 V16 H76 V28" stroke="#64748b" strokeWidth="3" fill="#1e293b" />
+          <path d="M84 28 V12 H94 V28" stroke="#64748b" strokeWidth="3" fill="#1e293b" />
+          <line x1="72" y1="14" x2="72" y2="28" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3 2" />
+          <line x1="89" y1="12" x2="89" y2="28" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 2" />
+
+          {/* Mechanical Heart Casing Body */}
+          <path 
+            d="M80 74 C50 56 46 36 62 26 C72 20 80 28 80 32 C80 28 88 20 98 26 C114 36 110 56 80 74 Z" 
+            fill="#1e1b2e" 
+            stroke="#ef4444" 
+            strokeWidth="2.5" 
+          />
+
+          {/* Layered Cyber Armor Plates */}
+          <path d="M56 34 Q80 44 76 66 Q62 52 56 34 Z" fill="#0f172a" stroke="#475569" strokeWidth="1.2" />
+          <path d="M104 34 Q80 44 84 66 Q98 52 104 34 Z" fill="#0f172a" stroke="#475569" strokeWidth="1.2" />
+
+          {/* Central Reactor Core (Heartbeat Reactor) */}
+          <circle cx="80" cy="45" r="11" fill="#7f1d1d" stroke="#f87171" strokeWidth="2" />
+          <circle cx="80" cy="45" r="5.5" fill="#ef4444" className="animate-ping" />
+
+          {/* Dynamic ECG Cardiogram Monitor Line */}
+          <path 
+            d="M36 46 H62 L67 36 L72 56 L77 38 L83 49 L88 46 H124" 
+            stroke="#22c55e" 
+            strokeWidth="1.8" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            opacity="0.9"
+          />
+
+          {/* Nanite Infusion Beads */}
+          <circle cx="64" cy="50" r="2" fill="#ef4444" />
+          <circle cx="96" cy="50" r="2" fill="#ef4444" />
+          <circle cx="80" cy="64" r="2" fill="#f87171" />
+
+          {/* Level 3+ Supercharge Rings */}
+          {level >= 3 && (
+            <ellipse cx="80" cy="45" rx="36" ry="16" stroke="#f43f5e" strokeWidth="1" strokeDasharray="4 3" transform="rotate(-15 80 45)" />
+          )}
+        </svg>
+      );
+
+    case 'armorLevel':
+      // Aegis Hex-Deflector Shield Matrix with glowing hexagonal force barrier
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Hexagonal Forcefield Ambient Glow */}
+          <circle cx="80" cy="45" r="32" fill="#0284c7" opacity="0.15" />
+
+          {/* Outer Force Barrier Hexagons */}
+          <g stroke="#38bdf8" strokeWidth="1.2" opacity="0.75">
+            <polygon points="52,35 60,30 68,35 68,45 60,50 52,45" fill="#082f49" />
+            <polygon points="68,25 76,20 84,25 84,35 76,40 68,35" fill="#0c4a6e" />
+            <polygon points="84,25 92,20 100,25 100,35 92,40 84,35" fill="#0c4a6e" />
+            <polygon points="100,35 108,30 116,35 116,45 108,50 100,45" fill="#082f49" />
+            <polygon points="68,45 76,40 84,45 84,55 76,60 68,55" fill="#075985" />
+            <polygon points="84,45 92,40 100,45 100,55 92,60 84,55" fill="#075985" />
+            <polygon points="76,60 84,55 92,60 92,70 84,75 76,70" fill="#0c4a6e" />
+          </g>
+
+          {/* Heavy Armored Ballistic Chest Plate Silhouette */}
+          <path 
+            d="M60 22 H100 L112 40 L80 78 L48 40 Z" 
+            fill="#0f172a" 
+            stroke="#0284c7" 
+            strokeWidth="2.5" 
+          />
+
+          {/* Interior Armored Plates */}
+          <path d="M68 28 H92 L98 42 L80 66 L62 42 Z" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+
+          {/* Central Nano-Aegis Core */}
+          <polygon points="80,36 90,44 80,56 70,44" fill="#0369a1" stroke="#38bdf8" strokeWidth="2" />
+          <circle cx="80" cy="46" r="3.5" fill="#38bdf8" className="animate-ping" />
+
+          {/* Quad Shield Stabilizer Nodes */}
+          <circle cx="50" cy="38" r="3" fill="#0284c7" stroke="#e0f2fe" strokeWidth="1" />
+          <circle cx="110" cy="38" r="3" fill="#0284c7" stroke="#e0f2fe" strokeWidth="1" />
+          <line x1="50" y1="38" x2="68" y2="44" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2 2" />
+          <line x1="110" y1="38" x2="92" y2="44" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2 2" />
+        </svg>
+      );
+
+    case 'speedLevel':
+      // Kinetic Hydraulic Jump Boots & Sonic Slipstream
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Supersonic Slipstream Streaks */}
+          <line x1="18" y1="32" x2="62" y2="32" stroke="#10b981" strokeWidth="2" strokeDasharray="6 4" opacity="0.6" />
+          <line x1="12" y1="45" x2="55" y2="45" stroke="#34d399" strokeWidth="2.5" strokeDasharray="8 5" opacity="0.8" />
+          <line x1="20" y1="58" x2="68" y2="58" stroke="#10b981" strokeWidth="2" strokeDasharray="6 4" opacity="0.6" />
+          <line x1="26" y1="70" x2="78" y2="70" stroke="#059669" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.5" />
+
+          {/* Boot Leg Ankle Brace */}
+          <path d="M72 18 H98 V46 L114 56 V72 H62 L60 62 L68 40 Z" fill="#0f172a" stroke="#10b981" strokeWidth="2.5" />
+
+          {/* Hydraulic Suspension Piston */}
+          <rect x="66" y="24" width="8" height="24" rx="2" fill="#334155" stroke="#64748b" strokeWidth="1" />
+          <line x1="70" y1="28" x2="70" y2="44" stroke="#f59e0b" strokeWidth="2.5" />
+
+          {/* Heavy Lug Tread Sole */}
+          <rect x="60" y="70" width="58" height="10" rx="2" fill="#1e293b" stroke="#10b981" strokeWidth="1.5" />
+          <line x1="68" y1="75" x2="68" y2="80" stroke="#34d399" strokeWidth="2" />
+          <line x1="78" y1="75" x2="78" y2="80" stroke="#34d399" strokeWidth="2" />
+          <line x1="88" y1="75" x2="88" y2="80" stroke="#34d399" strokeWidth="2" />
+          <line x1="98" y1="75" x2="98" y2="80" stroke="#34d399" strokeWidth="2" />
+          <line x1="108" y1="75" x2="108" y2="80" stroke="#34d399" strokeWidth="2" />
+
+          {/* Heel Plasma Jet Rocket Thruster */}
+          <rect x="52" y="56" width="12" height="12" rx="2" fill="#1e293b" stroke="#10b981" strokeWidth="1.5" />
+          <polygon points="34,62 52,58 52,66" fill="#10b981" className="animate-pulse" />
+          <polygon points="42,62 52,59 52,65" fill="#6ee7b7" />
+
+          {/* Ankle Speed Sensor Indicator */}
+          <circle cx="86" cy="52" r="3.5" fill="#34d399" className="animate-ping" />
+        </svg>
+      );
+
+    case 'reloadLevel':
+      // Hyper-Cycle Dual-Chamber Fast Speedloader with Revolving Cylinder Magazines
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Circular Rotation Guide Track */}
+          <circle cx="80" cy="45" r="32" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.5" />
+          
+          {/* Twin Rotating Speedloader Chambers */}
+          {/* Left Chamber */}
+          <circle cx="60" cy="45" r="20" fill="#0f172a" stroke="#d97706" strokeWidth="2" />
+          <circle cx="60" cy="45" r="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="1.5" />
+          {/* Brass Cartridges in Left Cylinder */}
+          <circle cx="60" cy="32" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <circle cx="71" cy="39" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <circle cx="71" cy="51" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <circle cx="60" cy="58" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <circle cx="49" cy="51" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <circle cx="49" cy="39" r="3.5" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+
+          {/* Right Chamber */}
+          <circle cx="100" cy="45" r="20" fill="#0f172a" stroke="#f59e0b" strokeWidth="2" />
+          <circle cx="100" cy="45" r="6" fill="#1e293b" stroke="#fbbf24" strokeWidth="1.5" />
+          {/* Brass Cartridges in Right Cylinder */}
+          <circle cx="100" cy="32" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="111" cy="39" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="111" cy="51" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="100" cy="58" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="89" cy="51" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="89" cy="39" r="3.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+
+          {/* Rapid Auto-Loader Mechanical Transfer Arm */}
+          <path d="M72 40 L88 40 L84 50 L68 50 Z" fill="#334155" stroke="#f59e0b" strokeWidth="1.5" />
+          <circle cx="80" cy="45" r="3" fill="#f59e0b" className="animate-ping" />
+
+          {/* Dynamic Rotation Arrows */}
+          <path d="M76 18 A32 32 0 0 1 106 26" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+          <polygon points="106,21 110,28 102,28" fill="#fbbf24" />
+          <path d="M84 72 A32 32 0 0 1 54 64" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+          <polygon points="54,69 50,62 58,62" fill="#fbbf24" />
+        </svg>
+      );
+
+    case 'critChanceLevel':
+      // Deadshot Tactical Hologram HUD Reticle with precision lock
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Glowing Red Optical Grid Background */}
+          <circle cx="80" cy="45" r="35" fill="#881337" opacity="0.15" />
+
+          {/* Outer Milliradian Compass Ring */}
+          <circle cx="80" cy="45" r="34" stroke="#f43f5e" strokeWidth="1.5" strokeDasharray="3 3" />
+          <circle cx="80" cy="45" r="24" stroke="#fb7185" strokeWidth="1.8" />
+
+          {/* 4 Corner Locking Brackets */}
+          <path d="M42 22 H54 V34" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M118 22 H106 V34" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M42 68 H54 V56" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M118 68 H106 V56" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+          {/* Precision Crosshairs Axes */}
+          <line x1="80" y1="14" x2="80" y2="34" stroke="#f43f5e" strokeWidth="2" />
+          <line x1="80" y1="56" x2="80" y2="76" stroke="#f43f5e" strokeWidth="2" />
+          <line x1="48" y1="45" x2="68" y2="45" stroke="#f43f5e" strokeWidth="2" />
+          <line x1="92" y1="45" x2="112" y2="45" stroke="#f43f5e" strokeWidth="2" />
+
+          {/* Center Weakpoint Skull / Target Bullseye */}
+          <circle cx="80" cy="45" r="10" fill="#4c0519" stroke="#fda4af" strokeWidth="2" />
+          <circle cx="80" cy="45" r="4.5" fill="#f43f5e" className="animate-ping" />
+
+          {/* Critical Rangefinder HUD telemetry */}
+          <text x="38" y="42" fill="#fda4af" fontSize="6" fontFamily="monospace" fontWeight="bold">CRIT 2.5X</text>
+          <text x="96" y="42" fill="#fda4af" fontSize="6" fontFamily="monospace" fontWeight="bold">LOCK ON</text>
+        </svg>
+      );
+
+    case 'bulletDamageLevel':
+      // Depleted Uranium APFSDS Heavy Shell & Dual Plasma Energy Blades
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Overdrive Kinetic Shock Aura */}
+          <polygon points="30,45 130,22 145,45 130,68" fill="#ea580c" opacity="0.15" />
+
+          {/* Kinetic Shockwave Cones */}
+          <path d="M118 26 Q134 45 118 64" stroke="#f97316" strokeWidth="2" strokeDasharray="3 2" />
+          <path d="M128 32 Q140 45 128 58" stroke="#fdba74" strokeWidth="2" />
+
+          {/* Heavy Armor-Piercing Sabot Projectile */}
+          {/* Casing / Body */}
+          <rect x="36" y="40" width="70" height="10" rx="1" fill="#1e293b" stroke="#ea580c" strokeWidth="1.8" />
+          
+          {/* Hardened Tungsten Penetrator Point */}
+          <path d="M106 38 L136 45 L106 52 Z" fill="#c2410c" stroke="#fed7aa" strokeWidth="1.5" />
+          <line x1="106" y1="45" x2="136" y2="45" stroke="#fed7aa" strokeWidth="1.5" />
+
+          {/* Brass Primer & Base */}
+          <rect x="28" y="38" width="8" height="14" rx="1" fill="#7c2d12" stroke="#ea580c" strokeWidth="1.5" />
+
+          {/* Stabilizing Fin Sabots */}
+          <polygon points="36,40 50,26 62,40" fill="#ea580c" stroke="#fed7aa" strokeWidth="1.2" />
+          <polygon points="36,50 50,64 62,50" fill="#ea580c" stroke="#fed7aa" strokeWidth="1.2" />
+
+          {/* Crackling High-Energy Plasma Rings Wrapping Around Bullet */}
+          <ellipse cx="65" cy="45" rx="7" ry="14" stroke="#fb923c" strokeWidth="2" strokeDasharray="3 2" transform="rotate(20 65 45)" />
+          <ellipse cx="90" cy="45" rx="6" ry="12" stroke="#fdba74" strokeWidth="2" strokeDasharray="3 2" transform="rotate(20 90 45)" />
+          <circle cx="136" cy="45" r="3.5" fill="#fed7aa" className="animate-ping" />
+        </svg>
+      );
+
+    case 'magnetRadiusLevel':
+      // Quantum Gravity Singularity Vortex & Neodymium Magnet
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Gravity Singularity Ambient Halo */}
+          <circle cx="80" cy="45" r="32" fill="#a855f7" opacity="0.14" />
+
+          {/* Magnetic Flux Vector Field Lines */}
+          <ellipse cx="80" cy="45" rx="42" ry="18" stroke="#c084fc" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+          <ellipse cx="80" cy="45" rx="30" ry="26" stroke="#c084fc" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.5" />
+
+          {/* Dual Horseshoe Neodymium Magnet Prongs */}
+          <path 
+            d="M50 30 C50 18 110 18 110 30 V56 H94 V32 C94 28 66 28 66 32 V56 H50 Z" 
+            fill="#2e1065" 
+            stroke="#a855f7" 
+            strokeWidth="2.5" 
+          />
+
+          {/* North & South Magnetic Pole Caps */}
+          {/* North Pole (Red) */}
+          <rect x="50" y="52" width="16" height="12" rx="1" fill="#dc2626" stroke="#f87171" strokeWidth="1.2" />
+          <text x="55" y="61" fill="#ffffff" fontSize="8" fontWeight="bold" fontFamily="monospace">N</text>
+          
+          {/* South Pole (Blue) */}
+          <rect x="94" y="52" width="16" height="12" rx="1" fill="#2563eb" stroke="#60a5fa" strokeWidth="1.2" />
+          <text x="99" y="61" fill="#ffffff" fontSize="8" fontWeight="bold" fontFamily="monospace">S</text>
+
+          {/* Central Quantum Graviton Vortex */}
+          <circle cx="80" cy="45" r="8" fill="#3b0764" stroke="#e879f9" strokeWidth="2" />
+          <circle cx="80" cy="45" r="3.5" fill="#f0abfc" className="animate-ping" />
+
+          {/* Orbiting Attracted Gold Coins & Gems */}
+          <circle cx="68" cy="70" r="4.5" fill="#f59e0b" stroke="#fef08a" strokeWidth="1.2" />
+          <circle cx="92" cy="72" r="3.5" fill="#f59e0b" stroke="#fef08a" strokeWidth="1.2" />
+          <polygon points="80,24 84,28 80,32 76,28" fill="#38bdf8" />
+          <polygon points="122,42 126,46 122,50 118,46" fill="#f59e0b" />
+          <polygon points="38,44 42,48 38,52 34,48" fill="#a855f7" />
+        </svg>
+      );
+
+    default:
+      return null;
+  }
+};
+
+// ==========================================
+// 5. SUPPLY VISUAL ARTWORK (TIẾP TẾ TÁC CHIẾN)
+// ==========================================
+export const SupplyVisualArtwork: React.FC<{
+  supplyType: 'heal' | 'armor' | 'grenade' | 'turret' | 'trap';
+  className?: string;
+}> = ({ supplyType, className = 'w-full h-full' }) => {
+  switch (supplyType) {
+    case 'heal':
+      // Military Nano-Stim Combat Medkit Case
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ambient Vital Glow */}
+          <circle cx="80" cy="45" r="30" fill="#22c55e" opacity="0.15" />
+
+          {/* Heavy Armored Medkit Briefcase */}
+          <rect x="42" y="24" width="76" height="52" rx="8" fill="#0f172a" stroke="#22c55e" strokeWidth="2.5" />
+          
+          {/* Top Carry Handle */}
+          <path d="M68 24 V16 H92 V24" stroke="#64748b" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+
+          {/* Reinforced Armor Corner Bumpers */}
+          <path d="M42 34 V24 H52" stroke="#475569" strokeWidth="3" />
+          <path d="M118 34 V24 H108" stroke="#475569" strokeWidth="3" />
+          <path d="M42 66 V76 H52" stroke="#475569" strokeWidth="3" />
+          <path d="M118 66 V76 H108" stroke="#475569" strokeWidth="3" />
+
+          {/* Heavy Center Clasp */}
+          <rect x="74" y="24" width="12" height="10" rx="1.5" fill="#334155" stroke="#64748b" strokeWidth="1" />
+
+          {/* Prominent Glowing Emerald Medical Cross */}
+          <rect x="73" y="38" width="14" height="26" rx="2" fill="#22c55e" />
+          <rect x="67" y="44" width="26" height="14" rx="2" fill="#22c55e" />
+          <rect x="75" y="40" width="10" height="22" rx="1" fill="#86efac" />
+          <rect x="69" y="46" width="22" height="10" rx="1" fill="#86efac" />
+
+          {/* Dual Rapid Auto-Injector Syrettes docked on the sides */}
+          <g>
+            <rect x="28" y="36" width="8" height="28" rx="2" fill="#1e293b" stroke="#22c55e" strokeWidth="1.2" />
+            <rect x="30" y="42" width="4" height="16" fill="#22c55e" className="animate-pulse" />
+            <line x1="32" y1="64" x2="32" y2="72" stroke="#cbd5e1" strokeWidth="1.5" />
+          </g>
+          <g>
+            <rect x="124" y="36" width="8" height="28" rx="2" fill="#1e293b" stroke="#22c55e" strokeWidth="1.2" />
+            <rect x="126" y="42" width="4" height="16" fill="#22c55e" className="animate-pulse" />
+            <line x1="128" y1="64" x2="128" y2="72" stroke="#cbd5e1" strokeWidth="1.5" />
+          </g>
+
+          {/* Digital Bio-Pressure LED Monitor */}
+          <rect x="54" y="68" width="52" height="4" rx="1" fill="#042f2e" stroke="#22c55e" strokeWidth="0.8" />
+          <rect x="55" y="69" width="38" height="2" fill="#4ade80" />
+        </svg>
+      );
+
+    case 'armor':
+      // Nanoceramic Ballistic Armor Repair Matrix Kit
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ambient Azure Glow */}
+          <circle cx="80" cy="45" r="30" fill="#0284c7" opacity="0.15" />
+
+          {/* Composite Ceramic Armor Plate Base */}
+          <path 
+            d="M52 20 H108 L118 42 L80 76 L42 42 Z" 
+            fill="#0f172a" 
+            stroke="#0284c7" 
+            strokeWidth="2.5" 
+          />
+
+          {/* Layered Weave Carbon Plates */}
+          <path d="M60 26 H100 L106 44 L80 68 L54 44 Z" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+
+          {/* Armor Repair Welder Seam with Cyan Sealant */}
+          <path d="M80 32 L84 46 L76 56 L80 66" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="80" cy="46" r="3.5" fill="#bae6fd" className="animate-ping" />
+
+          {/* Articulated Robotic Nano-Welder Torch Arm */}
+          <path d="M124 22 L102 36 L86 44" stroke="#64748b" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="102" cy="36" r="3.5" fill="#334155" stroke="#94a3b8" />
+          <rect x="82" y="42" width="6" height="6" rx="1" fill="#38bdf8" />
+
+          {/* Welding Plasma Sparks */}
+          <circle cx="76" cy="40" r="1.5" fill="#38bdf8" />
+          <circle cx="88" cy="48" r="1.5" fill="#38bdf8" />
+          <circle cx="82" cy="52" r="1.2" fill="#e0f2fe" />
+          <circle cx="72" cy="46" r="1.2" fill="#e0f2fe" />
+
+          {/* Armor Integrity Gauge Readout */}
+          <rect x="62" y="30" width="36" height="5" rx="1" fill="#082f49" stroke="#38bdf8" strokeWidth="1" />
+          <rect x="63" y="31" width="28" height="3" fill="#38bdf8" />
+        </svg>
+      );
+
+    case 'grenade':
+      // Trio of Tactical M67 Pineapple Frag Grenades
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ambient Amber Glow */}
+          <circle cx="80" cy="45" r="30" fill="#f59e0b" opacity="0.12" />
+
+          {/* Left Grenade */}
+          <g transform="translate(-32, 6) rotate(-12 60 45)">
+            {/* Grenade Egg Body */}
+            <rect x="52" y="32" width="22" height="30" rx="9" fill="#14532d" stroke="#15803d" strokeWidth="1.8" />
+            {/* Ribbed Fragmentation Grid */}
+            <line x1="52" y1="42" x2="74" y2="42" stroke="#166534" strokeWidth="1.5" />
+            <line x1="52" y1="52" x2="74" y2="52" stroke="#166534" strokeWidth="1.5" />
+            <line x1="63" y1="32" x2="63" y2="62" stroke="#166534" strokeWidth="1.5" />
+            {/* Fuse & Spoon Lever */}
+            <rect x="59" y="24" width="8" height="8" fill="#334155" stroke="#64748b" strokeWidth="1" />
+            <path d="M59 26 C54 26 50 32 50 48" stroke="#94a3b8" strokeWidth="2" fill="none" />
+            {/* Pull Ring */}
+            <circle cx="68" cy="27" r="4" stroke="#cbd5e1" strokeWidth="1.5" fill="none" />
+            {/* Yellow Hazard Stripe */}
+            <rect x="53" y="36" width="20" height="2.5" fill="#f59e0b" />
+          </g>
+
+          {/* Right Grenade */}
+          <g transform="translate(32, 6) rotate(12 100 45)">
+            <rect x="90" y="32" width="22" height="30" rx="9" fill="#14532d" stroke="#15803d" strokeWidth="1.8" />
+            <line x1="90" y1="42" x2="112" y2="42" stroke="#166534" strokeWidth="1.5" />
+            <line x1="90" y1="52" x2="112" y2="52" stroke="#166534" strokeWidth="1.5" />
+            <line x1="101" y1="32" x2="101" y2="62" stroke="#166534" strokeWidth="1.5" />
+            <rect x="97" y="24" width="8" height="8" fill="#334155" stroke="#64748b" strokeWidth="1" />
+            <path d="M105 26 C110 26 114 32 114 48" stroke="#94a3b8" strokeWidth="2" fill="none" />
+            <circle cx="95" cy="27" r="4" stroke="#cbd5e1" strokeWidth="1.5" fill="none" />
+            <rect x="91" y="36" width="20" height="2.5" fill="#f59e0b" />
+          </g>
+
+          {/* Center Grenade (Hero Primary) */}
+          <g>
+            <rect x="67" y="26" width="26" height="36" rx="11" fill="#15803d" stroke="#22c55e" strokeWidth="2" />
+            {/* Ribbed Fragmentation Grid */}
+            <line x1="67" y1="38" x2="93" y2="38" stroke="#14532d" strokeWidth="1.8" />
+            <line x1="67" y1="50" x2="93" y2="50" stroke="#14532d" strokeWidth="1.8" />
+            <line x1="80" y1="26" x2="80" y2="62" stroke="#14532d" strokeWidth="1.8" />
+            {/* Yellow Hazard Band */}
+            <rect x="68" y="31" width="24" height="3" fill="#f59e0b" />
+            {/* Fuse Mechanism & Spoon */}
+            <rect x="75" y="16" width="10" height="10" fill="#334155" stroke="#64748b" strokeWidth="1.2" />
+            <path d="M75 18 C68 18 64 26 64 46" stroke="#94a3b8" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            {/* Steel Pull Ring */}
+            <circle cx="88" cy="19" r="5" stroke="#e2e8f0" strokeWidth="2" fill="none" />
+            <circle cx="80" cy="44" r="2.5" fill="#f59e0b" className="animate-ping" />
+          </g>
+        </svg>
+      );
+
+    case 'turret':
+      // Automated Deployable Heavy Sentry Gatling Turret
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Tripod Stabilizer Leg Assembly */}
+          <path d="M80 62 L42 82 H34" stroke="#475569" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M80 62 L118 82 H126" stroke="#475569" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M80 62 V84" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="80" cy="62" r="5" fill="#0f172a" stroke="#a855f7" strokeWidth="2" />
+
+          {/* Rotating Turret Swivel Housing */}
+          <rect x="58" y="38" width="44" height="24" rx="4" fill="#0f172a" stroke="#a855f7" strokeWidth="2" />
+          <polygon points="58,42 70,30 90,30 102,42" fill="#1e1b4b" stroke="#c084fc" strokeWidth="1.5" />
+
+          {/* AI Targeting Optical Sensor Lens */}
+          <circle cx="80" cy="48" r="6" fill="#581c87" stroke="#e879f9" strokeWidth="1.8" />
+          <circle cx="80" cy="48" r="2.5" fill="#f0abfc" className="animate-ping" />
+
+          {/* Red Target Acquisition Laser Line */}
+          <line x1="80" y1="48" x2="152" y2="48" stroke="#ef4444" strokeWidth="1.2" strokeDasharray="3 2" />
+          <circle cx="152" cy="48" r="1.5" fill="#ef4444" className="animate-ping" />
+
+          {/* Twin Rotary Multi-Barrel Cannons */}
+          <g>
+            <rect x="102" y="42" width="34" height="3" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
+            <rect x="102" y="46" width="34" height="3" fill="#1e293b" stroke="#94a3b8" strokeWidth="0.8" />
+            <rect x="102" y="50" width="34" height="3" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
+            {/* Muzzle Clamp */}
+            <rect x="132" y="40" width="5" height="15" rx="1" fill="#a855f7" stroke="#c084fc" strokeWidth="1" />
+          </g>
+
+          {/* Ammo Feed Belt Drum Hopper */}
+          <rect x="42" y="42" width="16" height="18" rx="3" fill="#1e1b4b" stroke="#a855f7" strokeWidth="1.5" />
+          <line x1="46" y1="46" x2="54" y2="46" stroke="#f59e0b" strokeWidth="2" />
+          <line x1="46" y1="52" x2="54" y2="52" stroke="#f59e0b" strokeWidth="2" />
+        </svg>
+      );
+
+    case 'trap':
+      // Cyber-Tesla Shock Field Pylon Trap
+      return (
+        <svg viewBox="0 0 160 90" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ground Electric Stun Field Perimeter */}
+          <ellipse cx="80" cy="72" rx="52" ry="12" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.6" />
+          <ellipse cx="80" cy="72" rx="34" ry="8" fill="#0284c7" opacity="0.18" />
+
+          {/* Triangular Heavy Ground Anchor Base */}
+          <polygon points="54,72 80,62 106,72 80,78" fill="#0f172a" stroke="#0284c7" strokeWidth="2" />
+          <circle cx="54" cy="72" r="3" fill="#38bdf8" />
+          <circle cx="106" cy="72" r="3" fill="#38bdf8" />
+
+          {/* Vertical Tesla Induction Coil Tower */}
+          <rect x="74" y="28" width="12" height="36" rx="2" fill="#082f49" stroke="#38bdf8" strokeWidth="1.8" />
+          {/* Copper Magnetic Windings */}
+          <line x1="74" y1="34" x2="86" y2="34" stroke="#f59e0b" strokeWidth="2" />
+          <line x1="74" y1="40" x2="86" y2="40" stroke="#f59e0b" strokeWidth="2" />
+          <line x1="74" y1="46" x2="86" y2="46" stroke="#f59e0b" strokeWidth="2" />
+          <line x1="74" y1="52" x2="86" y2="52" stroke="#f59e0b" strokeWidth="2" />
+          <line x1="74" y1="58" x2="86" y2="58" stroke="#f59e0b" strokeWidth="2" />
+
+          {/* Spherical High-Voltage Discharge Emitter */}
+          <circle cx="80" cy="24" r="9" fill="#0284c7" stroke="#7dd3fc" strokeWidth="2" />
+          <circle cx="80" cy="24" r="4.5" fill="#bae6fd" className="animate-ping" />
+
+          {/* Branching Electric Lightning Arc Bolts */}
+          <path d="M80 20 L72 10 L84 4" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M86 24 L104 18 L114 26 L128 20" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M74 24 L56 18 L48 28 L32 22" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M80 28 L94 40 L108 52" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    default:
+      return null;
+  }
+};
+

@@ -274,17 +274,17 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
   return (
     <div
       ref={containerRef}
-      style={customPos ? { position: 'fixed', left: `${customPos.x}px`, top: `${customPos.y}px`, zIndex: 40 } : undefined}
+      style={customPos ? { position: 'fixed', left: `${customPos.x}px`, top: `${customPos.y}px`, zIndex: 30 } : undefined}
       className={!customPos ? (
         dockSide === 'left'
-          ? 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[40px] left-[max(0.5rem,env(safe-area-inset-left,0px))] sm:left-4 z-30 select-none pointer-events-auto transition-all'
-          : 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[40px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-30 select-none pointer-events-auto transition-all'
+          ? 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+158px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+96px)] landscape:top-[38px] left-[max(0.5rem,env(safe-area-inset-left,0px))] sm:left-4 z-30 select-none pointer-events-auto transition-all'
+          : 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+158px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+96px)] landscape:top-[38px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-3 z-30 select-none pointer-events-auto transition-all'
       ) : 'select-none pointer-events-auto'}
     >
-      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 landscape:border-sky-500/35 shadow-[0_0_15px_rgba(2,132,199,0.35)] landscape:shadow-none bg-neutral-950/90 landscape:bg-neutral-950/60 backdrop-blur-md landscape:backdrop-blur-sm">
+      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 landscape:border-sky-500/35 shadow-lg shadow-sky-950/40 bg-neutral-950/85 landscape:bg-neutral-950/60 backdrop-blur-md landscape:backdrop-blur-sm">
         {/* Radar Header with Drag & Dock Controls */}
         <div
-          className="flex items-center justify-between px-1.5 py-0.5 bg-neutral-900/95 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold gap-1 cursor-grab active:cursor-grabbing active:bg-sky-950/40 select-none touch-none"
+          className="flex items-center justify-between px-1.5 py-0.5 bg-neutral-900/90 border-b border-sky-500/30 text-[7.5px] sm:text-[8px] text-sky-400 font-mono font-bold gap-1 cursor-grab active:cursor-grabbing active:bg-sky-950/40 select-none touch-none"
           onMouseDown={(e) => handleStartDrag(e.clientX, e.clientY)}
           onTouchStart={(e) => {
             if (e.touches.length > 0) {
@@ -296,7 +296,7 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
           <div className="flex items-center gap-1 shrink-0">
             <GripHorizontal className="w-2.5 h-2.5 text-sky-400/60" />
             <Compass className="w-2.5 h-2.5 animate-spin text-sky-400" style={{ animationDuration: '8s' }} />
-            <span className="text-[7.5px] sm:text-[8px] tracking-wider">RADAR</span>
+            <span className="text-[7px] sm:text-[7.5px] tracking-wider">RADAR</span>
           </div>
 
           <div
@@ -348,29 +348,29 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
 
         {/* Canvas or Minimized Pill */}
         {!isMinimized ? (
-          <div className="relative w-[90px] h-[64px] sm:w-[100px] sm:h-[72px]">
+          <div className="relative w-[78px] h-[54px] sm:w-[94px] sm:h-[66px] landscape:w-[84px] landscape:h-[58px]">
             <canvas
               ref={canvasRef}
-              width={100}
-              height={72}
+              width={94}
+              height={66}
               className="w-full h-full block"
             />
             {/* Cardinal markers */}
-            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-mono text-sky-400/70 pointer-events-none">N</span>
+            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[6.5px] font-mono text-sky-400/70 pointer-events-none">N</span>
             {/* Threat indicator */}
-            <div className="absolute bottom-0.5 left-1 text-[7px] font-mono text-amber-400/90 pointer-events-none">
+            <div className="absolute bottom-0.5 left-1 text-[6.5px] sm:text-[7px] font-mono text-amber-400/90 pointer-events-none">
               ⚠️ {zombies.filter(z => z.hp > 0).length}
             </div>
           </div>
         ) : (
           <div 
             onClick={() => setIsMinimized(false)}
-            className="px-2 py-0.5 text-[8px] font-mono text-sky-300 hover:text-white cursor-pointer flex items-center gap-1.5 transition-colors"
+            className="px-1.5 py-0.5 text-[7.5px] font-mono text-sky-300 hover:text-white cursor-pointer flex items-center gap-1 transition-colors"
             title="Chạm để mở rộng Radar"
           >
             <Compass className="w-2.5 h-2.5 text-sky-400 animate-spin" style={{ animationDuration: '8s' }} />
-            <span>⚠️ {zombies.filter(z => z.hp > 0).length} quái</span>
-            <Maximize2 className="w-2.5 h-2.5 text-sky-300 ml-0.5" />
+            <span>⚠️ {zombies.filter(z => z.hp > 0).length}</span>
+            <Maximize2 className="w-2 h-2 text-sky-300 ml-0.5" />
           </div>
         )}
       </div>

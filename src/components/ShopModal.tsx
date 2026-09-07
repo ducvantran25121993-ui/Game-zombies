@@ -11,7 +11,13 @@ import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WarriorClass } from '../data/warriors';
 import { CompanionDroneConfig } from '../data/drones';
 import { INITIAL_EQUIPMENT } from '../data/equipment';
-import { WeaponVisualArtwork, DroneVisualArtwork, EquipmentVisualArtwork } from './ShopVisualArtwork';
+import { 
+  WeaponVisualArtwork, 
+  DroneVisualArtwork, 
+  EquipmentVisualArtwork,
+  SkillPerkVisualArtwork,
+  SupplyVisualArtwork 
+} from './ShopVisualArtwork';
 
 interface ShopModalProps {
   player: PlayerStats;
@@ -34,6 +40,57 @@ interface ShopModalProps {
   onBuyEquipment?: (slotId: EquipmentSlotId) => void;
   onQuickUpgradeAll?: () => void;
 }
+
+const PERK_THEMES: Record<string, { color: string; badge: string; tier: string[] }> = {
+  maxHpLevel: {
+    color: '#ef4444',
+    badge: 'HỒI PHỤC SINH MỆNH',
+    tier: ['Chưa Mở', 'Tế Bào Sơ Cấp', 'Tim Nhân Tạo', 'Bơm Nanite', 'Lõi Sinh Học', 'Bất Tử Kim Cương']
+  },
+  armorLevel: {
+    color: '#0284c7',
+    badge: 'GIẢM THIỂU SÁT THƯƠNG',
+    tier: ['Chưa Mở', 'Tấm Titan Mỏng', 'Áo Giáp Kevlar', 'Lớp Phủ Gốm', 'Khiên Lực Trường', 'Khiên Nano Aegis']
+  },
+  speedLevel: {
+    color: '#10b981',
+    badge: 'TỐC ĐỘ & CƠ ĐỘNG',
+    tier: ['Chưa Mở', 'Giày Chạy Bộ', 'Khung Trợ Lực', 'Pít-tông Thủy Lực', 'Động Cơ Phản Lực', 'Tốc Độ Âm Thanh']
+  },
+  reloadLevel: {
+    color: '#f59e0b',
+    badge: 'TỐC ĐỘ NẠP ĐẠN',
+    tier: ['Chưa Mở', 'Kẹp Băng Nhanh', 'Khóa Nạp Trượt', 'Bộ Nạp Xoay Kép', 'Ống Nạp Cơ Học', 'Nạp Đạn Thần Tốc']
+  },
+  critChanceLevel: {
+    color: '#f43f5e',
+    badge: 'ĐIỂM YẾU CHÍ MẠNG',
+    tier: ['Chưa Mở', 'Tâm Ngắm Cơ Bản', 'Ống Ngắm Laser', 'Kính Nhiệt Hồng Ngoại', 'Radar Khóa Mục Tiêu', 'Mắt Thần Bách Phát']
+  },
+  bulletDamageLevel: {
+    color: '#ea580c',
+    badge: 'TĂNG HỎA LỰC CHUNG',
+    tier: ['Chưa Mở', 'Đạn Chì Nén', 'Đầu Đạn Lõi Thép', 'Đạn Sabot Xuyên Giáp', 'Lớp Phủ Uranium', 'Đạn Năng Lượng Plasma']
+  },
+  magnetRadiusLevel: {
+    color: '#a855f7',
+    badge: 'HÚT CHIẾN LỢI PHẨM',
+    tier: ['Chưa Mở', 'Vòng Từ Tính', 'Nam Châm Neodymium', 'Cuộn Cảm Điện Từ', 'Bộ Hút Từ Trường', 'Lỗ Đen Hút Vàng']
+  }
+};
+
+const renderPerkIcon = (iconName: string, perkColor: string) => {
+  switch (iconName) {
+    case 'Heart': return <Heart className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'Shield': return <Shield className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'Footprints': return <Footprints className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'RefreshCw': return <RefreshCw className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'Target': return <Target className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'Sword': return <Sword className="w-5 h-5" style={{ color: perkColor }} />;
+    case 'Magnet': return <Magnet className="w-5 h-5" style={{ color: perkColor }} />;
+    default: return <Sparkles className="w-5 h-5" style={{ color: perkColor }} />;
+  }
+};
 
 export const ShopModal: React.FC<ShopModalProps> = ({
   player,
@@ -868,48 +925,149 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 const currentLvl = (player.upgrades as any)[`${perk.id}Level`] || 0;
                 const isMax = currentLvl >= perk.maxLevel;
                 const cost = getPerkCost(perk.id, currentLvl);
+                const theme = PERK_THEMES[perk.id] || {
+                  color: '#f59e0b',
+                  badge: 'KỸ NĂNG CHIẾN BINH',
+                  tier: ['Chưa Mở', 'Cấp 1', 'Cấp 2', 'Cấp 3', 'Cấp 4', 'Tối Thượng']
+                };
+                const tierTitle = theme.tier[Math.min(currentLvl, theme.tier.length - 1)];
 
                 return (
                   <div 
                     key={perk.id}
-                    className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between"
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden group ${
+                      isMax 
+                        ? 'bg-neutral-900/90 border-amber-500/60 shadow-lg shadow-amber-500/5'
+                        : currentLvl > 0
+                          ? 'bg-neutral-900/80 border-neutral-700/80 hover:border-neutral-600'
+                          : 'bg-neutral-950/70 border-neutral-800/80 hover:border-neutral-700'
+                    }`}
                   >
+                    {/* Subtle Ambient Radial Glow */}
+                    <div 
+                      className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none"
+                      style={{ backgroundColor: theme.color }}
+                    />
+
                     <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{perk.icon}</span>
-                          <div>
-                            <h3 className="font-bold text-base text-white">{perk.nameVi}</h3>
-                            <p className="text-xs text-neutral-400">{perk.desc}</p>
+                      {/* Header: Icon Box + Title + Badge */}
+                      <div className="flex items-start justify-between gap-2.5 mb-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div 
+                            className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner shrink-0"
+                            style={{ 
+                              backgroundColor: `${theme.color}20`,
+                              borderColor: `${theme.color}55`
+                            }}
+                          >
+                            {renderPerkIcon(perk.icon, theme.color)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-base text-white truncate">{perk.nameVi}</h3>
+                              <span 
+                                className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase border"
+                                style={{
+                                  backgroundColor: `${theme.color}15`,
+                                  color: theme.color,
+                                  borderColor: `${theme.color}40`
+                                }}
+                              >
+                                {theme.badge}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-medium text-neutral-400 block mt-0.5">
+                              {tierTitle} • Cấp {currentLvl}/{perk.maxLevel}
+                            </span>
                           </div>
                         </div>
-                        <span className="text-xs font-bold font-mono text-amber-400">
-                          {isMax ? 'TỐI ĐA' : `Cấp ${currentLvl}/${perk.maxLevel}`}
+
+                        <div className="text-right shrink-0">
+                          {isMax ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/50 text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                              <Check className="w-3 h-3 stroke-[3]" /> MAX LVL
+                            </span>
+                          ) : (
+                            <span className="text-xs font-mono font-bold text-amber-400 px-2 py-1 rounded-lg bg-neutral-900 border border-neutral-800">
+                              LV.{currentLvl}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Visual Artwork Showcase Window */}
+                      <div 
+                        className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                        style={{
+                          background: `radial-gradient(ellipse at center, ${theme.color}22 0%, rgba(10, 10, 15, 0.95) 75%)`,
+                          borderColor: `${theme.color}44`
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                        <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                          <SkillPerkVisualArtwork perkId={perk.id} level={currentLvl} color={theme.color} />
+                        </div>
+                        <span 
+                          className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md"
+                          style={{
+                            backgroundColor: `${theme.color}20`,
+                            color: theme.color,
+                            borderColor: `${theme.color}40`
+                          }}
+                        >
+                          {perk.id.replace('Level', '').toUpperCase()}
                         </span>
                       </div>
 
-                      {/* Level Progress Bar */}
-                      <div className="h-2 w-full bg-neutral-900 rounded-full mt-3 overflow-hidden border border-neutral-700">
-                        <div 
-                          className="h-full bg-amber-500 transition-all duration-200" 
-                          style={{ width: `${(currentLvl / perk.maxLevel) * 100}%` }}
-                        />
+                      {/* Description & Effect Note */}
+                      <p className="text-xs text-neutral-300 leading-relaxed bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-3">
+                        {perk.desc}
+                      </p>
+
+                      {/* Segmented Level Pips */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
+                          <span>Tiến trình nâng cấp:</span>
+                          <span className="text-amber-400 font-bold">{Math.round((currentLvl / perk.maxLevel) * 100)}%</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1.5 w-full">
+                          {Array.from({ length: perk.maxLevel }).map((_, idx) => {
+                            const isFilled = idx < currentLvl;
+                            return (
+                              <div 
+                                key={idx} 
+                                className={`h-2 rounded-full transition-all duration-300 border ${
+                                  isFilled 
+                                    ? 'border-transparent shadow-sm' 
+                                    : 'bg-neutral-900 border-neutral-800'
+                                }`}
+                                style={{
+                                  backgroundColor: isFilled ? theme.color : undefined,
+                                  boxShadow: isFilled ? `0 0 8px ${theme.color}60` : undefined
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 
+                    {/* Action Button */}
                     <button
                       onClick={() => onBuyPerk(perk.id)}
                       disabled={isMax || player.gold < cost}
                       className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                         isMax 
-                          ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                          ? 'bg-neutral-800/80 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
                           : player.gold >= cost
                             ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black shadow-lg shadow-amber-500/20 active:scale-95'
-                            : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                            : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                       }`}
                     >
                       {isMax ? (
-                        'ĐÃ ĐẠT CẤP TỐI ĐA'
+                        <span className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" /> ĐÃ ĐẠT CẤP TỐI ĐA
+                        </span>
                       ) : (
                         <>
                           <DollarSign className="w-4 h-4" /> Nâng Cấp ({cost} Vàng)
@@ -926,77 +1084,203 @@ export const ShopModal: React.FC<ShopModalProps> = ({
           {tab === 'supplies' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Medkit Heal */}
-              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div 
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none bg-emerald-500"
+                />
+
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400">
-                      <Heart className="w-6 h-6" />
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2.5 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl flex items-center justify-center text-emerald-400 shrink-0">
+                        <Heart className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-bold text-base text-white">Hồi Phục Sinh Lực (Nano-Medkit)</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            TIẾP TẾ Y TẾ
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">Tiêm thuốc kích hoạt tái tạo tức thì 50 HP sinh lực</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Hồi Phục Sinh Lực (Medkit)</h3>
-                      <p className="text-xs text-neutral-400">Hồi ngay 50 HP (Không vượt quá giới hạn máu tối đa)</p>
+                  </div>
+
+                  {/* Artwork Showcase */}
+                  <div 
+                    className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, rgba(34, 197, 94, 0.22) 0%, rgba(10, 10, 15, 0.95) 75%)',
+                      borderColor: 'rgba(34, 197, 94, 0.35)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                    <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                      <SupplyVisualArtwork supplyType="heal" />
+                    </div>
+                    <span className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md bg-emerald-950/60 text-emerald-300 border-emerald-500/30">
+                      MEDKIT +50HP
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-2">
+                    <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                      <span className="text-neutral-400">Máu hiện tại:</span>
+                      <span className="font-bold text-emerald-400">{Math.round(player.hp)} / {player.maxHp} HP</span>
+                    </div>
+                    <div className="h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                      <div 
+                        className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
+                        style={{ width: `${Math.min(100, (player.hp / player.maxHp) * 100)}%` }}
+                      />
                     </div>
                   </div>
                 </div>
+
                 <button
                   onClick={() => onBuySupply('heal')}
                   disabled={player.hp >= player.maxHp || player.gold < 100}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  className={`w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     player.hp < player.maxHp && player.gold >= 100
-                      ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black shadow-lg shadow-emerald-500/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                   }`}
                 >
-                  <DollarSign className="w-4 h-4" /> HỒI MÁU (100 Vàng)
+                  <DollarSign className="w-4 h-4" /> {player.hp >= player.maxHp ? 'MÁU ĐÃ ĐẦY 100%' : 'HỒI MÁU (100 Vàng)'}
                 </button>
               </div>
 
               {/* Armor Repair */}
-              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div 
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none bg-sky-500"
+                />
+
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl text-sky-400">
-                      <Shield className="w-6 h-6" />
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2.5 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-sky-500/15 border border-sky-500/40 rounded-2xl flex items-center justify-center text-sky-400 shrink-0">
+                        <Shield className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-bold text-base text-white">Sửa Chữa Giáp Phòng Hộ</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                            BẢO VỆ PHÒNG THỦ
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">Tái hàn lớp gốm ceramic và phục hồi 100% khiên giáp</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Sửa Chữa Giáp Phòng Hộ</h3>
-                      <p className="text-xs text-neutral-400">Hồi phục hoàn toàn 100% chỉ số Giáp hiện tại</p>
+                  </div>
+
+                  {/* Artwork Showcase */}
+                  <div 
+                    className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, rgba(2, 132, 199, 0.22) 0%, rgba(10, 10, 15, 0.95) 75%)',
+                      borderColor: 'rgba(2, 132, 199, 0.35)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                    <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                      <SupplyVisualArtwork supplyType="armor" />
+                    </div>
+                    <span className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md bg-sky-950/60 text-sky-300 border-sky-500/30">
+                      ARMOR REPAIR
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-2">
+                    <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                      <span className="text-neutral-400">Giáp hiện tại:</span>
+                      <span className="font-bold text-sky-400">{Math.round(player.armor)} / {player.maxArmor} Giáp</span>
+                    </div>
+                    <div className="h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                      <div 
+                        className="h-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all duration-300"
+                        style={{ width: `${Math.min(100, (player.armor / player.maxArmor) * 100)}%` }}
+                      />
                     </div>
                   </div>
                 </div>
+
                 <button
                   onClick={() => onBuySupply('armor')}
                   disabled={player.armor >= player.maxArmor || player.gold < 120}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  className={`w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     player.armor < player.maxArmor && player.gold >= 120
-                      ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-600/20 active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      ? 'bg-sky-500 hover:bg-sky-400 text-neutral-950 font-black shadow-lg shadow-sky-500/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                   }`}
                 >
-                  <DollarSign className="w-4 h-4" /> HỒI GIÁP (120 Vàng)
+                  <DollarSign className="w-4 h-4" /> {player.armor >= player.maxArmor ? 'GIÁP ĐÃ ĐẦY 100%' : 'HỒI GIÁP (120 Vàng)'}
                 </button>
               </div>
 
               {/* Hand Grenades */}
-              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div 
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none bg-amber-500"
+                />
+
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
-                      <Bomb className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Bổ Sung 3 Quả Lựu Đạn Nổ</h3>
-                      <p className="text-xs text-neutral-400">Hiện có: {player.grenadeCount} quả lựu đạn sẵn sàng</p>
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2.5 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-amber-500/15 border border-amber-500/40 rounded-2xl flex items-center justify-center text-amber-400 shrink-0">
+                        <Bomb className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-bold text-base text-white">Lựu Đạn Nổ Phá Mảnh (M67)</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            VŨ KHÍ NỔ TACTICAL
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">Bổ sung ngay 3 quả lựu đạn gây nổ diện rộng sát thương cực mạnh</p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Artwork Showcase */}
+                  <div 
+                    className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.22) 0%, rgba(10, 10, 15, 0.95) 75%)',
+                      borderColor: 'rgba(245, 158, 11, 0.35)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                    <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                      <SupplyVisualArtwork supplyType="grenade" />
+                    </div>
+                    <span className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md bg-amber-950/60 text-amber-300 border-amber-500/30">
+                      M67 FRAG x3
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-2 flex items-center justify-between text-xs font-mono">
+                    <span className="text-neutral-400">Số lượng sẵn có:</span>
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                      <Bomb className="w-3.5 h-3.5" /> {player.grenadeCount} quả [Phím G]
+                    </span>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => onBuySupply('grenade')}
                   disabled={player.gold < 180}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  className={`w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     player.gold >= 180
-                      ? 'bg-amber-600 hover:bg-amber-500 text-neutral-950 font-black shadow-lg shadow-amber-600/20 active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black shadow-lg shadow-amber-500/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                   }`}
                 >
                   <DollarSign className="w-4 h-4" /> MUA 3 LỰU ĐẠN (180 Vàng)
@@ -1004,25 +1288,63 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               </div>
 
               {/* Automatic Sentry Turret */}
-              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div 
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none bg-purple-500"
+                />
+
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl text-purple-400">
-                      <Radio className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Tháp Pháo Tự Động Sentry Gun</h3>
-                      <p className="text-xs text-neutral-400">Triển khai 1 tháp súng tự động ngắm bắn zombie trong 30 giây (hoặc bấm [T])</p>
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2.5 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-purple-500/15 border border-purple-500/40 rounded-2xl flex items-center justify-center text-purple-400 shrink-0">
+                        <Radio className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-bold text-base text-white">Tháp Pháo Tự Động Sentry Gun</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                            HỆ THỐNG TỰ ĐỘNG
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">Đặt 1 tháp súng xoay 360 độ tự động xả đạn tiêu diệt quái 30 giây</p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Artwork Showcase */}
+                  <div 
+                    className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.22) 0%, rgba(10, 10, 15, 0.95) 75%)',
+                      borderColor: 'rgba(168, 85, 247, 0.35)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                    <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                      <SupplyVisualArtwork supplyType="turret" />
+                    </div>
+                    <span className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md bg-purple-950/60 text-purple-300 border-purple-500/30">
+                      SENTRY GATLING
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-2 flex items-center justify-between text-xs font-mono">
+                    <span className="text-neutral-400">Thời gian tác chiến:</span>
+                    <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5" /> 30 Giây [Phím T]
+                    </span>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => onBuySupply('turret')}
                   disabled={player.gold < 350}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  className={`w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     player.gold >= 350
-                      ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20 active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      ? 'bg-purple-600 hover:bg-purple-500 text-white font-black shadow-lg shadow-purple-600/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                   }`}
                 >
                   <DollarSign className="w-4 h-4" /> MUA TRỤ SÚNG (350 Vàng)
@@ -1030,25 +1352,63 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               </div>
 
               {/* Electric Shock Field Trap */}
-              <div className="p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/60 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div 
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none bg-sky-500"
+                />
+
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl text-sky-400">
-                      <Zap className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-white">Bẫy Điện Từ Trường (Electric Trap)</h3>
-                      <p className="text-xs text-neutral-400">Đặt bẫy phóng điện làm chậm 65% và giật sét zombie xung quanh trong 30s (hoặc bấm [Y])</p>
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2.5 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-sky-500/15 border border-sky-500/40 rounded-2xl flex items-center justify-center text-sky-400 shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-bold text-base text-white">Bẫy Điện Từ Trường (Tesla Trap)</h3>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                            KHỐNG CHẾ TRƯỜNG LỰC
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">Đặt bẫy phóng điện làm chậm 65% và giật sét zombie xung quanh 30 giây</p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Artwork Showcase */}
+                  <div 
+                    className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/art"
+                    style={{
+                      background: 'radial-gradient(ellipse at center, rgba(56, 189, 248, 0.22) 0%, rgba(10, 10, 15, 0.95) 75%)',
+                      borderColor: 'rgba(56, 189, 248, 0.35)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                    <div className="w-full h-full max-w-[170px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/art:scale-105 filter drop-shadow-[0_4px_14px_rgba(0,0,0,0.8)]">
+                      <SupplyVisualArtwork supplyType="trap" />
+                    </div>
+                    <span className="absolute top-2 right-2 text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md bg-sky-950/60 text-sky-300 border-sky-500/30">
+                      TESLA STUN TRAP
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80 mb-2 flex items-center justify-between text-xs font-mono">
+                    <span className="text-neutral-400">Hiệu quả khống chế:</span>
+                    <span className="font-bold text-sky-300 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" /> Giảm 65% tốc chạy [Phím Y]
+                    </span>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => onBuySupply('trap')}
                   disabled={player.gold < 250}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                  className={`w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     player.gold >= 250
-                      ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-600/20 active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      ? 'bg-sky-500 hover:bg-sky-400 text-neutral-950 font-black shadow-lg shadow-sky-500/20 active:scale-95'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-800'
                   }`}
                 >
                   <DollarSign className="w-4 h-4" /> MUA BẪY ĐIỆN (250 Vàng)
