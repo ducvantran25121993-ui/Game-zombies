@@ -309,7 +309,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         p.equipment = { ...player.equipment };
       }
     }
-  }, [player.gold, player.hp, player.maxHp, player.armor, player.maxArmor, player.speed, player.grenadeCount, player.upgrades, player.warriorSkin, player.equipment]);
+  }, [player.gold, player.hp, player.maxHp, player.armor, player.maxArmor, player.speed, player.grenadeCount, player.upgrades, player.warriorSkin, player.equipment, player.level, player.exp, player.maxExp]);
 
   useEffect(() => {
     stateRef.current.currentWeapon = { ...currentWeapon };
@@ -1989,8 +1989,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             soundManager.playShoot(wep.soundType);
             state.screenShake = wep.id === 'shotgun' ? 6 : wep.id === 'rpg' ? 10 : 2;
 
-            // Damage multiplier perk + double damage buff
-            const dmgPerkMult = 1 + (p.upgrades.bulletDamageLevel || 0) * 0.10;
+            // Damage multiplier perk + double damage buff + player level bonus (+1.5% per level)
+            const dmgPerkMult = (1 + (p.upgrades.bulletDamageLevel || 0) * 0.10) * (1 + (Math.max(1, p.level || 1) - 1) * 0.015);
             const buffMult = state.activeBuffs.doubleDamageTimer > 0 ? 2 : 1;
             const finalDmg = Math.round(wep.damage * dmgPerkMult * buffMult);
 

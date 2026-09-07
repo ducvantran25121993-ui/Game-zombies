@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { HighScoreRecord, GameDifficulty } from '../types/game';
-import { Skull, RotateCcw, Trophy, Award, DollarSign, Target, Check, Share2, UserCheck } from 'lucide-react';
+import { Skull, RotateCcw, Trophy, Award, DollarSign, Target, Check, Share2, UserCheck, Sparkles } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES } from '../data/warriors';
+import { getRankTitle, savePlayerProfile, loadPlayerProfile } from '../data/playerProfile';
 
 interface GameOverModalProps {
   score: number;
@@ -13,6 +14,10 @@ interface GameOverModalProps {
   onRestart: () => void;
   onGoHome: () => void;
   warriorSkin?: string;
+  playerName?: string;
+  playerLevel?: number;
+  playerExp?: number;
+  playerMaxExp?: number;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -23,10 +28,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   difficulty,
   onRestart,
   onGoHome,
-  warriorSkin = 'commando'
+  warriorSkin = 'commando',
+  playerName: initialPlayerName,
+  playerLevel = 1,
+  playerExp = 0,
+  playerMaxExp = 100
 }) => {
   const warrior = WARRIOR_CLASSES.find(w => w.id === warriorSkin) || WARRIOR_CLASSES[0];
-  const [playerName, setPlayerName] = useState(warrior.nameVi);
+  const [playerName, setPlayerName] = useState(() => initialPlayerName || loadPlayerProfile().playerName || warrior.nameVi);
   const [isSaved, setIsSaved] = useState(false);
   const [leaderboard, setLeaderboard] = useState<HighScoreRecord[]>([]);
 
@@ -41,10 +50,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     }
   }, []);
 
+  const rankTitle = getRankTitle(playerLevel);
+  const expPercent = Math.min(100, Math.max(0, Math.round(((playerExp || 0) / (playerMaxExp || 100)) * 100)));
+
   const handleSaveScore = () => {
     if (!playerName.trim() || isSaved) return;
+    const finalName = playerName.trim();
     const newRecord: HighScoreRecord = {
-      name: playerName.trim(),
+      name: finalName,
       score,
       kills,
       wave,
@@ -60,6 +73,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     setIsSaved(true);
     try {
       localStorage.setItem('zombie_high_scores', JSON.stringify(updated));
+      savePlayerProfile({ playerName: finalName });
     } catch {
       // ignore
     }
@@ -82,24 +96,55 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         </p>
 
         {/* Warrior In Memoriam Avatar & Honors */}
-        <div className="flex items-center gap-2.5 sm:gap-3 bg-neutral-950/80 p-2 sm:p-3 rounded-2xl border border-neutral-800 my-2.5 landscape:my-1.5 text-left w-full">
-          <div className="relative w-10 h-10 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-amber-500/70 shrink-0 shadow-md">
-            <img 
-              src={warrior.avatar} 
-              alt={warrior.nameVi}
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover grayscale contrast-125"
-            />
-            <div className="absolute inset-0 bg-red-950/40" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-xs sm:text-sm">{warrior.nameVi}</span>
-              <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded bg-neutral-800 text-amber-400 border border-amber-500/30">
-                {warrior.codename}
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-neutral-950/90 p-2.5 sm:p-3.5 rounded-2xl border border-amber-500/40 my-2.5 landscape:my-1.5 text-left w-full shadow-lg">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-amber-500/70 shrink-0 shadow-md">
+              <img 
+                src={warrior.avatar} 
+                alt={warrior.nameVi} 
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover grayscale contrast-125"
+              />
+              <div className="absolute inset-0 bg-red-950/40" />
+              <div className="absolute bottom-0 inset-x-0 bg-neutral-950/90 text-center text-[7.5px] font-black text-amber-400">
+                LV.{playerLevel}
+              </div>
             </div>
-            <p className="text-[10px] sm:text-xs text-neutral-400 mt-0.5">{warrior.titleVi} • Tác chiến kiên cường tới phút cuối cùng</p>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-white text-xs sm:text-sm">{playerName}</span>
+                <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                  CẤP {playerLevel}
+                </span>
+                <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
+                  {warrior.nameVi}
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-sky-300 font-semibold mt-0.5">
+                {rankTitle} • Tác chiến kiên cường tới phút cuối cùng
+              </p>
+              <div className="flex items-center gap-1 text-[9.5px] text-emerald-400 font-bold mt-1">
+                <Check className="w-3 h-3 stroke-[3]" />
+                <span>Cấp độ & Kinh nghiệm đã được lưu vĩnh viễn!</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini EXP progress */}
+          <div className="sm:w-36 flex flex-col justify-center bg-neutral-900/90 p-2 rounded-xl border border-neutral-800 shrink-0">
+            <div className="flex justify-between text-[8.5px] text-neutral-400 font-mono mb-0.5">
+              <span>EXP TIẾN ĐỘ</span>
+              <span className="text-cyan-400 font-bold">{expPercent}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-cyan-950/80">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full"
+                style={{ width: `${expPercent}%` }}
+              />
+            </div>
+            <div className="text-[8px] text-neutral-400 font-mono text-right mt-0.5">
+              {playerExp}/{playerMaxExp}
+            </div>
           </div>
         </div>
 

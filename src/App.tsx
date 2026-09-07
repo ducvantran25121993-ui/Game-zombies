@@ -11,6 +11,9 @@ import { WARRIOR_CLASSES } from './data/warriors';
 import { INITIAL_DRONES, CompanionDroneConfig } from './data/drones';
 import { INITIAL_EQUIPMENT } from './data/equipment';
 import { loadRecordStats, saveRecordStats, loadSavedMissions, saveMissions } from './data/missions';
+import { 
+  PlayerProfile, loadPlayerProfile, savePlayerProfile 
+} from './data/playerProfile';
 import { getRandomSkillDraft } from './data/skills';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
@@ -38,60 +41,71 @@ export const App: React.FC = () => {
   const [recordStats, setRecordStats] = useState<GameRecordStats>(() => loadRecordStats());
   const [radarData, setRadarData] = useState<{ zombies: Zombie[]; drops: DropItem[] }>({ zombies: [], drops: [] });
 
+  // Persistent Player Profile (Character Name & Saved Level)
+  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(() => loadPlayerProfile());
+
   // Difficulty & Mode & Warrior & Map Environment
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [mode, setMode] = useState<GameMode>('survival');
   const [selectedWarriorId, setSelectedWarriorId] = useState<string>('commando');
   const [selectedMapId, setSelectedMapId] = useState<MapEnvironmentId>('rooftop');
 
-  // Player State
-  const [player, setPlayer] = useState<PlayerStats>({
-    x: MAP_SIZE.width / 2,
-    y: MAP_SIZE.height / 2,
-    radius: 18,
-    hp: 100,
-    maxHp: 100,
-    armor: 50,
-    maxArmor: 50,
-    speed: 3.6,
-    angle: 0,
-    stamina: 100,
-    maxStamina: 100,
-    isDashing: false,
-    dashCooldown: 0,
-    dashTimer: 0,
-    grenadeCount: 3,
-    gold: 150,
-    score: 0,
-    kills: 0,
-    headshots: 0,
-    combo: 0,
-    comboTimer: 0,
-    multiplier: 1,
-    invincibleTimer: 0,
-    warriorSkin: 'commando',
-    walkFrame: 0,
-    level: 1,
-    exp: 0,
-    maxExp: 100,
-    roguelikeSkills: {},
-    upgrades: {
-      maxHpLevel: 0,
-      armorLevel: 0,
-      speedLevel: 0,
-      reloadLevel: 0,
-      critChanceLevel: 0,
-      magnetRadiusLevel: 0,
-      bulletDamageLevel: 0
-    },
-    equipment: {
-      armor: 0,
-      boots: 0,
-      helmet: 0,
-      gloves: 0,
-      backpack: 0,
-      visor: 0
-    }
+  // Player State (with persistent level & name)
+  const [player, setPlayer] = useState<PlayerStats>(() => {
+    const profile = loadPlayerProfile();
+    const warriorConfig = WARRIOR_CLASSES[0];
+    const levelHpMult = 1 + (profile.level - 1) * 0.02;
+    const initialHp = Math.round(100 * warriorConfig.perks.hpMultiplier * levelHpMult);
+
+    return {
+      playerName: profile.playerName,
+      x: MAP_SIZE.width / 2,
+      y: MAP_SIZE.height / 2,
+      radius: 18,
+      hp: initialHp,
+      maxHp: initialHp,
+      armor: 50,
+      maxArmor: 50,
+      speed: 3.6,
+      angle: 0,
+      stamina: 100,
+      maxStamina: 100,
+      isDashing: false,
+      dashCooldown: 0,
+      dashTimer: 0,
+      grenadeCount: 3,
+      gold: 150,
+      score: 0,
+      kills: 0,
+      headshots: 0,
+      combo: 0,
+      comboTimer: 0,
+      multiplier: 1,
+      invincibleTimer: 0,
+      warriorSkin: 'commando',
+      walkFrame: 0,
+      level: profile.level,
+      exp: profile.exp,
+      maxExp: profile.maxExp,
+      roguelikeSkills: {},
+      upgrades: {
+        maxHpLevel: 0,
+        armorLevel: 0,
+        speedLevel: 0,
+        reloadLevel: 0,
+        critChanceLevel: 0,
+        magnetRadiusLevel: 0,
+        bulletDamageLevel: 0
+      },
+      equipment: {
+        armor: 0,
+        boots: 0,
+        helmet: 0,
+        gloves: 0,
+        backpack: 0,
+        visor: 0
+      }
+    };
   });
 
   // Weapons Arsenal State
@@ -190,6 +204,13 @@ export const App: React.FC = () => {
 
   const handleGameOver = useCallback(() => {
     soundManager.playGameOver();
+    const updated = savePlayerProfile({
+      playerName: player.playerName || playerProfile.playerName,
+      level: player.level,
+      exp: player.exp,
+      maxExp: player.maxExp
+    });
+    setPlayerProfile(updated);
     setRecordStats(() => {
       return saveRecordStats({
         highScore: player.score,
@@ -200,7 +221,59 @@ export const App: React.FC = () => {
       });
     });
     setGameState('gameover');
-  }, [player.score, player.kills, player.gold, wave]);
+  }, [player.score, player.kills, player.gold, wave, player.level, player.exp, player.maxExp, player.playerName, playerProfile.playerName]);
+
+  // Real-time automatic persistence of player level, exp & name during battle
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const saved = savePlayerProfile({
+        playerName: player.playerName || playerProfile.playerName,
+        level: player.level,
+        exp: player.exp,
+        maxExp: player.maxExp
+      });
+      setPlayerProfile(saved);
+    }
+  }, [player.level, player.exp, player.maxExp, player.playerName, gameState]);
+
+  // Ensure player level & name are saved if the user closes tab, reloads or navigates away
+  useEffect(() => {
+    const handleExitSave = () => {
+      savePlayerProfile({
+        playerName: player.playerName || playerProfile.playerName,
+        level: player.level,
+        exp: player.exp,
+        maxExp: player.maxExp
+      });
+    };
+
+    window.addEventListener('beforeunload', handleExitSave);
+    window.addEventListener('pagehide', handleExitSave);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        handleExitSave();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleExitSave);
+      window.removeEventListener('pagehide', handleExitSave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [player.level, player.exp, player.maxExp, player.playerName, playerProfile.playerName]);
+
+  const handleGoHome = useCallback(() => {
+    const saved = savePlayerProfile({
+      playerName: player.playerName || playerProfile.playerName,
+      level: player.level,
+      exp: player.exp,
+      maxExp: player.maxExp
+    });
+    setPlayerProfile(saved);
+    setIsPaused(false);
+    setGameState('start');
+  }, [player.level, player.exp, player.maxExp, player.playerName, playerProfile.playerName]);
 
   const handleBossKilled = useCallback(() => {
     setRecordStats(() => saveRecordStats({ totalBossKills: 1 }));
@@ -303,7 +376,8 @@ export const App: React.FC = () => {
     chosenDiff: GameDifficulty, 
     chosenMode: GameMode, 
     chosenWarriorId?: string,
-    chosenMapId?: MapEnvironmentId
+    chosenMapId?: MapEnvironmentId,
+    chosenPlayerName?: string
   ) => {
     setDifficulty(chosenDiff);
     setMode(chosenMode);
@@ -313,13 +387,21 @@ export const App: React.FC = () => {
       setSelectedMapId(chosenMapId);
     }
 
+    const currentProfile = loadPlayerProfile();
+    const finalPlayerName = (chosenPlayerName || player.playerName || currentProfile.playerName || 'Chiến Binh Alpha').trim();
+    if (finalPlayerName !== currentProfile.playerName) {
+      savePlayerProfile({ playerName: finalPlayerName });
+    }
+
     const warriorConfig = WARRIOR_CLASSES.find(w => w.id === warriorId) || WARRIOR_CLASSES[0];
-    const initialHp = Math.round(100 * warriorConfig.perks.hpMultiplier);
+    const levelHpMult = 1 + (currentProfile.level - 1) * 0.02;
+    const initialHp = Math.round(100 * warriorConfig.perks.hpMultiplier * levelHpMult);
     const initialArmor = Math.round(50 * warriorConfig.perks.armorMultiplier);
     const initialSpeed = Number((3.6 * warriorConfig.perks.speedMultiplier).toFixed(2));
 
-    // Reset Player with warrior stats
+    // Reset Player with warrior stats and saved level / exp
     setPlayer({
+      playerName: finalPlayerName,
       x: MAP_SIZE.width / 2,
       y: MAP_SIZE.height / 2,
       radius: 18,
@@ -345,9 +427,9 @@ export const App: React.FC = () => {
       invincibleTimer: 0,
       warriorSkin: warriorId,
       walkFrame: 0,
-      level: 1,
-      exp: 0,
-      maxExp: 100,
+      level: currentProfile.level,
+      exp: currentProfile.exp,
+      maxExp: currentProfile.maxExp,
       roguelikeSkills: {},
       upgrades: {
         maxHpLevel: 0,
@@ -767,6 +849,8 @@ export const App: React.FC = () => {
           onSelectMap={(id) => setSelectedMapId(id)}
           onOpenMissions={() => setIsMissionsOpen(true)}
           unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
+          playerProfile={playerProfile}
+          onUpdatePlayerProfile={(updated) => setPlayerProfile(prev => ({ ...prev, ...updated }))}
         />
       )}
 
@@ -914,13 +998,14 @@ export const App: React.FC = () => {
           <PauseModal
             isOpen={isPaused}
             onResume={() => setIsPaused(false)}
-            onRestart={() => handleStartGame(difficulty, mode)}
-            onGoHome={() => {
-              setIsPaused(false);
-              setGameState('start');
-            }}
+            onRestart={() => handleStartGame(difficulty, mode, selectedWarriorId, selectedMapId, player.playerName || playerProfile.playerName)}
+            onGoHome={handleGoHome}
             isMuted={isMuted}
             onToggleMute={handleToggleMute}
+            playerName={player.playerName || playerProfile.playerName}
+            playerLevel={player.level || playerProfile.level}
+            playerExp={player.exp || playerProfile.exp}
+            playerMaxExp={player.maxExp || playerProfile.maxExp}
           />
         </>
       )}
@@ -943,8 +1028,12 @@ export const App: React.FC = () => {
           goldEarned={player.gold}
           difficulty={difficulty}
           warriorSkin={player.warriorSkin}
-          onRestart={() => handleStartGame(difficulty, mode)}
-          onGoHome={() => setGameState('start')}
+          playerName={player.playerName || playerProfile.playerName}
+          playerLevel={player.level || playerProfile.level}
+          playerExp={player.exp || playerProfile.exp}
+          playerMaxExp={player.maxExp || playerProfile.maxExp}
+          onRestart={() => handleStartGame(difficulty, mode, selectedWarriorId, selectedMapId, player.playerName || playerProfile.playerName)}
+          onGoHome={handleGoHome}
         />
       )}
 

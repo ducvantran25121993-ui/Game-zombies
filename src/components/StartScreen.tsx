@@ -5,16 +5,21 @@ import {
   Flame, HelpCircle, Radio, Award, ChevronRight, Check,
   UserCheck, Sparkles, Heart, Footprints, MapPin, Building2,
   Biohazard, AlertTriangle, Ghost, SunMedium, Cpu, Layers,
-  Volume2, VolumeX, ShieldAlert, Swords, Smartphone
+  Volume2, VolumeX, ShieldAlert, Swords, Smartphone,
+  Shuffle, Edit3
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WARRIOR_HERO_BANNER } from '../data/warriors';
 import { MAP_ENVIRONMENTS, BG_APOCALYPSE_IMAGE } from '../data/maps';
 import { usePWAInstall } from '../utils/usePWAInstall';
 import { InstallAppModal } from './InstallAppModal';
+import { 
+  PlayerProfile, loadPlayerProfile, savePlayerProfile, 
+  SUGGESTED_NAMES, getRankTitle 
+} from '../data/playerProfile';
 
 interface StartScreenProps {
-  onStartGame: (difficulty: GameDifficulty, mode: GameMode, warriorId: string, mapId: MapEnvironmentId) => void;
+  onStartGame: (difficulty: GameDifficulty, mode: GameMode, warriorId: string, mapId: MapEnvironmentId, playerName?: string) => void;
   isMuted: boolean;
   onToggleMute: () => void;
   selectedWarriorId: string;
@@ -23,6 +28,8 @@ interface StartScreenProps {
   onSelectMap: (id: MapEnvironmentId) => void;
   onOpenMissions?: () => void;
   unclaimedMissionsCount?: number;
+  playerProfile?: PlayerProfile;
+  onUpdatePlayerProfile?: (profile: Partial<PlayerProfile>) => void;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -34,7 +41,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   selectedMapId,
   onSelectMap,
   onOpenMissions,
-  unclaimedMissionsCount = 0
+  unclaimedMissionsCount = 0,
+  playerProfile,
+  onUpdatePlayerProfile
 }) => {
   const [difficulty, setDifficulty] = useState<GameDifficulty>('normal');
   const [mode, setMode] = useState<GameMode>('survival');
@@ -42,6 +51,38 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [leaderboard, setLeaderboard] = useState<HighScoreRecord[]>([]);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+
+  // Persistent Player Profile (Name & Level)
+  const [profile, setProfile] = useState<PlayerProfile>(() => playerProfile || loadPlayerProfile());
+  const [characterName, setCharacterName] = useState<string>(() => (playerProfile?.playerName || loadPlayerProfile().playerName));
+
+  // Sync profile if prop changes
+  useEffect(() => {
+    if (playerProfile) {
+      setProfile(playerProfile);
+      setCharacterName(playerProfile.playerName);
+    } else {
+      const loaded = loadPlayerProfile();
+      setProfile(loaded);
+      setCharacterName(loaded.playerName);
+    }
+  }, [playerProfile]);
+
+  const handleNameChange = (newName: string) => {
+    setCharacterName(newName);
+    const updated = savePlayerProfile({ playerName: newName });
+    setProfile(updated);
+    if (onUpdatePlayerProfile) {
+      onUpdatePlayerProfile({ playerName: newName });
+    }
+  };
+
+  const handleRandomizeName = () => {
+    soundManager.playEmptyClick();
+    const otherNames = SUGGESTED_NAMES.filter(n => n !== characterName);
+    const randomName = otherNames[Math.floor(Math.random() * otherNames.length)] || 'Chiến Binh Alpha';
+    handleNameChange(randomName);
+  };
 
   useEffect(() => {
     try {
@@ -60,7 +101,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const handleLaunchGame = () => {
     soundManager.playEmptyClick();
     soundManager.startMusic();
-    onStartGame(difficulty, mode, selectedWarriorId, selectedMapId);
+    onStartGame(difficulty, mode, selectedWarriorId, selectedMapId, characterName);
   };
 
   return (
@@ -314,8 +355,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         <span>CHIẾN BINH</span>
                         <span className="text-[7.5px] text-neutral-400 group-hover/w:text-amber-300">▼</span>
                       </div>
-                      <div className="text-[11px] font-bold text-white truncate max-w-[90px] sm:max-w-[120px]">
-                        {activeWarrior.nameVi}
+                      <div className="text-[11px] font-bold text-white truncate max-w-[95px] sm:max-w-[130px]">
+                        {characterName || activeWarrior.nameVi}
+                      </div>
+                      <div className="text-[8.5px] text-neutral-400 truncate max-w-[95px] sm:max-w-[130px]">
+                        {activeWarrior.nameVi} • Lv.{profile.level}
                       </div>
                     </div>
                   </button>
@@ -369,6 +413,121 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* TACTICAL OPERATOR PROFILE & SAVED LEVEL CARD */}
+            {(() => {
+              const expPercent = Math.min(100, Math.max(0, Math.round(((profile.exp || 0) / (profile.maxExp || 100)) * 100)));
+              const hpBonusPercent = (profile.level - 1) * 2;
+              const dmgBonusPercent = Number(((profile.level - 1) * 1.5).toFixed(1));
+
+              return (
+                <div className="w-full bg-neutral-900/90 border border-amber-500/40 hover:border-amber-500/60 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md relative overflow-hidden transition-all">
+                  <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-amber-500/10 via-red-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+                  {/* Header row */}
+                  <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-neutral-800">
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">
+                        HỒ SƠ NHÂN VẬT & CẤP ĐỘ SINH TỒN
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[9.5px] sm:text-[10.5px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span>Tự động lưu khi thoát</span>
+                    </div>
+                  </div>
+
+                  {/* Profile Body */}
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                    {/* Left: Warrior Identity & Military Rank Badge */}
+                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-amber-400/80 shadow-md bg-neutral-950 shrink-0 group/av">
+                        <img 
+                          src={activeWarrior.avatar} 
+                          alt={activeWarrior.nameVi} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-0 inset-x-0 bg-neutral-950/95 text-center text-[7.5px] sm:text-[8.5px] font-black text-amber-400 border-t border-amber-500/40">
+                          LV.{profile.level}
+                        </div>
+                      </div>
+
+                      <div className="leading-tight">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs sm:text-sm font-black text-white">
+                            {profile.title}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 shadow-sm font-mono">
+                            CẤP {profile.level}
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] sm:text-[11.5px] text-neutral-400 mt-0.5">
+                          {activeWarrior.nameVi} • {activeWarrior.titleVi}
+                        </p>
+                        <div className="text-[9.5px] text-sky-300 font-semibold mt-0.5 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-sky-400 shrink-0" />
+                          <span>Hiệu ứng cấp: +{hpBonusPercent}% Máu & +{dmgBonusPercent}% Sát thương đạn</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Character Name Input & EXP Progress */}
+                    <div className="w-full md:w-auto flex-1 max-w-md flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-neutral-300">
+                        <label htmlFor="character-name-input" className="flex items-center gap-1 text-amber-300">
+                          <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                          <span>TÊN NHÂN VẬT CỦA BẠN:</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleRandomizeName}
+                          className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 text-[9.5px] sm:text-[10px] font-bold hover:underline active:scale-95"
+                          title="Chọn ngẫu nhiên một tên chiến binh hay"
+                        >
+                          <Shuffle className="w-3 h-3" />
+                          <span>Đổi tên ngẫu nhiên</span>
+                        </button>
+                      </div>
+
+                      {/* Input Box */}
+                      <div className="relative flex items-center">
+                        <input
+                          id="character-name-input"
+                          type="text"
+                          value={characterName}
+                          onChange={(e) => handleNameChange(e.target.value)}
+                          placeholder="Nhập tên nhân vật mong muốn..."
+                          maxLength={20}
+                          className="w-full bg-neutral-950 border border-neutral-700 hover:border-neutral-600 focus:border-amber-400 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-white font-black placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all pr-12 shadow-inner"
+                        />
+                        <span className="absolute right-2.5 text-[9px] font-mono text-neutral-500 pointer-events-none">
+                          {characterName.length}/20
+                        </span>
+                      </div>
+
+                      {/* EXP Progress Bar */}
+                      <div className="space-y-0.5 mt-0.5">
+                        <div className="flex justify-between text-[9px] sm:text-[10px] font-semibold text-neutral-400">
+                          <span className="text-cyan-400 font-bold flex items-center gap-1">
+                            <span>Tiến Độ EXP Cấp {profile.level}</span>
+                          </span>
+                          <span className="font-mono text-neutral-300">
+                            {profile.exp} / {profile.maxExp} EXP ({expPercent}%)
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden border border-cyan-950 p-0.5">
+                          <div 
+                            className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(56,189,248,0.5)]"
+                            style={{ width: `${expPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* GAME MODE SELECTION */}
             <div>

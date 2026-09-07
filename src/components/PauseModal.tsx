@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Play, RotateCcw, Home, HelpCircle } from 'lucide-react';
+import { Volume2, VolumeX, Play, RotateCcw, Home, HelpCircle, UserCheck, Check, Sparkles } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { getRankTitle } from '../data/playerProfile';
 
 interface PauseModalProps {
   isOpen: boolean;
@@ -9,6 +10,10 @@ interface PauseModalProps {
   onGoHome: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  playerName?: string;
+  playerLevel?: number;
+  playerExp?: number;
+  playerMaxExp?: number;
 }
 
 export const PauseModal: React.FC<PauseModalProps> = ({
@@ -17,12 +22,19 @@ export const PauseModal: React.FC<PauseModalProps> = ({
   onRestart,
   onGoHome,
   isMuted,
-  onToggleMute
+  onToggleMute,
+  playerName = 'Chiến Binh Alpha',
+  playerLevel = 1,
+  playerExp = 0,
+  playerMaxExp = 100
 }) => {
   const [sfxVol, setSfxVol] = useState(0.7);
   const [musicVol, setMusicVol] = useState(0.4);
 
   if (!isOpen) return null;
+
+  const rankTitle = getRankTitle(playerLevel);
+  const expPercent = Math.min(100, Math.max(0, Math.round(((playerExp || 0) / (playerMaxExp || 100)) * 100)));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-neutral-950/85 backdrop-blur-md select-none">
@@ -30,7 +42,34 @@ export const PauseModal: React.FC<PauseModalProps> = ({
         <h2 className="text-xl sm:text-2xl landscape:text-lg font-black text-white tracking-widest uppercase mb-0.5">
           TẠM DỪNG TRẬN CHIẾN
         </h2>
-        <p className="text-[11px] sm:text-xs text-neutral-400 mb-3 landscape:mb-2">Trò chơi đang dừng. Bạn có thể chỉnh âm thanh hoặc xem phím điều khiển bên dưới.</p>
+        <p className="text-[11px] sm:text-xs text-neutral-400 mb-2 landscape:mb-1.5">Trò chơi đang dừng. Cấp độ và điểm kinh nghiệm được tự động lưu vĩnh viễn.</p>
+
+        {/* PLAYER IDENTITY & PERSISTENT LEVEL BADGE */}
+        <div className="w-full bg-neutral-950/80 p-2.5 sm:p-3 rounded-2xl border border-amber-500/40 mb-3 landscape:mb-2 text-left">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="font-black text-white text-xs sm:text-sm">{playerName}</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] sm:text-[10px] font-black font-mono">
+              CẤP {playerLevel}
+            </span>
+          </div>
+          <div className="text-[10px] text-sky-300 font-semibold mb-1 flex items-center justify-between">
+            <span>{rankTitle}</span>
+            <span className="text-neutral-400 font-mono text-[9px]">{playerExp}/{playerMaxExp} EXP ({expPercent}%)</span>
+          </div>
+          <div className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden border border-cyan-950/60 mb-1.5">
+            <div 
+              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-300"
+              style={{ width: `${expPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-semibold">
+            <Check className="w-3 h-3 stroke-[3]" />
+            <span>Đã đồng bộ & lưu an toàn vào máy khi bạn rời trận!</span>
+          </div>
+        </div>
 
         {/* AUDIO SETTINGS */}
         <div className="w-full bg-neutral-950/60 p-3 sm:p-4 rounded-2xl border border-neutral-800 space-y-3 landscape:space-y-2 mb-3 landscape:mb-2 text-left">
@@ -111,8 +150,9 @@ export const PauseModal: React.FC<PauseModalProps> = ({
             <button
               onClick={onGoHome}
               className="flex-1 py-2 sm:py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+              title="Cấp độ và tên nhân vật được tự động lưu vĩnh viễn"
             >
-              <Home className="w-4 h-4" /> TRANG CHỦ
+              <Home className="w-4 h-4" /> LƯU & VỀ SẢNH
             </button>
           </div>
         </div>

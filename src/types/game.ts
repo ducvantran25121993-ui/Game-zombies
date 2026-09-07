@@ -332,6 +332,7 @@ export interface EnvironmentalHazardZone {
 }
 
 export interface PlayerStats {
+  playerName?: string;
   x: number;
   y: number;
   radius: number;

@@ -178,7 +178,13 @@ export const HUD: React.FC<HUDProps> = ({
               );
             })()}
 
-            <div className="flex flex-col gap-0.5 min-w-[58px] sm:min-w-[85px]">
+            <div className="flex flex-col gap-0.5 min-w-[62px] sm:min-w-[95px]">
+              {/* Player Name & Level Tag */}
+              <div className="flex items-center justify-between text-[7px] sm:text-[9px] font-black leading-none text-amber-300">
+                <span className="truncate max-w-[65px] sm:max-w-[100px]">{player.playerName || 'Chiến Binh'}</span>
+                <span className="text-cyan-400 font-mono text-[6.5px] sm:text-[8px] shrink-0">Lv.{player.level || 1}</span>
+              </div>
+
               {/* Health */}
               <div className="flex items-center justify-between text-[7.5px] sm:text-[10px] font-bold leading-none">
                 <span className="flex items-center gap-0.5 text-red-400">
