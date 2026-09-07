@@ -3682,7 +3682,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               const finalDmg = rawDmg;
 
               z.hp -= finalDmg;
-              z.hitFlashTimer = 110; // Combat Juice: Instant visual white/red hit flash
+              z.hitFlashTimer = 60; // Combat Juice: Instant visual damage feedback
               b.pierceLeft -= 1;
 
               // Knockback (Bosses barely flinch - 0.05x knockback, regular minions punchy 1.4x knockback)
@@ -3839,6 +3839,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       for (let i = state.zombies.length - 1; i >= 0; i--) {
         const z = state.zombies[i];
         z.animationFrame += 0.075 * Math.max(1.8, z.speed);
+
+        // Update condition & hit reaction timers
+        if (z.hitFlashTimer && z.hitFlashTimer > 0) {
+          z.hitFlashTimer = Math.max(0, z.hitFlashTimer - dt);
+        }
+        if (z.frozenTimer && z.frozenTimer > 0) {
+          z.frozenTimer = Math.max(0, z.frozenTimer - dt);
+          if (z.frozenTimer <= 0) {
+            z.speed = z.baseSpeed;
+          }
+        }
+        if (z.burnTimer && z.burnTimer > 0) {
+          z.burnTimer = Math.max(0, z.burnTimer - dt);
+          z.hp -= (35 * dt) / 1000;
+        }
+        if (z.poisonTimer && z.poisonTimer > 0) {
+          z.poisonTimer = Math.max(0, z.poisonTimer - dt);
+          z.hp -= (22 * dt) / 1000;
+        }
 
         // Death check
         if (z.hp <= 0) {

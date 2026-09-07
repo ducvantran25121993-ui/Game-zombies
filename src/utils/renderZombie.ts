@@ -463,16 +463,32 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     ctx.restore();
   }
 
-  // 10. IMPACT HIT FLASH (Combat Juice: Brilliant arcade white flash on projectile impact)
+  // 10. IMPACT HIT FLASH (Combat Juice: Crisp arcade damage reaction)
   if (z.hitFlashTimer && z.hitFlashTimer > 0) {
-    const flashAlpha = Math.min(1, z.hitFlashTimer / 80);
+    const flashAlpha = Math.min(1, z.hitFlashTimer / 50);
     ctx.save();
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.75 * flashAlpha})`;
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
-    ctx.fill();
+    if (isBoss) {
+      // Boss damage effect: Outer bright crimson/white rim aura, preserving the boss's monstrous textures
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.85 * flashAlpha})`;
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.06, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Very subtle translucent inner hit flash tint
+      ctx.fillStyle = `rgba(254, 202, 202, ${0.14 * flashAlpha})`;
+      ctx.fill();
+    } else {
+      // Regular zombie quick translucent flash
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.28 * flashAlpha})`;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.05, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
