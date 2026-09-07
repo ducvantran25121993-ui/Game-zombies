@@ -277,11 +277,11 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
       style={customPos ? { position: 'fixed', left: `${customPos.x}px`, top: `${customPos.y}px`, zIndex: 40 } : undefined}
       className={!customPos ? (
         dockSide === 'left'
-          ? 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[44px] left-[max(0.5rem,env(safe-area-inset-left,0px))] sm:left-4 z-30 select-none pointer-events-auto transition-all'
-          : 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[44px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-30 select-none pointer-events-auto transition-all'
+          ? 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[40px] left-[max(0.5rem,env(safe-area-inset-left,0px))] sm:left-4 z-30 select-none pointer-events-auto transition-all'
+          : 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[40px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-30 select-none pointer-events-auto transition-all'
       ) : 'select-none pointer-events-auto'}
     >
-      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 shadow-[0_0_15px_rgba(2,132,199,0.35)] bg-neutral-950/90 backdrop-blur-md">
+      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 landscape:border-sky-500/35 shadow-[0_0_15px_rgba(2,132,199,0.35)] landscape:shadow-none bg-neutral-950/90 landscape:bg-neutral-950/60 backdrop-blur-md landscape:backdrop-blur-sm">
         {/* Radar Header with Drag & Dock Controls */}
         <div
           className="flex items-center justify-between px-1.5 py-0.5 bg-neutral-900/95 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold gap-1 cursor-grab active:cursor-grabbing active:bg-sky-950/40 select-none touch-none"

@@ -228,6 +228,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     environmentalZones: EnvironmentalHazardZone[];
     vampiricKillCounter: number;
     warDog: WarDogCompanion | null;
+    orbitalLaserTimer: number;
+    infiniteOverdriveTimer: number;
   }>({
     player: { 
       ...player, 
@@ -289,7 +291,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       { id: 'electric_1', type: 'electric_leak', x: 1300, y: 550, radius: 125, damage: 45, pulseTimer: 0, color: '#38bdf8' },
       { id: 'electric_2', type: 'electric_leak', x: 1400, y: 1450, radius: 130, damage: 45, pulseTimer: 0, color: '#38bdf8' }
     ],
-    vampiricKillCounter: 0
+    vampiricKillCounter: 0,
+    orbitalLaserTimer: 4500,
+    infiniteOverdriveTimer: 0
   });
 
   // Sync props to stateRef when weapons/player change from Shop or UI
@@ -1241,6 +1245,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     p.isDashing = true;
     p.dashTimer = 180; // ms
     p.invincibleTimer = 220;
+
+    // Trigger Infinite Overdrive if unlocked
+    if ((p.roguelikeSkills?.infinite_overdrive || 0) > 0) {
+      state.infiniteOverdriveTimer = 5000;
+      state.floatingTexts.push({
+        id: Math.random().toString(),
+        x: p.x,
+        y: p.y - 40,
+        text: '⚡ QUÁ TẢI BĂNG ĐẠN VÔ TẬN (5S)!',
+        color: '#ec4899',
+        alpha: 1.2,
+        life: 40,
+        isCrit: true
+      });
+    }
   };
 
   const handleCycleGrenade = () => {
@@ -1984,10 +2003,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const isAutoFiring = Boolean(autoAim && closestZombie && !state.isReloading);
       const isFiring = state.isMouseDown || touchAim.isShooting || isAutoFiring;
       if (isFiring && !state.isReloading) {
-        const fireRateMultiplier = (p.roguelikeSkills?.adrenaline_rush || 0) > 0 ? 0.72 : 1.0;
+        const isInfiniteAmmo = (p.roguelikeSkills?.infinite_overdrive || 0) > 0 && (state.infiniteOverdriveTimer || 0) > 0;
+        const overdriveFireMult = isInfiniteAmmo ? 0.60 : 1.0;
+        const fireRateMultiplier = ((p.roguelikeSkills?.adrenaline_rush || 0) > 0 ? 0.72 : 1.0) * overdriveFireMult;
         if (currentTime - lastShotTime >= wep.fireRate * fireRateMultiplier) {
-          if (wep.currentMag > 0) {
-            wep.currentMag -= 1;
+          if (wep.currentMag > 0 || isInfiniteAmmo) {
+            if (!isInfiniteAmmo) {
+              wep.currentMag -= 1;
+            }
             lastShotTime = currentTime;
 
             soundManager.playShoot(wep.soundType);
@@ -1996,7 +2019,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             // Damage multiplier perk + double damage buff + player level bonus (+1.5% per level)
             const dmgPerkMult = (1 + (p.upgrades.bulletDamageLevel || 0) * 0.10) * (1 + (Math.max(1, p.level || 1) - 1) * 0.015);
             const buffMult = state.activeBuffs.doubleDamageTimer > 0 ? 2 : 1;
-            const finalDmg = Math.round(wep.damage * dmgPerkMult * buffMult);
+            const titanMult = 1 + (p.roguelikeSkills?.titan_berserk || 0) * 0.40;
+            const millionaireMult = (p.roguelikeSkills?.gold_millionaire || 0) > 0 ? 2.0 : 1.0;
+            const finalDmg = Math.round(wep.damage * dmgPerkMult * buffMult * titanMult * millionaireMult);
 
             // Muzzle flash particle
             const muzzleDist = p.radius + 18;
@@ -2987,6 +3012,66 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             }
           }
         });
+      }
+
+      // 3. Orbital Satellite Laser Strike
+      if ((p.roguelikeSkills?.orbital_laser || 0) > 0) {
+        state.orbitalLaserTimer = (state.orbitalLaserTimer || 5000) - dt;
+        if (state.orbitalLaserTimer <= 0) {
+          state.orbitalLaserTimer = 5500;
+          // Target highest maxHp zombie within 750px of player
+          const highValueTarget = state.zombies
+            .filter(z => z.hp > 0 && Math.hypot(z.x - p.x, z.y - p.y) < 750)
+            .sort((a, b) => b.maxHp - a.maxHp)[0];
+
+          if (highValueTarget) {
+            soundManager.playThunder();
+            state.screenShake = Math.max(state.screenShake, 8);
+            state.lightningFlashAlpha = 0.45;
+            state.laserBeams.push({
+              x1: highValueTarget.x,
+              y1: highValueTarget.y - 650,
+              x2: highValueTarget.x,
+              y2: highValueTarget.y,
+              color: '#38bdf8',
+              alpha: 2.0
+            });
+            const laserDmg = 2800 * (p.roguelikeSkills?.orbital_laser || 1);
+            highValueTarget.hp -= laserDmg;
+            highValueTarget.hitFlashTimer = 180;
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: highValueTarget.x,
+              y: highValueTarget.y - 30,
+              text: `💥 LASER VỆ TINH -${laserDmg.toLocaleString()} ST!`,
+              color: '#38bdf8',
+              alpha: 1.2,
+              life: 45,
+              isCrit: true
+            });
+            for (let i = 0; i < 16; i++) {
+              const ang = (i / 16) * Math.PI * 2;
+              state.particles.push({
+                x: highValueTarget.x,
+                y: highValueTarget.y,
+                vx: Math.cos(ang) * (4 + Math.random() * 3),
+                vy: Math.sin(ang) * (4 + Math.random() * 3),
+                radius: 3.5,
+                color: '#38bdf8',
+                alpha: 1,
+                life: 0,
+                maxLife: 25,
+                decay: 0.04,
+                shape: 'spark'
+              });
+            }
+          }
+        }
+      }
+
+      // Update Infinite Overdrive Timer
+      if (state.infiniteOverdriveTimer > 0) {
+        state.infiniteOverdriveTimer = Math.max(0, state.infiniteOverdriveTimer - dt);
       }
 
       // Decay Lightning Flash
@@ -4677,7 +4762,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // 10. WIDE TACTICAL CAMERA TRACKING & OPTIMIZED PERSPECTIVE
       // Wide FOV view on mobile to see surrounding hordes and battlefield clearly
       const currentZoomMode = cameraZoomModeRef.current;
-      let baseZoom = canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+      const isMobileLandscape = canvas.height < 520 && canvas.width > canvas.height;
+      let baseZoom = isMobileLandscape ? 0.60 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
       if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
       else if (currentZoomMode === 'normal') baseZoom *= 1.25;
       const zoom = baseZoom;
@@ -5466,7 +5552,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const screenY = clientY - rect.top;
 
     const currentZoomMode = cameraZoomModeRef.current;
-    let baseZoom = canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
+    const isMobileLandscape = canvas.height < 520 && canvas.width > canvas.height;
+    let baseZoom = isMobileLandscape ? 0.60 : canvas.width < 640 ? 0.62 : canvas.width < 1024 ? 0.78 : 0.92;
     if (currentZoomMode === 'ultrawide') baseZoom *= 0.80;
     else if (currentZoomMode === 'normal') baseZoom *= 1.25;
     const zoom = baseZoom;

@@ -16,15 +16,17 @@ interface SkillDraftModalProps {
 const ICON_MAP: Record<string, React.ReactNode> = {
   CornerUpRight: <CornerUpRight className="w-8 h-8" />,
   Bomb: <Bomb className="w-8 h-8" />,
-  Zap: <Zap className="w-8 h-8" />,
+  Zap: <Zap className="w-8 h-8 text-sky-400" />,
   Snowflake: <Snowflake className="w-8 h-8" />,
   HeartPulse: <HeartPulse className="w-8 h-8" />,
   Flame: <Flame className="w-8 h-8" />,
-  ChevronsUp: <ChevronsUp className="w-8 h-8" />,
-  Activity: <Activity className="w-8 h-8" />,
+  ChevronsUp: <ChevronsUp className="w-8 h-8 text-pink-400" />,
+  Activity: <Activity className="w-8 h-8 text-emerald-400" />,
   ShieldAlert: <ShieldAlert className="w-8 h-8" />,
   Dog: <Dog className="w-8 h-8 text-amber-400" />,
-  PawPrint: <PawPrint className="w-8 h-8 text-amber-400" />
+  PawPrint: <PawPrint className="w-8 h-8 text-amber-400" />,
+  Sparkles: <Sparkles className="w-8 h-8 text-yellow-300" />,
+  Star: <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
 };
 
 export const SkillDraftModal: React.FC<SkillDraftModalProps> = ({
@@ -39,29 +41,29 @@ export const SkillDraftModal: React.FC<SkillDraftModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl bg-zinc-950/95 border-2 border-amber-500/60 rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-4xl max-h-[94vh] overflow-y-auto bg-zinc-950/95 border-2 border-amber-500/60 rounded-2xl p-3 sm:p-6 landscape:py-3 landscape:px-4 shadow-2xl flex flex-col items-center text-center relative">
         {/* Glow ambient background */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-32 bg-amber-500/20 blur-3xl pointer-events-none" />
 
         {/* Header */}
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-6 h-6 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-          <span className="text-xs sm:text-sm font-black tracking-widest uppercase text-amber-400">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 landscape:mb-0">
+          <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+          <span className="text-[10px] sm:text-sm font-black tracking-widest uppercase text-amber-400">
             CHIẾN BINH THĂNG CẤP • LEVEL {playerLevel}
           </span>
-          <Sparkles className="w-6 h-6 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+          <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
         </div>
 
-        <h2 className="text-xl sm:text-3xl font-black text-white tracking-wider mb-2">
-          CHỌN 1 KỸ NĂNG SINH TỒN
+        <h2 className="text-lg sm:text-3xl landscape:text-xl font-black text-white tracking-wider mb-1 landscape:mb-0.5">
+          CHỌN 1 THẺ KỸ NĂNG ĐỈNH CAO
         </h2>
-        <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mb-6">
+        <p className="text-[10px] sm:text-sm text-zinc-400 max-w-lg mb-3 sm:mb-5 landscape:mb-2">
           Kỹ năng sẽ lập tức có hiệu lực và kết hợp trực tiếp với hỏa lực hiện tại của bạn!
         </p>
 
         {/* 3 Skill Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 w-full">
           {skills.map((skill) => {
             const currentLvl = currentSkills[skill.id] || 0;
             const nextLvl = currentLvl + 1;

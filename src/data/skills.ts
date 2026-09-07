@@ -91,6 +91,56 @@ export const ROGUELIKE_SKILLS_DATABASE: Record<RoguelikeSkillId, RoguelikeSkill>
     color: '#f59e0b',
     maxLevel: 3,
     minPlayerLevel: 2
+  },
+  midas_jackpot: {
+    id: 'midas_jackpot',
+    nameVi: 'Thần Tài Hoàng Kim (Kho Báu)',
+    descVi: 'Nhận ngay +250,000 Vàng trực tiếp vào ví, tăng +100% tỉ lệ rơi thỏi vàng và đá quý khi hạ boss!',
+    icon: 'Sparkles',
+    rarity: 'legendary',
+    color: '#eab308',
+    maxLevel: 10,
+    minPlayerLevel: 3
+  },
+  gold_millionaire: {
+    id: 'gold_millionaire',
+    nameVi: 'Thẻ Triệu Phú Đỉnh Cao (1M Gold)',
+    descVi: 'KÍCH HOẠT ĐỈNH CAO: Bổ sung thẳng +1,000,000 VÀNG (1M) vào tài khoản và +100% sát thương chí mạng!',
+    icon: 'Star',
+    rarity: 'legendary',
+    color: '#fbbf24',
+    maxLevel: 3,
+    minPlayerLevel: 5
+  },
+  orbital_laser: {
+    id: 'orbital_laser',
+    nameVi: 'Laser Quỹ Đạo Vệ Tinh',
+    descVi: 'Mỗi 6 giây, chùm tia laser không gian hủy diệt giáng xuống thiêu rụi mục tiêu quái vật mạnh nhất với 2,800 sát thương!',
+    icon: 'Zap',
+    rarity: 'legendary',
+    color: '#38bdf8',
+    maxLevel: 3,
+    minPlayerLevel: 3
+  },
+  titan_berserk: {
+    id: 'titan_berserk',
+    nameVi: 'Chiến Thần Titan Bất Tử',
+    descVi: 'Tăng vĩnh viễn +300 Máu tối đa, +120 Giáp chắn, và +40% Sát thương tổng thể!',
+    icon: 'Activity',
+    rarity: 'rare',
+    color: '#ef4444',
+    maxLevel: 8,
+    minPlayerLevel: 2
+  },
+  infinite_overdrive: {
+    id: 'infinite_overdrive',
+    nameVi: 'Quá Tải Băng Đạn Vô Tận',
+    descVi: 'Sau mỗi lần lướt Dash hoặc hạ quái lớn, kích hoạt 5 giây xả đạn vô tận không tốn đạn với tốc bắn +60%!',
+    icon: 'ChevronsUp',
+    rarity: 'legendary',
+    color: '#ec4899',
+    maxLevel: 3,
+    minPlayerLevel: 4
   }
 };
 
@@ -99,13 +149,31 @@ export const getRandomSkillDraft = (
   playerLevel: number = 1
 ): RoguelikeSkill[] => {
   const allSkills = Object.values(ROGUELIKE_SKILLS_DATABASE);
-  // Filter out maxed skills and skills requiring higher player level
+  
+  // At high levels (>= 5), prioritize the 1M Gold Millionaire card and High-tier cards
   const available = allSkills.filter(s => {
     const lvl = currentSkills[s.id] || 0;
     if (lvl >= s.maxLevel) return false;
     if (s.minPlayerLevel && playerLevel < s.minPlayerLevel) return false;
     return true;
   });
+
+  // If player is level >= 5 and hasn't picked 1M Gold Millionaire, give it high chance to show
+  if (playerLevel >= 5 && (currentSkills['gold_millionaire'] || 0) < 3) {
+    const goldSkill = allSkills.find(s => s.id === 'gold_millionaire');
+    if (goldSkill && !available.some(s => s.id === 'gold_millionaire')) {
+      available.unshift(goldSkill);
+    }
+  }
+
+  // Fallback if everything is maxed: always provide Midas Jackpot & Titan Berserk so cards never stop!
+  if (available.length === 0) {
+    return [
+      ROGUELIKE_SKILLS_DATABASE.midas_jackpot,
+      ROGUELIKE_SKILLS_DATABASE.titan_berserk,
+      ROGUELIKE_SKILLS_DATABASE.gold_millionaire
+    ];
+  }
 
   if (available.length <= 3) {
     return available;
@@ -118,6 +186,17 @@ export const getRandomSkillDraft = (
 
   if (dogSkill && dogLvl === 0 && Math.random() < 0.75) {
     selected.push(dogSkill);
+  }
+
+  // At high levels (>= 5), guarantee at least one legendary card like 1M Gold or Orbital Laser
+  if (playerLevel >= 5 && selected.length < 3) {
+    const highLevelLegendary = available.find(s => 
+      (s.id === 'gold_millionaire' || s.id === 'midas_jackpot' || s.id === 'orbital_laser') &&
+      !selected.some(sel => sel.id === s.id)
+    );
+    if (highLevelLegendary) {
+      selected.push(highLevelLegendary);
+    }
   }
 
   const remaining = available.filter(s => !selected.some(sel => sel.id === s.id));

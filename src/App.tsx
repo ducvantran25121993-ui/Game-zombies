@@ -364,8 +364,31 @@ export const App: React.FC = () => {
     setPlayer(prev => {
       const skills = { ...(prev.roguelikeSkills || {}) };
       skills[skill.id] = (skills[skill.id] || 0) + 1;
+
+      let bonusGold = 0;
+      let bonusMaxHp = 0;
+      let bonusHp = 0;
+      let bonusMaxArmor = 0;
+      let bonusArmor = 0;
+
+      if (skill.id === 'gold_millionaire') {
+        bonusGold = 1_000_000; // Directly add 1,000,000 Gold!
+      } else if (skill.id === 'midas_jackpot') {
+        bonusGold = 250_000;
+      } else if (skill.id === 'titan_berserk') {
+        bonusMaxHp = 300;
+        bonusHp = 300;
+        bonusMaxArmor = 120;
+        bonusArmor = 120;
+      }
+
       return {
         ...prev,
+        gold: prev.gold + bonusGold,
+        maxHp: prev.maxHp + bonusMaxHp,
+        hp: Math.min(prev.maxHp + bonusMaxHp, prev.hp + bonusHp),
+        maxArmor: (prev.maxArmor || 100) + bonusMaxArmor,
+        armor: (prev.armor || 0) + bonusArmor,
         roguelikeSkills: skills
       };
     });

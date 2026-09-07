@@ -298,7 +298,12 @@ export type RoguelikeSkillId =
   | 'twin_shot'
   | 'adrenaline_rush'
   | 'shockwave_armor'
-  | 'k9_war_dog';
+  | 'k9_war_dog'
+  | 'midas_jackpot'
+  | 'orbital_laser'
+  | 'titan_berserk'
+  | 'infinite_overdrive'
+  | 'gold_millionaire';
 
 export interface RoguelikeSkill {
   id: RoguelikeSkillId;

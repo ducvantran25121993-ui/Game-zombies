@@ -238,20 +238,31 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
 
           {/* Currency: Gold & Score */}
-          <div className="bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 rounded-xl border border-neutral-800/80 shadow-md flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[8.5px] sm:text-xs">
-              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
-              <span className="font-mono">{player.gold}</span>
+          <div className="bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2 py-1 landscape:py-0.5 rounded-xl landscape:rounded-lg border border-neutral-800/80 shadow-md flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="flex items-center gap-0.5 text-amber-400 font-black text-[8.5px] sm:text-xs landscape:text-[9px]">
+              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 landscape:w-2.5 landscape:h-2.5 text-amber-400 shrink-0" />
+              <span className="font-mono">
+                {player.gold >= 1_000_000 
+                  ? `${(player.gold / 1_000_000).toFixed(2)}M` 
+                  : player.gold >= 100_000 
+                  ? `${(player.gold / 1000).toFixed(1)}k` 
+                  : player.gold.toLocaleString()}
+              </span>
             </div>
             <div className="h-2.5 w-[1px] bg-neutral-800" />
-            <div className="flex items-center gap-0.5 text-white font-bold text-[7.5px] sm:text-[10px]">
-              <Award className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
-              <span className="font-mono">{player.score}</span>
+            <div className="flex items-center gap-0.5 text-white font-bold text-[7.5px] sm:text-[10px] landscape:text-[8.5px]">
+              <Award className="w-2.5 h-2.5 landscape:w-2 landscape:h-2 text-indigo-400 shrink-0" />
+              <span className="font-mono">
+                {player.score >= 1_000_000 
+                  ? `${(player.score / 1_000_000).toFixed(2)}M` 
+                  : player.score.toLocaleString()}
+              </span>
             </div>
           </div>
 
-          {/* Desktop Combat Shortcuts (Hidden on Mobile/Touch to prevent header overflow) */}
-          <div className="hidden md:flex items-center gap-1 shrink-0">
+          {/* Desktop Combat Shortcuts (Hidden completely on Touch devices to prevent mobile clutter) */}
+          {!isTouchDevice && (
+            <div className="hidden lg:flex items-center gap-1 shrink-0">
             {/* Quick Grenade Button */}
             <button
               onClick={onThrowGrenade}
@@ -334,21 +345,77 @@ export const HUD: React.FC<HUDProps> = ({
               );
             })()}
           </div>
+          )}
 
           {/* Primary System Actions: Missions (NV), Shop, Pause (ALWAYS visible, never cut off) */}
           <div className="flex items-center gap-1 shrink-0 ml-auto">
+            {/* Tactical Controls docked into Row 1 in Landscape mode */}
+            <div className="hidden landscape:flex items-center gap-1 shrink-0">
+              {/* Camera FOV Zoom Toggle Button */}
+              {onToggleCameraZoom && (
+                <button
+                  onClick={onToggleCameraZoom}
+                  className="px-1.5 py-0.5 rounded-lg bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 text-[8.5px] font-black text-cyan-300 backdrop-blur-md shadow-sm active:scale-95 flex items-center gap-0.5 pointer-events-auto"
+                  title="Thay đổi góc nhìn camera (Siêu rộng / Rộng / Chuẩn)"
+                >
+                  <span>🔍</span>
+                  <span>{cameraZoomMode === 'ultrawide' ? '0.5x' : cameraZoomMode === 'wide' ? '0.7x' : '1.0x'}</span>
+                </button>
+              )}
+
+              {/* Auto-Aim Quick Toggle */}
+              {onToggleAutoAim && (
+                <button
+                  onClick={onToggleAutoAim}
+                  className={`px-1.5 py-0.5 rounded-lg border text-[8.5px] font-black flex items-center gap-0.5 backdrop-blur-md shadow-sm transition-all active:scale-95 pointer-events-auto ${
+                    autoAimEnabled
+                      ? 'bg-emerald-500/25 border-emerald-400/80 text-emerald-300'
+                      : 'bg-neutral-900/90 border-neutral-700 text-neutral-400'
+                  }`}
+                  title="Bật/Tắt Tự Động Khóa Quái Gần Nhất"
+                >
+                  <Crosshair className={`w-2.5 h-2.5 ${autoAimEnabled ? 'text-emerald-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '6s' }} />
+                  <span>{autoAimEnabled ? 'TỰ NGẮM' : 'TẮT'}</span>
+                </button>
+              )}
+
+              {/* Tactical Radar Toggle Button */}
+              {radarData && (
+                <button
+                  onClick={() => setShowRadar(prev => !prev)}
+                  className={`px-1.5 py-0.5 rounded-lg border text-[8.5px] font-black flex items-center gap-0.5 backdrop-blur-md shadow-sm transition-all active:scale-95 pointer-events-auto ${
+                    showRadar
+                      ? 'bg-sky-500/25 border-sky-400/80 text-sky-300'
+                      : 'bg-neutral-900/90 border-neutral-700 text-neutral-500 hover:text-neutral-300'
+                  }`}
+                  title={showRadar ? 'Ẩn Radar để mở rộng tầm nhìn toàn cảnh' : 'Bật Radar GPS'}
+                >
+                  <Compass className={`w-2.5 h-2.5 ${showRadar ? 'text-sky-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '8s' }} />
+                  <span>RADAR</span>
+                </button>
+              )}
+
+              <button
+                onClick={onToggleMute}
+                className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto"
+                title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+              >
+                <Radio className={`w-2.5 h-2.5 ${isMuted ? 'text-neutral-500' : 'text-emerald-400'}`} />
+              </button>
+            </div>
+
             {/* Missions & Achievements Button */}
             {onOpenMissions && (
               <button
                 onClick={onOpenMissions}
-                className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
+                className={`px-1.5 sm:px-2 py-1 landscape:py-0.5 rounded-xl landscape:rounded-lg border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] landscape:text-[8.5px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
                   unclaimedMissionsCount > 0
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-400 shadow-indigo-500/40 animate-pulse'
                     : 'bg-neutral-950/90 border-indigo-500/60 text-indigo-300 hover:bg-neutral-900'
                 }`}
                 title="Xem Danh Sách Nhiệm Vụ & Thành Tựu"
               >
-                <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 shrink-0" />
+                <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3 landscape:w-2.5 landscape:h-2.5 text-indigo-400 shrink-0" />
                 <span>NV</span>
                 {unclaimedMissionsCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-600 text-white font-mono text-[8px] flex items-center justify-center border border-white animate-bounce">
@@ -361,14 +428,14 @@ export const HUD: React.FC<HUDProps> = ({
             {/* Quick Shop Button in Top Bar */}
             <button
               onClick={onOpenShop}
-              className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
+              className={`px-1.5 sm:px-2 py-1 landscape:py-0.5 rounded-xl landscape:rounded-lg border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] landscape:text-[8.5px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
                 canAffordAnything
                   ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 border-amber-300 animate-pulse shadow-amber-500/40'
                   : 'bg-neutral-950/90 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
               }`}
               title="Mở Cửa Hàng Trang Bị / Nâng Cấp (Phím B)"
             >
-              <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+              <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 landscape:w-2.5 landscape:h-2.5 shrink-0" />
               <span>SHOP</span>
               {canAffordAnything && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-600 animate-ping border border-white" />
@@ -378,10 +445,10 @@ export const HUD: React.FC<HUDProps> = ({
             {/* Dedicated Pause Button */}
             <button
               onClick={onPause}
-              className="px-1.5 sm:px-2 py-1 rounded-xl border border-amber-500/60 bg-neutral-950/90 hover:bg-amber-950/50 text-amber-300 hover:text-amber-200 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0"
+              className="px-1.5 sm:px-2 py-1 landscape:py-0.5 rounded-xl landscape:rounded-lg border border-amber-500/60 bg-neutral-950/90 hover:bg-amber-950/50 text-amber-300 hover:text-amber-200 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] landscape:text-[8.5px] font-black backdrop-blur-md pointer-events-auto shrink-0"
               title="Tạm Dừng Trò Chơi (Phím ESC hoặc P)"
             >
-              <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
+              <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 landscape:w-2.5 landscape:h-2.5 text-amber-400 fill-amber-400 shrink-0" />
               <span>DỪNG</span>
             </button>
           </div>
@@ -457,17 +524,43 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
             </div>
           ) : (
-            <div 
-              className="text-[7.5px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
-              style={{ color: currentMap.accentColor }}
-            >
-              <MapPin className="w-2.5 h-2.5" />
-              <span>{currentMap.nameVi}</span>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <div 
+                className="text-[7.5px] sm:text-[9px] font-bold px-2 py-0.5 rounded-lg border border-neutral-800 bg-neutral-950/80 flex items-center gap-1 shadow-sm shrink-0"
+                style={{ color: currentMap.accentColor }}
+              >
+                <MapPin className="w-2.5 h-2.5" />
+                <span>{currentMap.nameVi}</span>
+              </div>
+
+              {/* In Landscape: Dock Tracked Mission directly on Row 2 to free up the whole screen below! */}
+              {selectedMission && (
+                <div
+                  onClick={onOpenMissions}
+                  className={`hidden landscape:flex self-start pointer-events-auto cursor-pointer px-2 py-0.5 rounded-lg border backdrop-blur-md shadow-md transition-all active:scale-95 items-center gap-1.5 select-none group max-w-sm ${
+                    selectedMission.completed && !selectedMission.claimed
+                      ? 'bg-amber-950/90 border-amber-400/90 text-amber-200 animate-pulse'
+                      : 'bg-neutral-950/85 border-indigo-500/50 hover:border-indigo-400 text-neutral-200'
+                  }`}
+                  title="Bấm để chọn / đổi nhiệm vụ & tạm dừng trò chơi"
+                >
+                  <Target className={`w-2.5 h-2.5 shrink-0 ${selectedMission.completed ? 'text-amber-400 animate-bounce' : 'text-indigo-400'}`} />
+                  <span className="text-[7.5px] font-black uppercase text-indigo-300">MỤC TIÊU:</span>
+                  <span className="text-[8px] font-bold text-white truncate max-w-[130px]">{selectedMission.titleVi}</span>
+                  <span className="text-[7.5px] font-mono text-neutral-400">({selectedMission.current}/{selectedMission.target})</span>
+                  <div className="w-10 h-1 bg-neutral-900 rounded-full overflow-hidden border border-neutral-700 shrink-0">
+                    <div 
+                      className={`h-full ${selectedMission.completed ? 'bg-amber-400' : 'bg-indigo-500'}`}
+                      style={{ width: `${Math.min(100, Math.round((selectedMission.current / selectedMission.target) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Radar) aligned on the same row with clearance for Radar */}
-          <div className={`flex items-center gap-1 shrink-0 ml-auto transition-all ${showRadar ? 'landscape:mr-[108px] sm:landscape:mr-[116px]' : ''}`}>
+          {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Radar) in Portrait Mode only (In landscape they are in Row 1) */}
+          <div className="flex landscape:hidden items-center gap-1 shrink-0 ml-auto">
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
@@ -522,11 +615,11 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* ROW 3: Tracked Mission Objective Bar (Click to open missions & pause game) */}
+        {/* ROW 3: Tracked Mission Objective Bar (Portrait Only - in landscape it's already in Row 2) */}
         {selectedMission && (
           <div
             onClick={onOpenMissions}
-            className={`self-start pointer-events-auto cursor-pointer px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border backdrop-blur-md shadow-md transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 select-none group max-w-full sm:max-w-md ${
+            className={`landscape:hidden self-start pointer-events-auto cursor-pointer px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border backdrop-blur-md shadow-md transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 select-none group max-w-full sm:max-w-md ${
               selectedMission.completed && !selectedMission.claimed
                 ? 'bg-amber-950/90 border-amber-400/90 text-amber-200 animate-pulse'
                 : 'bg-neutral-950/85 border-indigo-500/50 hover:border-indigo-400 text-neutral-200'
@@ -584,14 +677,14 @@ export const HUD: React.FC<HUDProps> = ({
       {notification && (
         <div 
           onClick={onOpenShop}
-          className="self-center cursor-pointer pointer-events-auto bg-amber-500/95 hover:bg-amber-400 text-neutral-950 px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl border-2 border-yellow-200 shadow-[0_0_25px_rgba(245,158,11,0.7)] flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 animate-bounce relative group"
+          className="self-center cursor-pointer pointer-events-auto bg-amber-500/95 hover:bg-amber-400 text-neutral-950 px-3 py-1.5 sm:px-4 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-2xl landscape:rounded-xl border-2 border-yellow-200 shadow-[0_0_25px_rgba(245,158,11,0.7)] flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 animate-bounce relative group landscape:scale-90 landscape:-translate-y-4"
         >
-          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-950 shrink-0" />
+          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 landscape:w-3.5 landscape:h-3.5 text-neutral-950 shrink-0" />
           <div className="text-left">
-            <div className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
+            <div className="text-[10px] sm:text-xs landscape:text-[9px] font-black uppercase tracking-wider">
               {notification.title}
             </div>
-            <div className="text-[8px] sm:text-[10px] font-bold text-neutral-900">
+            <div className="text-[8px] sm:text-[10px] landscape:text-[7.5px] font-bold text-neutral-900">
               {notification.subtitle}
             </div>
           </div>
@@ -603,18 +696,18 @@ export const HUD: React.FC<HUDProps> = ({
             className="p-1 rounded-full hover:bg-neutral-950/20 text-neutral-900 ml-1 transition-colors"
             title="Đóng thông báo"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3.5 h-3.5 landscape:w-3 landscape:h-3" />
           </button>
         </div>
       )}
 
-      {/* CENTER COMBO MULTIPLIER NOTIFICATION */}
+      {/* CENTER COMBO MULTIPLIER NOTIFICATION (Offset and scaled down in landscape to protect center view) */}
       {player.combo > 1 && (
-        <div className="self-center flex flex-col items-center gap-0.5 animate-bounce">
-          <div className="text-lg sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-500 to-red-500 tracking-wider drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+        <div className="self-center flex flex-col items-center gap-0.5 animate-bounce landscape:scale-75 landscape:-translate-y-8 pointer-events-none">
+          <div className="text-lg sm:text-2xl md:text-3xl landscape:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-500 to-red-500 tracking-wider drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
             {player.combo}x COMBO SÁT THỦ!
           </div>
-          <div className="text-[9px] sm:text-[11px] text-amber-300 font-bold bg-neutral-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+          <div className="text-[9px] sm:text-[11px] landscape:text-[8px] text-amber-300 font-bold bg-neutral-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
             +{Math.round((player.multiplier - 1) * 100)}% Điểm thưởng
           </div>
         </div>
