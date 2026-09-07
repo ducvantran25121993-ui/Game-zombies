@@ -10,7 +10,6 @@ interface RenderZombieParams {
 export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombieParams) => {
   ctx.save();
   ctx.translate(z.x, z.y);
-  ctx.rotate(z.angle);
 
   const r = z.radius;
   const isBoss = Boolean(z.isBoss);
@@ -18,13 +17,22 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
   const hpRatio = Math.max(0, Math.min(1, z.hp / z.maxHp));
   const isWounded = hpRatio < 0.6;
 
-  // 1. ZOMBIE CONTACT SHADOW (Soft organic floor shadow)
+  // 1. DIRECTIONAL WORLD DROP SHADOW (2.5D Slanted to South-East ~45deg)
   ctx.save();
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.44)';
   ctx.beginPath();
-  ctx.ellipse(2, 4, r * 1.15, r * 0.85, 0, 0, Math.PI * 2);
+  // Elongated cast shadow matching stylized 3D survivor reference
+  ctx.ellipse(r * 0.75, r * 1.15, r * 1.45, r * 0.65, 0.45, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Dense contact shadow directly under zombie feet
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.52)';
+  ctx.beginPath();
+  ctx.ellipse(1, 3, r * 0.95, r * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  ctx.rotate(z.angle);
 
   // 2. ACID / SLIME TRAIL FOR SPITTER & BOSS
   if (z.type === 'spitter' || z.type === 'boss_abomination') {

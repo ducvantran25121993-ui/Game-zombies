@@ -365,7 +365,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     };
 
     if (mapId === 'street') {
-      // 1. Street: Abandoned Police cars, Taxis, Civilian SUVs, Trees, Sandbags & Barrels
+      // 1. Street: Abandoned Police cars, Taxis, Civilian SUVs, 2.5D Shipping Containers, Concrete Barriers, Trees & Barrels
       const vehicleConfigs = [
         { variant: 'police', color: '#18181b', x: 380, y: 340, angle: 0.25, width: 92, height: 50, hp: 350 },
         { variant: 'taxi', color: '#eab308', x: 760, y: 460, angle: -0.18, width: 88, height: 48, hp: 300 },
@@ -387,6 +387,82 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           hp: vc.hp,
           maxHp: vc.hp,
           isExplosive: true
+        });
+      });
+
+      // 2.5D Corrugated Shipping Containers (Yellow, Red, Blue)
+      const containerConfigs = [
+        { variant: 'yellow', color: '#f59e0b', x: 580, y: 520, angle: 0.36, width: 140, height: 74, hp: 800 },
+        { variant: 'red', color: '#dc2626', x: 490, y: 440, angle: 0.34, width: 130, height: 70, hp: 800 },
+        { variant: 'blue', color: '#2563eb', x: 520, y: 1540, angle: -0.22, width: 140, height: 74, hp: 800 },
+        { variant: 'yellow', color: '#f59e0b', x: 1960, y: 1460, angle: 0.18, width: 140, height: 74, hp: 800 }
+      ];
+      containerConfigs.forEach((c, idx) => {
+        obs.push({
+          id: `cont_${idx}`,
+          x: c.x,
+          y: c.y,
+          width: c.width,
+          height: c.height,
+          type: 'container',
+          variant: c.variant,
+          color: c.color,
+          angle: c.angle,
+          hp: c.hp,
+          maxHp: c.hp
+        });
+      });
+
+      // 2.5D Broken Concrete Jersey Barriers
+      const barrierConfigs = [
+        { x: 920, y: 680, angle: -0.42, width: 96, height: 36 },
+        { x: 1040, y: 620, angle: -0.45, width: 90, height: 36 },
+        { x: 1680, y: 1220, angle: 0.35, width: 98, height: 36 },
+        { x: 1560, y: 1280, angle: 0.38, width: 92, height: 36 }
+      ];
+      barrierConfigs.forEach((b, idx) => {
+        obs.push({
+          id: `barr_${idx}`,
+          x: b.x,
+          y: b.y,
+          width: b.width,
+          height: b.height,
+          type: 'concrete_barrier',
+          angle: b.angle,
+          hp: 500,
+          maxHp: 500
+        });
+      });
+
+      // 2.5D Industrial Corrugated Warehouse Roof
+      obs.push({
+        id: 'roof_corner_1',
+        x: 1820,
+        y: 1160,
+        width: 220,
+        height: 160,
+        type: 'corrugated_roof',
+        angle: 0.32,
+        hp: 1200,
+        maxHp: 1200
+      });
+
+      // 2.5D Rubble & Broken Stone Debris
+      const rubblePositions = [
+        { x: 620, y: 610 },
+        { x: 970, y: 730 },
+        { x: 1720, y: 1140 },
+        { x: 580, y: 1620 }
+      ];
+      rubblePositions.forEach((r, idx) => {
+        obs.push({
+          id: `rubble_${idx}`,
+          x: r.x,
+          y: r.y,
+          width: 50,
+          height: 50,
+          type: 'rubble',
+          hp: 9999
         });
       });
 
@@ -1756,7 +1832,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
         // Smooth sliding collision with obstacles (Circle vs AABB)
         for (const obs of state.obstacles) {
-          if ((obs.hp || 1) <= 0) continue;
+          if ((obs.hp || 1) <= 0 || obs.type === 'rubble') continue;
 
           // Test X movement independently to allow smooth sliding
           const clampX_X = Math.max(obs.x, Math.min(obs.x + obs.width, nextX));
@@ -1796,7 +1872,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Continuous unsticking / anti-trapping pass (e.g. from boss knockback / dash)
       for (const obs of state.obstacles) {
-        if ((obs.hp || 1) <= 0) continue;
+        if ((obs.hp || 1) <= 0 || obs.type === 'rubble') continue;
         const clampX = Math.max(obs.x, Math.min(obs.x + obs.width, p.x));
         const clampY = Math.max(obs.y, Math.min(obs.y + obs.height, p.y));
         const dx = p.x - clampX;
@@ -3030,9 +3106,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             continue;
           }
         } else {
-          // PLAYER & DRONE BULLETS: Check obstacle collision (Vehicles, Trees, Barrels, Crates)
+          // PLAYER & DRONE BULLETS: Check obstacle collision (Vehicles, Trees, Barrels, Crates, Containers)
           state.obstacles.forEach(obs => {
-            if ((obs.hp || 0) > 0) {
+            if ((obs.hp || 0) > 0 && obs.type !== 'rubble') {
               if (b.x > obs.x && b.x < obs.x + obs.width && b.y > obs.y && b.y < obs.y + obs.height) {
                 obs.hp = (obs.hp || 0) - b.damage;
                 if (obs.isExplosive && obs.hp <= 0 && !obs.exploded) {
@@ -4784,9 +4860,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       });
 
       // ==========================================
-      // DYNAMIC ATMOSPHERIC LIGHTING & TACTICAL FLASHLIGHT
+      // 2.5D ATMOSPHERIC VISION FOG OF WAR & TACTICAL FLASHLIGHT
+      // (Matching isometric survival shooter reference)
       // ==========================================
       ctx.save();
+      const visionRadius = 380;
+
+      // Soft Post-Apocalyptic Fog of War outside player vision circle
+      const fogGrad = ctx.createRadialGradient(
+        p.x, p.y, visionRadius * 0.68,
+        p.x, p.y, visionRadius * 1.35
+      );
+      fogGrad.addColorStop(0, 'rgba(15, 23, 42, 0)');
+      fogGrad.addColorStop(0.35, 'rgba(15, 23, 42, 0.16)');
+      fogGrad.addColorStop(0.78, 'rgba(2, 6, 23, 0.42)');
+      fogGrad.addColorStop(1, 'rgba(2, 6, 23, 0.62)');
+
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(p.x - 1200, p.y - 1200, 2400, 2400);
+
+      // Vision Boundary Ring (Luminous circle boundary as seen in reference image)
+      ctx.strokeStyle = 'rgba(224, 242, 254, 0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, visionRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
       // Forward Tactical Weapon Flashlight Beam (Cone)
       const flashDist = 380;
       const flashGrad = ctx.createRadialGradient(

@@ -15,16 +15,44 @@ export const renderObstacles = ({ ctx, obstacles, time }: RenderObstaclesParams)
     const cy = obs.y + obs.height / 2;
     const rot = obs.angle || 0;
 
-    // 1. DIRECTIONAL GROUND DROP SHADOW (2.5D Isometric Slanted Shadow)
+    // 1. DIRECTIONAL GROUND DROP SHADOW (2.5D Isometric Slanted Shadow to South-East)
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.46)';
     ctx.beginPath();
     if (obs.type === 'tree') {
-      ctx.ellipse(cx + 8, cy + 10, obs.width * 0.58, obs.height * 0.42, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(cx + 16, cy + 22, obs.width * 0.65, obs.height * 0.38, 0.38, 0, Math.PI * 2);
     } else if (obs.type === 'barrel') {
-      ctx.ellipse(cx + 4, cy + 6, obs.width * 0.55, obs.height * 0.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 10, cy + 14, obs.width * 0.6, obs.height * 0.36, 0.35, 0, Math.PI * 2);
+    } else if (obs.type === 'container') {
+      // 2.5D Slanted Box Cast Shadow
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      const halfW = obs.width / 2;
+      const halfH = obs.height / 2;
+      const sDx = 22;
+      const sDy = 26;
+      ctx.moveTo(-halfW, -halfH + 12);
+      ctx.lineTo(-halfW + sDx, -halfH + sDy);
+      ctx.lineTo(halfW + sDx, -halfH + sDy);
+      ctx.lineTo(halfW + sDx, halfH + sDy);
+      ctx.lineTo(halfW, halfH);
+      ctx.lineTo(-halfW, halfH);
+      ctx.closePath();
+    } else if (obs.type === 'concrete_barrier') {
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      const halfW = obs.width / 2;
+      const halfH = obs.height / 2;
+      const sDx = 14;
+      const sDy = 18;
+      ctx.moveTo(-halfW, -halfH + 6);
+      ctx.lineTo(-halfW + sDx, -halfH + sDy);
+      ctx.lineTo(halfW + sDx, -halfH + sDy);
+      ctx.lineTo(halfW + sDx, halfH + sDy);
+      ctx.lineTo(halfW, halfH);
+      ctx.closePath();
     } else {
-      ctx.translate(cx + 6, cy + 8);
+      ctx.translate(cx + 12, cy + 16);
       ctx.rotate(rot);
       ctx.fillRect(-obs.width / 2, -obs.height / 2, obs.width, obs.height);
     }
@@ -626,6 +654,243 @@ export const renderObstacles = ({ ctx, obstacles, time }: RenderObstaclesParams)
         ctx.fillRect(-halfW * 0.85, -12, 6, 12);
         ctx.fillRect(halfW * 0.35, 2, halfW * 0.5, 8);
         ctx.fillRect(halfW * 0.7, -6, 6, 12);
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // P. 2.5D CORRUGATED SHIPPING CONTAINERS (THÙNG CONTAINER NỔI KHỐI 3D)
+      // ---------------------------------------------------------------------
+      case 'container': {
+        const variantColor = obs.color || (obs.variant === 'red' ? '#dc2626' : obs.variant === 'blue' ? '#2563eb' : '#f59e0b');
+        const darkColor = obs.variant === 'red' ? '#991b1b' : obs.variant === 'blue' ? '#1d4ed8' : '#b45309';
+        const deepShadow = obs.variant === 'red' ? '#450a0a' : obs.variant === 'blue' ? '#0f172a' : '#451a03';
+        const highlightColor = obs.variant === 'red' ? '#f87171' : obs.variant === 'blue' ? '#60a5fa' : '#fde047';
+
+        const roofH = h * 0.72;
+        const frontH = h - roofH;
+
+        // Front Extruded 2.5D Face (facing south)
+        ctx.fillStyle = darkColor;
+        ctx.fillRect(-halfW, -halfH + roofH, w, frontH);
+        ctx.strokeStyle = deepShadow;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-halfW, -halfH + roofH, w, frontH);
+
+        // Front Face Vertical Corrugation Flutes
+        const fluteCount = Math.max(5, Math.floor(w / 8));
+        const fluteW = w / fluteCount;
+        for (let i = 0; i < fluteCount; i++) {
+          const fx = -halfW + i * fluteW;
+          ctx.fillStyle = i % 2 === 0 ? darkColor : deepShadow;
+          ctx.fillRect(fx, -halfH + roofH, fluteW, frontH);
+        }
+
+        // Door Lock Rods & Latch Handles on Front Face
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-halfW + 8, -halfH + roofH, 3, frontH);
+        ctx.fillRect(-halfW + 18, -halfH + roofH, 3, frontH);
+        ctx.fillRect(halfW - 20, -halfH + roofH, 3, frontH);
+        ctx.fillRect(halfW - 10, -halfH + roofH, 3, frontH);
+
+        // Top Corrugated Metal Roof (slanted perspective)
+        ctx.fillStyle = variantColor;
+        ctx.fillRect(-halfW, -halfH, w, roofH);
+
+        // Roof Corrugated Ridges
+        const roofRibCount = Math.max(6, Math.floor(w / 10));
+        const ribW = w / roofRibCount;
+        for (let i = 0; i < roofRibCount; i++) {
+          const rx = -halfW + i * ribW;
+          // Shaded ridge side
+          ctx.fillStyle = darkColor;
+          ctx.fillRect(rx, -halfH, ribW * 0.35, roofH);
+          // Highlight ridge crest
+          ctx.fillStyle = highlightColor;
+          ctx.fillRect(rx + ribW * 0.35, -halfH, ribW * 0.25, roofH);
+        }
+
+        // Outer Corner Casting Pillars (Heavy steel corner brackets)
+        ctx.fillStyle = deepShadow;
+        const cornerSize = 7;
+        // Top-left, top-right
+        ctx.fillRect(-halfW, -halfH, cornerSize, cornerSize);
+        ctx.fillRect(halfW - cornerSize, -halfH, cornerSize, cornerSize);
+        // Mid-front corners
+        ctx.fillRect(-halfW, -halfH + roofH - cornerSize / 2, cornerSize, cornerSize + frontH);
+        ctx.fillRect(halfW - cornerSize, -halfH + roofH - cornerSize / 2, cornerSize, cornerSize + frontH);
+
+        // Corner twist lock holes
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(-halfW + cornerSize / 2, -halfH + cornerSize / 2, 1.8, 0, Math.PI * 2);
+        ctx.arc(halfW - cornerSize / 2, -halfH + cornerSize / 2, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ISO Container Stencil Code Markings on Roof
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.font = 'bold 7.5px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('MSKU-892041', halfW - 10, -halfH + 14);
+        ctx.font = '900 6px monospace';
+        ctx.fillText('MAX 30480 KG', halfW - 10, -halfH + 24);
+        ctx.restore();
+
+        // Weathering Rust & Grime on Edges
+        ctx.strokeStyle = 'rgba(69, 26, 3, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-halfW, -halfH, w, roofH);
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // Q. 2.5D BROKEN CONCRETE ROAD BARRIERS (RÀO CHẮN BÊ TÔNG JERSEY VỠ)
+      // ---------------------------------------------------------------------
+      case 'concrete_barrier': {
+        const topH = h * 0.45;
+        const sideH = h - topH;
+
+        // Front Face (darker side facing viewer)
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-halfW, -halfH + topH, w, sideH);
+
+        // Caution Hazard Diagonal Stripes (Yellow / Black on middle segment)
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-halfW + 6, -halfH + topH + 2, w - 12, sideH - 4);
+        ctx.clip();
+        const stripeW = 10;
+        for (let sx = -halfW; sx < halfW + sideH; sx += stripeW * 2) {
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(sx, -halfH + topH + sideH);
+          ctx.lineTo(sx + stripeW, -halfH + topH + sideH);
+          ctx.lineTo(sx + stripeW + sideH, -halfH + topH);
+          ctx.lineTo(sx + sideH, -halfH + topH);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.moveTo(sx + stripeW, -halfH + topH + sideH);
+          ctx.lineTo(sx + stripeW * 2, -halfH + topH + sideH);
+          ctx.lineTo(sx + stripeW * 2 + sideH, -halfH + topH);
+          ctx.lineTo(sx + stripeW + sideH, -halfH + topH);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Top Slanted Concrete Surface (lighter sunlit bevel)
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.moveTo(-halfW, -halfH);
+        ctx.lineTo(halfW, -halfH);
+        ctx.lineTo(halfW, -halfH + topH);
+        ctx.lineTo(-halfW, -halfH + topH);
+        ctx.closePath();
+        ctx.fill();
+
+        // Chipped Concrete Cracks & Irregular Damaged Corner
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(halfW - 14, -halfH);
+        ctx.lineTo(halfW, -halfH + 6);
+        ctx.lineTo(halfW, -halfH);
+        ctx.closePath();
+        ctx.fill();
+
+        // Exposed Rusted Steel Rebar Rods sticking out
+        ctx.strokeStyle = '#9a3412';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(halfW - 8, -halfH + 2);
+        ctx.lineTo(halfW + 5, -halfH - 4);
+        ctx.moveTo(halfW - 5, -halfH + 8);
+        ctx.lineTo(halfW + 7, -halfH + 5);
+        ctx.stroke();
+
+        // Concrete Seam Outline
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-halfW, -halfH, w, h);
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // R. 2.5D CORRUGATED METAL WAREHOUSE ROOF (MÁI TÔN KIM LOẠI NHÀ XƯỞNG)
+      // ---------------------------------------------------------------------
+      case 'corrugated_roof': {
+        // Main Corrugated Roof Slab
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-halfW, -halfH, w, h);
+
+        // Corrugation Waves (slanted industrial sheet metal)
+        const waveStep = 12;
+        for (let wx = -halfW; wx < halfW; wx += waveStep) {
+          // Highlight crest
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(wx, -halfH, waveStep * 0.45, h);
+          // Shadow valley
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(wx + waveStep * 0.45, -halfH, waveStep * 0.55, h);
+        }
+
+        // Roof Edge Fascia Trim (Thick outer gutter border)
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-halfW, halfH - 6, w, 6);
+        ctx.fillRect(halfW - 6, -halfH, 6, h);
+
+        // Screw Rivets along roof seams
+        ctx.fillStyle = '#cbd5e1';
+        for (let rx = -halfW + 6; rx < halfW; rx += 24) {
+          ctx.beginPath();
+          ctx.arc(rx, -halfH + 5, 1.5, 0, Math.PI * 2);
+          ctx.arc(rx, halfH - 8, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-halfW, -halfH, w, h);
+        break;
+      }
+
+      // ---------------------------------------------------------------------
+      // S. 2.5D RUBBLE & BROKEN CONCRETE CHUNKS (GẠCH ĐÁ ĐỔ NÁT TÀN TÍCH)
+      // ---------------------------------------------------------------------
+      case 'rubble': {
+        // Multi-faceted 3D stone chunks
+        const stones = [
+          { dx: -halfW * 0.4, dy: -halfH * 0.3, r: Math.min(w, h) * 0.38, color: '#64748b' },
+          { dx: halfW * 0.3, dy: halfH * 0.2, r: Math.min(w, h) * 0.32, color: '#475569' },
+          { dx: -halfW * 0.2, dy: halfH * 0.4, r: Math.min(w, h) * 0.22, color: '#94a3b8' },
+          { dx: halfW * 0.4, dy: -halfH * 0.2, r: Math.min(w, h) * 0.24, color: '#334155' }
+        ];
+
+        stones.forEach(st => {
+          ctx.fillStyle = st.color;
+          ctx.beginPath();
+          ctx.moveTo(st.dx - st.r, st.dy);
+          ctx.lineTo(st.dx - st.r * 0.4, st.dy - st.r);
+          ctx.lineTo(st.dx + st.r * 0.7, st.dy - st.r * 0.6);
+          ctx.lineTo(st.dx + st.r, st.dy + st.r * 0.3);
+          ctx.lineTo(st.dx, st.dy + st.r);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          // Highlight facet
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.beginPath();
+          ctx.moveTo(st.dx - st.r * 0.4, st.dy - st.r);
+          ctx.lineTo(st.dx + st.r * 0.7, st.dy - st.r * 0.6);
+          ctx.lineTo(st.dx, st.dy);
+          ctx.closePath();
+          ctx.fill();
+        });
         break;
       }
 

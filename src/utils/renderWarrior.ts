@@ -80,17 +80,35 @@ export const renderWarrior = ({
     }
   }
 
-  // 2. AAA REALISTIC DIRECTIONAL AMBIENT OCCLUSION & DROP SHADOW
+  // 2. AAA REALISTIC DIRECTIONAL AMBIENT OCCLUSION & DROP SHADOW (Slanted South-East 2.5D Shadow)
   ctx.save();
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  // Long directional cast shadow to South-East
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.48)';
   ctx.beginPath();
-  ctx.ellipse(3, 8, p.radius * 1.35, p.radius * 0.92, 0.22, 0, Math.PI * 2);
+  ctx.ellipse(12, 18, p.radius * 1.55, p.radius * 0.72, 0.42, 0, Math.PI * 2);
   ctx.fill();
 
-  // Core dense shadow right under center of mass
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  // Core dense contact shadow under feet
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
   ctx.beginPath();
-  ctx.ellipse(1, 3, p.radius * 0.95, p.radius * 0.75, 0, 0, Math.PI * 2);
+  ctx.ellipse(2, 4, p.radius * 1.05, p.radius * 0.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 2.1 TACTICAL CYAN GROUND AURA RING (Matching 2.5D mobile survivor reference)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = '#0284c7';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Inner faint cyan glow fill
+  ctx.fillStyle = 'rgba(14, 165, 233, 0.12)';
+  ctx.beginPath();
+  ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
@@ -897,6 +915,32 @@ const renderDetailedWeapon = (
 
     ctx.restore();
   }
+
+  // 6. IN-WORLD TACTICAL AMMO BADGE (Matching 2.5D survivor reference: bullet icon + clip ammo)
+  ctx.save();
+  const badgeX = 18;
+  const badgeY = 6;
+  // Mini golden bullet cartridge icon
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(badgeX, badgeY - 7, 5, 10, 1.5);
+  } else {
+    ctx.rect(badgeX, badgeY - 7, 5, 10);
+  }
+  ctx.fill();
+  ctx.fillStyle = '#fef08a';
+  ctx.fillRect(badgeX + 1, badgeY - 7, 2, 3.5);
+
+  // Remaining Ammo Text
+  ctx.font = '900 10.5px monospace, system-ui';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = '#000000';
+  ctx.shadowBlur = 4;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${wep.currentMag}`, badgeX + 8, badgeY - 1);
+  ctx.restore();
 
   ctx.restore();
 };

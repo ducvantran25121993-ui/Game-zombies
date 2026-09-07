@@ -265,7 +265,11 @@ export type ObstacleType =
   | 'magma_rock'
   | 'barrier'
   | 'satellite'
-  | 'cactus';
+  | 'cactus'
+  | 'container'
+  | 'concrete_barrier'
+  | 'corrugated_roof'
+  | 'rubble';
 
 export interface Obstacle {
   id: string;
