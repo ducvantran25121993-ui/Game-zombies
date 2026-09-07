@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem, GameViewMode, ArenaEventState } from '../types/game';
+import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie, DropItem, GameViewMode, ArenaEventState, Mission } from '../types/game';
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
@@ -38,6 +38,7 @@ interface HUDProps {
   onOpenMissions?: () => void;
   unclaimedMissionsCount?: number;
   currentArenaEvent?: ArenaEventState | null;
+  selectedMission?: Mission | null;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -68,7 +69,8 @@ export const HUD: React.FC<HUDProps> = ({
   radarData,
   onOpenMissions,
   unclaimedMissionsCount = 0,
-  currentArenaEvent = null
+  currentArenaEvent = null,
+  selectedMission = null
 }) => {
   const hpPercent = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
   const armorPercent = Math.max(0, Math.min(100, (player.armor / player.maxArmor) * 100));
@@ -519,6 +521,53 @@ export const HUD: React.FC<HUDProps> = ({
             </button>
           </div>
         </div>
+
+        {/* ROW 3: Tracked Mission Objective Bar (Click to open missions & pause game) */}
+        {selectedMission && (
+          <div
+            onClick={onOpenMissions}
+            className={`self-start pointer-events-auto cursor-pointer px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border backdrop-blur-md shadow-md transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 select-none group max-w-full sm:max-w-md ${
+              selectedMission.completed && !selectedMission.claimed
+                ? 'bg-amber-950/90 border-amber-400/90 text-amber-200 animate-pulse'
+                : 'bg-neutral-950/85 border-indigo-500/50 hover:border-indigo-400 text-neutral-200'
+            }`}
+            title="Bấm để chọn / đổi nhiệm vụ & tạm dừng trò chơi"
+          >
+            <div className="flex items-center gap-1 shrink-0">
+              <Target className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${selectedMission.completed ? 'text-amber-400 animate-bounce' : 'text-indigo-400'}`} />
+              <span className="text-[8px] sm:text-[9.5px] font-black uppercase text-indigo-300">
+                MỤC TIÊU:
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+              <span className="text-[8.5px] sm:text-[10px] font-black text-white truncate">
+                {selectedMission.titleVi}
+              </span>
+              {selectedMission.completed && !selectedMission.claimed ? (
+                <span className="px-1.5 py-0.2 rounded bg-amber-500 text-neutral-950 font-black text-[7.5px] sm:text-[8.5px] shrink-0 animate-bounce">
+                  NHẬN THƯỞNG!
+                </span>
+              ) : (
+                <span className="text-[7.5px] sm:text-[9px] font-mono text-neutral-400 shrink-0">
+                  ({selectedMission.current}/{selectedMission.target})
+                </span>
+              )}
+            </div>
+
+            {/* Mini progress bar */}
+            <div className="w-10 sm:w-14 h-1.5 bg-neutral-900 rounded-full overflow-hidden border border-neutral-700 shrink-0">
+              <div 
+                className={`h-full transition-all duration-300 ${selectedMission.completed ? 'bg-amber-400' : 'bg-indigo-500'}`}
+                style={{ width: `${Math.min(100, Math.round((selectedMission.current / selectedMission.target) * 100))}%` }}
+              />
+            </div>
+
+            <span className="text-[7px] sm:text-[8px] font-bold text-indigo-300/80 uppercase hidden xs:inline shrink-0 group-hover:text-white">
+              [TẠM DỪNG / ĐỔI]
+            </span>
+          </div>
+        )}
       </div>
 
       {/* TACTICAL MINIMAP RADAR (Optimized for both Portrait and Landscape Viewports) */}

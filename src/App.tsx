@@ -41,6 +41,40 @@ export const App: React.FC = () => {
   const [recordStats, setRecordStats] = useState<GameRecordStats>(() => loadRecordStats());
   const [radarData, setRadarData] = useState<{ zombies: Zombie[]; drops: DropItem[] }>({ zombies: [], drops: [] });
 
+  // Selected / Tracked Tactical Mission
+  const SELECTED_MISSION_KEY = 'zombie_outbreak_selected_mission_id';
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(SELECTED_MISSION_KEY) || 'first_blood';
+    } catch {
+      return 'first_blood';
+    }
+  });
+
+  const handleSelectMission = useCallback((missionId: string | null) => {
+    setSelectedMissionId(missionId);
+    soundManager.playPowerUp();
+    try {
+      if (missionId) {
+        localStorage.setItem(SELECTED_MISSION_KEY, missionId);
+      } else {
+        localStorage.removeItem(SELECTED_MISSION_KEY);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleOpenMissions = useCallback(() => {
+    setIsPaused(true);
+    setIsMissionsOpen(true);
+  }, []);
+
+  const handleCloseMissions = useCallback(() => {
+    setIsMissionsOpen(false);
+    setIsPaused(false);
+  }, []);
+
   // Persistent Player Profile (Character Name & Saved Level)
   const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(() => loadPlayerProfile());
 
@@ -850,7 +884,7 @@ export const App: React.FC = () => {
           }}
           selectedMapId={selectedMapId}
           onSelectMap={(id) => setSelectedMapId(id)}
-          onOpenMissions={() => setIsMissionsOpen(true)}
+          onOpenMissions={handleOpenMissions}
           unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
           playerProfile={playerProfile}
           onUpdatePlayerProfile={(updated) => setPlayerProfile(prev => ({ ...prev, ...updated }))}
@@ -885,7 +919,7 @@ export const App: React.FC = () => {
             mode={mode}
             selectedMapId={selectedMapId}
             onMapChange={handleMapChange}
-            isPaused={isPaused || isSkillDraftOpen}
+            isPaused={isPaused || isSkillDraftOpen || isMissionsOpen}
             isShopOpen={isShopOpen}
             onGameOver={handleGameOver}
             touchMoveInput={touchMoveInput}
@@ -926,8 +960,9 @@ export const App: React.FC = () => {
             autoAimEnabled={autoAimEnabled}
             onToggleAutoAim={() => setAutoAimEnabled(prev => !prev)}
             radarData={radarData}
-            onOpenMissions={() => setIsMissionsOpen(true)}
+            onOpenMissions={handleOpenMissions}
             unclaimedMissionsCount={missions.filter(m => m.completed && !m.claimed).length}
+            selectedMission={missions.find(m => m.id === selectedMissionId) || null}
             currentArenaEvent={currentArenaEvent}
             onThrowGrenade={() => {
               if (player.grenadeCount > 0) {
@@ -1016,10 +1051,12 @@ export const App: React.FC = () => {
       {/* Missions & Hall of Fame Records Modal */}
       <MissionsModal
         isOpen={isMissionsOpen}
-        onClose={() => setIsMissionsOpen(false)}
+        onClose={handleCloseMissions}
         missions={missions}
         onClaimReward={handleClaimReward}
         recordStats={recordStats}
+        selectedMissionId={selectedMissionId}
+        onSelectMission={handleSelectMission}
       />
 
       {/* 3. GAME OVER MODAL */}

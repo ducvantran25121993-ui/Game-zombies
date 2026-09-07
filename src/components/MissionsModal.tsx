@@ -17,6 +17,8 @@ interface MissionsModalProps {
   achievements?: Achievement[];
   onClaimAchievement?: (achievementId: string) => void;
   initialTab?: 'missions' | 'achievements' | 'bestiary' | 'records';
+  selectedMissionId?: string | null;
+  onSelectMission?: (missionId: string | null) => void;
 }
 
 export const MissionsModal: React.FC<MissionsModalProps> = ({
@@ -27,7 +29,9 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
   recordStats,
   achievements = [],
   onClaimAchievement = () => {},
-  initialTab = 'missions'
+  initialTab = 'missions',
+  selectedMissionId = null,
+  onSelectMission
 }) => {
   const [activeTab, setActiveTab] = useState<'missions' | 'achievements' | 'bestiary' | 'records'>(initialTab);
 
@@ -156,17 +160,17 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
           ) : activeTab === 'missions' ? (
             <div className="space-y-3">
               {/* Hardcore Difficulty Notice Banner */}
-              <div className="p-3 rounded-xl bg-gradient-to-r from-red-950/40 via-purple-950/30 to-amber-950/20 border border-red-800/40 flex items-center justify-between gap-3">
+              <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-amber-950/20 border border-indigo-700/50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-red-950/80 border border-red-600/60 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+                  <div className="w-8 h-8 rounded-lg bg-indigo-950/80 border border-indigo-500/60 flex items-center justify-center shrink-0">
+                    <Target className="w-4 h-4 text-indigo-400 animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-black text-red-200 tracking-wide uppercase flex items-center gap-1.5">
-                      CHIẾN DỊCH KHÓ: THỬ THÁCH & TIỀN THƯỞNG CAO
+                    <h4 className="text-xs sm:text-sm font-black text-white tracking-wide uppercase flex items-center gap-1.5">
+                      ⏸️ GAME ĐÃ TẠM DỪNG — CHỌN MỤC TIÊU TÁC CHIẾN
                     </h4>
-                    <p className="text-[10px] sm:text-xs text-neutral-400">
-                      Chỉ tiêu nhiệm vụ đã được nâng lên mức tử thần với phần thưởng Vàng dồi dào tương xứng!
+                    <p className="text-[10px] sm:text-xs text-indigo-200">
+                      Bấm nút <span className="text-amber-300 font-bold">"CHỌN"</span> để ghim nhiệm vụ ưu tiên lên màn hình HUD trong trận, sau đó đóng bảng để tiếp tục chiến đấu!
                     </p>
                   </div>
                 </div>
@@ -178,11 +182,15 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
 
               {missions.map(m => {
                 const progressPct = Math.min(100, Math.round((m.current / m.target) * 100));
+                const isSelected = selectedMissionId === m.id;
                 return (
                   <div
                     key={m.id}
-                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                      m.claimed
+                    onClick={() => onSelectMission && onSelectMission(isSelected ? null : m.id)}
+                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-950/40 border-indigo-400 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-400/50'
+                        : m.claimed
                         ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
                         : m.completed
                         ? 'bg-amber-950/30 border-amber-500/60 shadow-lg shadow-amber-500/10'
@@ -192,13 +200,20 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 shrink-0">
+                      <div className={`p-2.5 rounded-xl border shrink-0 ${isSelected ? 'bg-indigo-950 border-indigo-400 text-indigo-300' : 'bg-neutral-950 border-neutral-800'}`}>
                         {getMissionIcon(m.icon)}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-xs sm:text-sm font-black text-white">{m.titleVi}</h4>
                           
+                          {/* Selected Badge */}
+                          {isSelected && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-400 text-indigo-300 font-black tracking-wider uppercase flex items-center gap-1 shadow-sm">
+                              <Target className="w-2.5 h-2.5 text-indigo-400" /> MỤC TIÊU ĐANG CHỌN
+                            </span>
+                          )}
+
                           {/* Difficulty Badge */}
                           {m.difficulty === 'nightmare' ? (
                             <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950/80 border border-red-600/80 text-red-300 font-extrabold tracking-wider uppercase shadow-sm shadow-red-500/30 flex items-center gap-0.5 animate-pulse">
@@ -229,6 +244,8 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                               className={`h-full transition-all duration-300 ${
                                 m.completed 
                                   ? 'bg-amber-400' 
+                                  : isSelected
+                                  ? 'bg-indigo-400'
                                   : m.difficulty === 'nightmare' 
                                   ? 'bg-rose-500' 
                                   : 'bg-sky-500'
@@ -244,15 +261,39 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                     </div>
 
                     {/* Reward & Action */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-800/80">
+                    <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-800/80">
                       <div className="flex items-center gap-1 font-black text-amber-400 text-xs sm:text-sm">
                         <DollarSign className="w-3.5 h-3.5 text-amber-400" />
                         <span>+{m.rewardGold.toLocaleString()} Vàng</span>
                       </div>
 
+                      {/* Select / Pin Mission Button */}
+                      {onSelectMission && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectMission(isSelected ? null : m.id);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 shrink-0 ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/30 hover:bg-indigo-500'
+                              : 'bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 active:scale-95'
+                          }`}
+                          title={isSelected ? 'Bỏ ghim nhiệm vụ này' : 'Chọn ghim nhiệm vụ này'}
+                        >
+                          <Target className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-indigo-400'}`} />
+                          <span>{isSelected ? 'ĐÃ CHỌN' : 'CHỌN'}</span>
+                        </button>
+                      )}
+
                       {m.completed && !m.claimed ? (
                         <button
-                          onClick={() => onClaimReward(m.id)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClaimReward(m.id);
+                          }}
                           className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 font-black text-xs hover:brightness-110 active:scale-95 transition-all shadow-md shadow-amber-500/30 flex items-center gap-1 shrink-0"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
