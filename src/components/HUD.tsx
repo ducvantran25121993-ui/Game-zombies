@@ -101,6 +101,19 @@ export const HUD: React.FC<HUDProps> = ({
   // Radar visibility state (allows player to show/hide to prevent obscuring other HUD elements)
   const [showRadar, setShowRadar] = useState(true);
 
+  // Detect touch devices to avoid rendering desktop-only widgets over virtual sticks
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const detect = () => {
+      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      setIsTouchDevice(Boolean(hasTouch));
+    };
+    detect();
+    window.addEventListener('resize', detect);
+    return () => window.removeEventListener('resize', detect);
+  }, []);
+
   // 5-second Auto-Dismiss Notification System for newly affordable weapons/gear
   const [notification, setNotification] = useState<{ id: string; title: string; subtitle: string } | null>(null);
   const lastNotifiedItemRef = useRef<string | null>(null);
@@ -133,7 +146,7 @@ export const HUD: React.FC<HUDProps> = ({
   }, []);
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] px-[max(0.5rem,env(safe-area-inset-left,0px))] sm:p-4 md:p-6 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between pt-[max(0.35rem,env(safe-area-inset-top,0px))] pb-[max(0.35rem,env(safe-area-inset-bottom,0px))] pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.5rem,env(safe-area-inset-right,0px))] lg:p-4 overflow-hidden">
       {/* Red Low HP Vignette Warning */}
       {isLowHp && (
         <div className="absolute inset-0 border-4 sm:border-8 border-red-600/40 animate-pulse pointer-events-none shadow-[inset_0_0_60px_rgba(239,68,68,0.5)]" />
@@ -288,10 +301,10 @@ export const HUD: React.FC<HUDProps> = ({
               <span className="font-mono">[X]</span>
             </button>
 
-            {/* Deploy Sentry Turret Button */}
+            {/* Deploy Sentry Turret Button (Desktop Only) */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('deploy-turret'))}
-              className="px-1.5 sm:px-2 py-1 rounded-xl border border-purple-500/50 bg-purple-950/80 hover:bg-purple-900 text-purple-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden md:flex items-center gap-1"
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-purple-500/50 bg-purple-950/80 hover:bg-purple-900 text-purple-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden lg:flex items-center gap-1"
               title="Đặt Tháp súng tự động Sentry [Phím T] (350 Vàng nếu không có sẵn)"
             >
               <span>🛡️ THÁP [T]</span>
@@ -300,10 +313,10 @@ export const HUD: React.FC<HUDProps> = ({
               )}
             </button>
 
-            {/* Deploy Electric Trap Button */}
+            {/* Deploy Electric Trap Button (Desktop Only) */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('deploy-trap'))}
-              className="px-1.5 sm:px-2 py-1 rounded-xl border border-sky-500/50 bg-sky-950/80 hover:bg-sky-900 text-sky-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden md:flex items-center gap-1"
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-sky-500/50 bg-sky-950/80 hover:bg-sky-900 text-sky-200 text-[8px] sm:text-[9px] font-black active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden lg:flex items-center gap-1"
               title="Đặt Bẫy điện từ trường [Phím Y] (250 Vàng nếu không có sẵn)"
             >
               <span>⚡ BẪY [Y]</span>
@@ -438,8 +451,8 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           )}
 
-          {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Pause) aligned on the same row */}
-          <div className="flex items-center gap-1 shrink-0 ml-auto">
+          {/* Tactical Controls (Zoom 0.7x, Auto-Aim, Sound, Radar) aligned on the same row with clearance for Radar */}
+          <div className={`flex items-center gap-1 shrink-0 ml-auto transition-all ${showRadar ? 'landscape:mr-[108px] sm:landscape:mr-[116px]' : ''}`}>
             {/* Camera FOV Zoom Toggle Button */}
             {onToggleCameraZoom && (
               <button
@@ -491,21 +504,13 @@ export const HUD: React.FC<HUDProps> = ({
             >
               <Radio className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${isMuted ? 'text-neutral-500' : 'text-emerald-400'}`} />
             </button>
-
-            <button
-              onClick={onPause}
-              className="px-2 py-0.5 sm:py-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto font-mono text-[8.5px] sm:text-[10px] font-bold"
-              title="Tạm dừng game"
-            >
-              II
-            </button>
           </div>
         </div>
       </div>
 
-      {/* TACTICAL MINIMAP RADAR (Safely Positioned Below Header Controls) */}
+      {/* TACTICAL MINIMAP RADAR (Optimized for both Portrait and Landscape Viewports) */}
       {radarData && showRadar && (
-        <div className="absolute top-[88px] sm:top-[94px] right-2 sm:right-4 z-20 pointer-events-auto">
+        <div className="absolute top-[88px] landscape:top-[42px] sm:landscape:top-[46px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-20 pointer-events-auto">
           <MiniMapRadar
             player={player}
             zombies={radarData.zombies}
@@ -587,80 +592,82 @@ export const HUD: React.FC<HUDProps> = ({
         )}
       </div>
 
-      {/* BOTTOM FOOTER: Desktop Only Full Weapon Info (Hidden on Mobile to keep screen 100% clean) */}
-      <div className="hidden sm:flex flex-col gap-2 w-full max-w-7xl mx-auto pointer-events-auto pb-0">
-        <div className="flex items-end justify-between gap-4 w-full">
-          {/* Left: Grenades & Quick Keybinds */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onThrowGrenade}
-              disabled={player.grenadeCount <= 0}
-              className={`p-2.5 sm:p-3 rounded-2xl backdrop-blur-md border flex flex-col items-center gap-1 shadow-2xl transition-all ${
-                player.grenadeCount > 0
-                  ? 'bg-neutral-950/85 hover:bg-neutral-900 border-amber-500/50 text-amber-400 hover:scale-105 active:scale-95'
-                  : 'bg-neutral-950/50 border-neutral-800 text-neutral-600 cursor-not-allowed'
-              }`}
-              title="Ném Lựu đạn (Phím G hoặc E)"
-            >
-              <div className="flex items-center gap-1">
-                <Bomb className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-                <span className="font-black text-xs sm:text-sm font-mono text-white">x{player.grenadeCount}</span>
-              </div>
-              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-neutral-400">Lựu đạn [G/E]</span>
-            </button>
-          </div>
-
-          {/* Right: Active Weapon & Ammo HUD */}
-          <div className="bg-neutral-950/90 backdrop-blur-md p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-neutral-800 shadow-2xl flex items-center gap-3 sm:gap-4 ml-auto">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-wider">VŨ KHÍ</span>
-                <span className="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
-                  LV.{currentWeapon.level}
-                </span>
-              </div>
-              <span className="text-sm sm:text-lg font-black text-white flex items-center gap-1 sm:gap-1.5 truncate max-w-[120px] sm:max-w-none" style={{ color: currentWeapon.color }}>
-                <Crosshair className="w-4 h-4 shrink-0" />
-                {currentWeapon.nameVi}
-              </span>
-              <span className="text-[10px] text-neutral-400 font-mono">
-                ST: {currentWeapon.damage} • {(1000 / currentWeapon.fireRate).toFixed(1)}v/s
-              </span>
+      {/* BOTTOM FOOTER: Desktop Only Full Weapon Info (Strictly hidden on touch devices to prevent overlapping virtual controls) */}
+      {!isTouchDevice && (
+        <div className="hidden lg:flex flex-col gap-2 w-full max-w-7xl mx-auto pointer-events-auto pb-0">
+          <div className="flex items-end justify-between gap-4 w-full">
+            {/* Left: Grenades & Quick Keybinds */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onThrowGrenade}
+                disabled={player.grenadeCount <= 0}
+                className={`p-2.5 sm:p-3 rounded-2xl backdrop-blur-md border flex flex-col items-center gap-1 shadow-2xl transition-all ${
+                  player.grenadeCount > 0
+                    ? 'bg-neutral-950/85 hover:bg-neutral-900 border-amber-500/50 text-amber-400 hover:scale-105 active:scale-95'
+                    : 'bg-neutral-950/50 border-neutral-800 text-neutral-600 cursor-not-allowed'
+                }`}
+                title="Ném Lựu đạn (Phím G hoặc E)"
+              >
+                <div className="flex items-center gap-1">
+                  <Bomb className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+                  <span className="font-black text-xs sm:text-sm font-mono text-white">x{player.grenadeCount}</span>
+                </div>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-neutral-400">Lựu đạn [G/E]</span>
+              </button>
             </div>
 
-            <div className="h-8 sm:h-10 w-[1px] bg-neutral-800" />
+            {/* Right: Active Weapon & Ammo HUD */}
+            <div className="bg-neutral-950/90 backdrop-blur-md p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-neutral-800 shadow-2xl flex items-center gap-3 sm:gap-4 ml-auto">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-wider">VŨ KHÍ</span>
+                  <span className="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
+                    LV.{currentWeapon.level}
+                  </span>
+                </div>
+                <span className="text-sm sm:text-lg font-black text-white flex items-center gap-1 sm:gap-1.5 truncate max-w-[120px] sm:max-w-none" style={{ color: currentWeapon.color }}>
+                  <Crosshair className="w-4 h-4 shrink-0" />
+                  {currentWeapon.nameVi}
+                </span>
+                <span className="text-[10px] text-neutral-400 font-mono">
+                  ST: {currentWeapon.damage} • {(1000 / currentWeapon.fireRate).toFixed(1)}v/s
+                </span>
+              </div>
 
-            {/* Ammo Display */}
-            <div className="flex flex-col items-end min-w-[70px] sm:min-w-[80px]">
-              {isReloading ? (
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-[10px] sm:text-xs font-bold text-amber-400 flex items-center gap-1 animate-pulse">
-                    <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin text-amber-400" /> NẠP...
-                  </span>
-                  <div className="h-1.5 sm:h-2 w-16 sm:w-24 bg-neutral-900 rounded-full overflow-hidden border border-amber-900/60">
-                    <div 
-                      className="h-full bg-amber-400 transition-all duration-75 rounded-full"
-                      style={{ width: `${reloadProgress * 100}%` }}
-                    />
+              <div className="h-8 sm:h-10 w-[1px] bg-neutral-800" />
+
+              {/* Ammo Display */}
+              <div className="flex flex-col items-end min-w-[70px] sm:min-w-[80px]">
+                {isReloading ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[10px] sm:text-xs font-bold text-amber-400 flex items-center gap-1 animate-pulse">
+                      <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin text-amber-400" /> NẠP...
+                    </span>
+                    <div className="h-1.5 sm:h-2 w-16 sm:w-24 bg-neutral-900 rounded-full overflow-hidden border border-amber-900/60">
+                      <div 
+                        className="h-full bg-amber-400 transition-all duration-75 rounded-full"
+                        style={{ width: `${reloadProgress * 100}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-xl sm:text-3xl font-black font-mono ${
-                    currentWeapon.currentMag <= currentWeapon.magSize * 0.25 ? 'text-red-500 animate-pulse' : 'text-white'
-                  }`}>
-                    {currentWeapon.currentMag}
-                  </span>
-                  <span className="text-neutral-500 font-mono text-xs sm:text-sm">
-                    / {currentWeapon.reserveAmmo === -1 ? '∞' : currentWeapon.reserveAmmo}
-                  </span>
-                </div>
-              )}
-              <span className="text-[9px] text-neutral-500 uppercase font-semibold">Phím [R] Nạp</span>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-xl sm:text-3xl font-black font-mono ${
+                      currentWeapon.currentMag <= currentWeapon.magSize * 0.25 ? 'text-red-500 animate-pulse' : 'text-white'
+                    }`}>
+                      {currentWeapon.currentMag}
+                    </span>
+                    <span className="text-neutral-500 font-mono text-xs sm:text-sm">
+                      / {currentWeapon.reserveAmmo === -1 ? '∞' : currentWeapon.reserveAmmo}
+                    </span>
+                  </div>
+                )}
+                <span className="text-[9px] text-neutral-500 uppercase font-semibold">Phím [R] Nạp</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

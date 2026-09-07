@@ -194,11 +194,11 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
 
         {/* Canvas or Minimized Pill */}
         {!isMinimized ? (
-          <div className="relative w-[88px] h-[68px] sm:w-[104px] sm:h-[80px]">
+          <div className="relative w-[90px] h-[64px] sm:w-[100px] sm:h-[72px]">
             <canvas
               ref={canvasRef}
-              width={104}
-              height={80}
+              width={100}
+              height={72}
               className="w-full h-full block"
             />
             {/* Cardinal markers */}
@@ -211,9 +211,12 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
         ) : (
           <div 
             onClick={() => setIsMinimized(false)}
-            className="px-2 py-1 text-[8px] font-mono text-sky-400 cursor-pointer flex items-center gap-1"
+            className="px-2 py-0.5 text-[8px] font-mono text-sky-300 hover:text-white cursor-pointer flex items-center gap-1.5 transition-colors"
+            title="Chạm để mở rộng Radar"
           >
-            <span>[BẬT RADAR]</span>
+            <Compass className="w-2.5 h-2.5 text-sky-400 animate-spin" style={{ animationDuration: '8s' }} />
+            <span>⚠️ {zombies.filter(z => z.hp > 0).length} quái</span>
+            <Maximize2 className="w-2.5 h-2.5 text-sky-300 ml-0.5" />
           </div>
         )}
       </div>
