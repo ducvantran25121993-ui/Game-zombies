@@ -435,21 +435,21 @@ export const HUD: React.FC<HUDProps> = ({
         {/* Dynamic Arena Event Banner Alert */}
         {currentArenaEvent && (
           <div 
-            className="w-full landscape:w-auto landscape:max-w-[200px] landscape:self-center landscape:mx-auto px-2.5 py-1 landscape:py-0 landscape:px-1.5 rounded-xl landscape:rounded-md border flex items-center justify-between gap-1.5 sm:gap-2 landscape:gap-1 shadow-lg backdrop-blur-md animate-pulse pointer-events-none select-none transition-all duration-300 landscape:h-[22px]"
+            className="w-full landscape:w-auto landscape:max-w-[170px] landscape:self-center landscape:mx-auto px-2.5 py-1 landscape:py-0 landscape:px-1.5 rounded-xl landscape:rounded-md border flex items-center justify-between gap-1.5 sm:gap-2 landscape:gap-1 shadow-lg backdrop-blur-md animate-pulse pointer-events-none select-none transition-all duration-300 landscape:h-[18px]"
             style={{ 
               borderColor: currentArenaEvent.color,
               backgroundColor: 'rgba(9, 9, 11, 0.94)'
             }}
           >
             <div className="flex items-center gap-1.5 landscape:gap-1 min-w-0">
-              <span className="text-xs sm:text-sm landscape:text-[7.5px] font-black tracking-wide uppercase truncate" style={{ color: currentArenaEvent.color }}>
+              <span className="text-xs sm:text-sm landscape:text-[7px] font-black tracking-wide uppercase truncate" style={{ color: currentArenaEvent.color }}>
                 {currentArenaEvent.titleVi}
               </span>
               <span className="text-[9px] sm:text-xs text-zinc-300 hidden sm:inline landscape:hidden truncate">
                 — {currentArenaEvent.descVi}
               </span>
             </div>
-            <span className="font-mono text-[9px] sm:text-[10px] landscape:text-[7px] font-black px-1.5 py-0.2 landscape:px-1 landscape:py-0 rounded bg-black/70 text-zinc-200 border border-zinc-700 shrink-0">
+            <span className="font-mono text-[9px] sm:text-[10px] landscape:text-[6.5px] font-black px-1.5 py-0.2 landscape:px-1 landscape:py-0 rounded bg-black/70 text-zinc-200 border border-zinc-700 shrink-0">
               {Math.ceil(currentArenaEvent.timer / 1000)}s
             </span>
           </div>
@@ -463,28 +463,28 @@ export const HUD: React.FC<HUDProps> = ({
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('toggle-boss-lock'));
               }}
-              className="flex-1 min-w-0 landscape:flex-none landscape:w-[190px] landscape:max-w-[200px] landscape:mx-auto bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2.5 landscape:px-1.5 py-0.5 landscape:py-0.5 rounded-lg sm:rounded-xl landscape:rounded-md border border-red-500/70 landscape:border-red-500/50 shadow-md shadow-red-950/40 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
+              className="flex-1 min-w-0 landscape:flex-none landscape:w-[170px] landscape:max-w-[170px] landscape:mx-auto bg-neutral-950/90 backdrop-blur-md px-1.5 sm:px-2.5 landscape:px-1.5 py-0.5 landscape:py-0.2 rounded-lg sm:rounded-xl landscape:rounded-md border border-red-500/70 landscape:border-red-500/40 shadow-md shadow-red-950/40 cursor-pointer hover:border-amber-400/90 transition-all active:scale-[0.99] group select-none"
               title="Click/Chạm để Khóa hoặc Hủy Khóa mục tiêu Boss"
             >
               {/* Boss Info Header */}
-              <div className="flex items-center justify-between text-[7px] sm:text-[9.5px] landscape:text-[7px] font-black text-red-200 uppercase tracking-wide gap-1">
+              <div className="flex items-center justify-between text-[7px] sm:text-[9.5px] landscape:text-[6.5px] font-black text-red-200 uppercase tracking-wide gap-1">
                 <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
                   <ShieldAlert className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 landscape:w-2 landscape:h-2 text-red-400 shrink-0 animate-pulse group-hover:text-amber-400" />
                   {bossHp.badge && (
-                    <span className="px-1 py-0.2 landscape:py-0 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 text-[6px] sm:text-[7.5px] landscape:text-[6px] shrink-0 hidden xs:inline-block">
+                    <span className="px-1 py-0.2 landscape:py-0 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 text-[6px] sm:text-[7.5px] landscape:text-[5.5px] shrink-0 hidden xs:inline-block">
                       {bossHp.badge}
                     </span>
                   )}
-                  <span className="font-black text-white tracking-wide truncate landscape:text-[7.5px]">{bossHp.name}</span>
+                  <span className="font-black text-white tracking-wide truncate landscape:text-[7px]">{bossHp.name}</span>
                   {bossHp.currentSkill && (
-                    <span className="text-[6px] sm:text-[8px] landscape:text-[6.5px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-500/40 px-1 py-0.2 landscape:py-0 rounded truncate shrink-0 max-w-[90px] sm:max-w-[180px] landscape:max-w-[70px] flex items-center gap-0.5">
+                    <span className="text-[6px] sm:text-[8px] landscape:text-[6px] text-amber-300 font-mono font-bold bg-amber-950/60 border border-amber-500/40 px-1 py-0.2 landscape:py-0 rounded truncate shrink-0 max-w-[90px] sm:max-w-[180px] landscape:max-w-[65px] flex items-center gap-0.5">
                       <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
                       <span className="truncate">{bossHp.currentSkill}</span>
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0 ml-1">
-                  <span className="font-mono text-red-200 font-black text-[7px] sm:text-[9.5px] landscape:text-[7px]">
+                  <span className="font-mono text-red-200 font-black text-[7px] sm:text-[9.5px] landscape:text-[6.5px]">
                     {Math.ceil(bossHp.current)}/{bossHp.max}
                   </span>
                   <span className="text-[6.5px] text-amber-400 font-mono hidden md:inline-block bg-neutral-900/80 px-1 py-0.2 rounded border border-neutral-700">
@@ -494,7 +494,7 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
 
               {/* Segmented Slim HP Gauge */}
-              <div className="h-1.5 sm:h-2 landscape:h-[2.5px] w-full bg-neutral-900 rounded-full overflow-hidden border border-red-900/80 shadow-inner mt-0.5 landscape:mt-0.5">
+              <div className="h-1.5 sm:h-2 landscape:h-[2px] w-full bg-neutral-900 rounded-full overflow-hidden border border-red-900/80 shadow-inner mt-0.5 landscape:mt-0.2">
                 <div 
                   className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 transition-all duration-150 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]"
                   style={{ width: `${Math.max(0, Math.min(100, (bossHp.current / bossHp.max) * 100))}%` }}
