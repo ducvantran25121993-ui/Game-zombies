@@ -242,35 +242,8 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </div>
 
-          {/* Quick Shop Button in Top Bar */}
-          <button
-            onClick={onOpenShop}
-            className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
-              canAffordAnything
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 border-amber-300 animate-pulse shadow-amber-500/40'
-                : 'bg-neutral-950/90 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
-            }`}
-            title="Mở Cửa Hàng Trang Bị / Nâng Cấp (Phím B)"
-          >
-            <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-            <span>SHOP</span>
-            {canAffordAnything && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-600 animate-ping border border-white" />
-            )}
-          </button>
-
-          {/* Dedicated Pause Button */}
-          <button
-            onClick={onPause}
-            className="px-1.5 sm:px-2 py-1 rounded-xl border border-amber-500/60 bg-neutral-950/90 hover:bg-amber-950/50 text-amber-300 hover:text-amber-200 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0"
-            title="Tạm Dừng Trò Chơi (Phím ESC hoặc P)"
-          >
-            <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
-            <span>DỪNG</span>
-          </button>
-
-          {/* Tactical Gadgets & Grenade Controls */}
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Desktop Combat Shortcuts (Hidden on Mobile/Touch to prevent header overflow) */}
+          <div className="hidden md:flex items-center gap-1 shrink-0">
             {/* Quick Grenade Button */}
             <button
               onClick={onThrowGrenade}
@@ -295,7 +268,7 @@ export const HUD: React.FC<HUDProps> = ({
             {/* Cycle Grenade Variant Button */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('cycle-grenade'))}
-              className="px-1.5 py-1 rounded-xl border border-purple-500/60 bg-neutral-950/80 hover:bg-neutral-900 text-purple-300 text-[8px] sm:text-[9px] font-bold active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 hidden xs:flex items-center gap-0.5"
+              className="px-1.5 py-1 rounded-xl border border-purple-500/60 bg-neutral-950/80 hover:bg-neutral-900 text-purple-300 text-[8px] sm:text-[9px] font-bold active:scale-90 shadow-md backdrop-blur-md pointer-events-auto shrink-0 flex items-center gap-0.5"
               title="Đổi loại Lựu đạn: Mảnh -> Băng -> Lỗ đen [Phím X]"
             >
               <span className="font-mono">[X]</span>
@@ -324,52 +297,86 @@ export const HUD: React.FC<HUDProps> = ({
                 <span className="bg-sky-600 px-1 rounded text-[8px] font-mono text-white">x{player.trapInventory}</span>
               )}
             </button>
+
+            {/* Ultimate Skill Button */}
+            {(() => {
+              const currentWarrior = WARRIOR_CLASSES.find(w => w.id === (player.warriorSkin || 'commando')) || WARRIOR_CLASSES[0];
+              const ultReady = (player.ultimateCharge || 0) >= 100;
+              const ultActive = player.isUltimateActive;
+              return (
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('trigger-ultimate'));
+                  }}
+                  disabled={!ultReady && !ultActive}
+                  className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 relative ${
+                    ultActive
+                      ? 'bg-gradient-to-r from-red-600 to-amber-500 border-amber-300 text-white animate-pulse shadow-red-500/50'
+                      : ultReady
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-300 border-yellow-200 text-neutral-950 animate-bounce shadow-[0_0_15px_rgba(245,158,11,0.7)]'
+                      : 'bg-neutral-950/80 border-neutral-800 text-neutral-500'
+                  }`}
+                  title={`Tuyệt Kỹ [${currentWarrior.ultimate.nameVi}] (Phím F/U)`}
+                >
+                  <Zap className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${ultReady ? 'fill-neutral-950 text-neutral-950' : 'text-amber-500'}`} />
+                  <span className="font-mono">
+                    {ultActive ? 'KÍCH HOẠT' : ultReady ? 'MAX [F]' : `${Math.floor(player.ultimateCharge || 0)}%`}
+                  </span>
+                </button>
+              );
+            })()}
           </div>
 
-          {/* Missions & Achievements Button */}
-          {onOpenMissions && (
+          {/* Primary System Actions: Missions (NV), Shop, Pause (ALWAYS visible, never cut off) */}
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
+            {/* Missions & Achievements Button */}
+            {onOpenMissions && (
+              <button
+                onClick={onOpenMissions}
+                className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
+                  unclaimedMissionsCount > 0
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-400 shadow-indigo-500/40 animate-pulse'
+                    : 'bg-neutral-950/90 border-indigo-500/60 text-indigo-300 hover:bg-neutral-900'
+                }`}
+                title="Xem Danh Sách Nhiệm Vụ & Thành Tựu"
+              >
+                <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 shrink-0" />
+                <span>NV</span>
+                {unclaimedMissionsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-600 text-white font-mono text-[8px] flex items-center justify-center border border-white animate-bounce">
+                    {unclaimedMissionsCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Quick Shop Button in Top Bar */}
             <button
-              onClick={onOpenMissions}
-              className="px-1.5 sm:px-2 py-1 rounded-xl border border-indigo-500/60 bg-neutral-950/90 hover:bg-neutral-900 text-indigo-300 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0"
-              title="Xem Danh Sách Nhiệm Vụ & Thành Tựu"
+              onClick={onOpenShop}
+              className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md relative pointer-events-auto shrink-0 ${
+                canAffordAnything
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 border-amber-300 animate-pulse shadow-amber-500/40'
+                  : 'bg-neutral-950/90 border-amber-500/50 text-amber-400 hover:bg-neutral-900'
+              }`}
+              title="Mở Cửa Hàng Trang Bị / Nâng Cấp (Phím B)"
             >
-              <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 shrink-0" />
-              <span>NV</span>
-              {unclaimedMissionsCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-600 text-white font-mono text-[8px] flex items-center justify-center border border-white animate-bounce">
-                  {unclaimedMissionsCount}
-                </span>
+              <ShoppingCart className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+              <span>SHOP</span>
+              {canAffordAnything && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-600 animate-ping border border-white" />
               )}
             </button>
-          )}
 
-          {/* Ultimate Skill Button */}
-          {(() => {
-            const currentWarrior = WARRIOR_CLASSES.find(w => w.id === (player.warriorSkin || 'commando')) || WARRIOR_CLASSES[0];
-            const ultReady = (player.ultimateCharge || 0) >= 100;
-            const ultActive = player.isUltimateActive;
-            return (
-              <button
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('trigger-ultimate'));
-                }}
-                disabled={!ultReady && !ultActive}
-                className={`px-1.5 sm:px-2 py-1 rounded-xl border flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0 relative ${
-                  ultActive
-                    ? 'bg-gradient-to-r from-red-600 to-amber-500 border-amber-300 text-white animate-pulse shadow-red-500/50'
-                    : ultReady
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-300 border-yellow-200 text-neutral-950 animate-bounce shadow-[0_0_15px_rgba(245,158,11,0.7)]'
-                    : 'bg-neutral-950/80 border-neutral-800 text-neutral-500'
-                }`}
-                title={`Tuyệt Kỹ [${currentWarrior.ultimate.nameVi}] (Phím F/U)`}
-              >
-                <Zap className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${ultReady ? 'fill-neutral-950 text-neutral-950' : 'text-amber-500'}`} />
-                <span className="font-mono">
-                  {ultActive ? 'KÍCH HOẠT' : ultReady ? 'MAX [F]' : `${Math.floor(player.ultimateCharge || 0)}%`}
-                </span>
-              </button>
-            );
-          })()}
+            {/* Dedicated Pause Button */}
+            <button
+              onClick={onPause}
+              className="px-1.5 sm:px-2 py-1 rounded-xl border border-amber-500/60 bg-neutral-950/90 hover:bg-amber-950/50 text-amber-300 hover:text-amber-200 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0"
+              title="Tạm Dừng Trò Chơi (Phím ESC hoặc P)"
+            >
+              <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
+              <span>DỪNG</span>
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Arena Event Banner Alert */}
@@ -510,7 +517,7 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* TACTICAL MINIMAP RADAR (Optimized for both Portrait and Landscape Viewports) */}
       {radarData && showRadar && (
-        <div className="absolute top-[88px] landscape:top-[42px] sm:landscape:top-[46px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-20 pointer-events-auto">
+        <div className="absolute top-[calc(max(0.35rem,env(safe-area-inset-top,0px))+76px)] sm:top-[calc(max(0.35rem,env(safe-area-inset-top,0px))+82px)] landscape:top-[42px] sm:landscape:top-[46px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-20 pointer-events-auto">
           <MiniMapRadar
             player={player}
             zombies={radarData.zombies}
