@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { PlayerStats, Zombie, DropItem } from '../types/game';
-import { Compass, Eye, EyeOff, Maximize2, Minimize2, X } from 'lucide-react';
+import { Compass, Maximize2, Minimize2, X, ArrowLeftRight, RotateCcw, GripHorizontal } from 'lucide-react';
 
 interface MiniMapRadarProps {
   player: PlayerStats;
@@ -20,8 +20,116 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
   onClose
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const sweepAngleRef = useRef(0);
+
+  // Free-drag & Dock positioning
+  const [customPos, setCustomPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('zombie_radar_custom_pos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const [dockSide, setDockSide] = useState<'right' | 'left'>(() => {
+    try {
+      return (localStorage.getItem('zombie_radar_dock_side') as 'right' | 'left') || 'right';
+    } catch {
+      return 'right';
+    }
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; posX: number; posY: number }>({
+    clientX: 0,
+    clientY: 0,
+    posX: 0,
+    posY: 0
+  });
+
+  // Touch & Mouse Drag handlers
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartRef.current.clientX;
+      const dy = e.clientY - dragStartRef.current.clientY;
+      const newX = Math.max(6, Math.min(window.innerWidth - 105, dragStartRef.current.posX + dx));
+      const newY = Math.max(48, Math.min(window.innerHeight - 100, dragStartRef.current.posY + dy));
+      setCustomPos({ x: newX, y: newY });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartRef.current.clientX;
+      const dy = touch.clientY - dragStartRef.current.clientY;
+      const newX = Math.max(6, Math.min(window.innerWidth - 105, dragStartRef.current.posX + dx));
+      const newY = Math.max(48, Math.min(window.innerHeight - 100, dragStartRef.current.posY + dy));
+      setCustomPos({ x: newX, y: newY });
+    };
+
+    const handleDragEnd = () => {
+      setIsDragging(false);
+      setCustomPos(prev => {
+        if (prev) {
+          try {
+            localStorage.setItem('zombie_radar_custom_pos', JSON.stringify(prev));
+          } catch {}
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleDragEnd);
+    window.addEventListener('touchcancel', handleDragEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleDragEnd);
+      window.removeEventListener('touchcancel', handleDragEnd);
+    };
+  }, [isDragging]);
+
+  const handleStartDrag = (clientX: number, clientY: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    dragStartRef.current = {
+      clientX,
+      clientY,
+      posX: rect.left,
+      posY: rect.top
+    };
+    setIsDragging(true);
+  };
+
+  const handleToggleDockSide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomPos(null);
+    try {
+      localStorage.removeItem('zombie_radar_custom_pos');
+    } catch {}
+    const nextSide = dockSide === 'right' ? 'left' : 'right';
+    setDockSide(nextSide);
+    try {
+      localStorage.setItem('zombie_radar_dock_side', nextSide);
+    } catch {}
+  };
+
+  const handleResetPos = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomPos(null);
+    try {
+      localStorage.removeItem('zombie_radar_custom_pos');
+    } catch {}
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -164,27 +272,73 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
   }, [player.x, player.y, player.angle, zombies, drops, isMinimized, mapWidth, mapHeight]);
 
   return (
-    <div className="flex flex-col items-end gap-1 select-none pointer-events-auto">
-      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 shadow-[0_0_15px_rgba(2,132,199,0.3)] bg-neutral-950/90 backdrop-blur-md">
-        {/* Radar Header */}
-        <div className="flex items-center justify-between px-2 py-0.5 bg-neutral-900/90 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold gap-2">
-          <span className="flex items-center gap-1">
-            <Compass className="w-2.5 h-2.5 animate-spin" style={{ animationDuration: '8s' }} />
-            RADAR GPS
-          </span>
-          <div className="flex items-center gap-1">
+    <div
+      ref={containerRef}
+      style={customPos ? { position: 'fixed', left: `${customPos.x}px`, top: `${customPos.y}px`, zIndex: 40 } : undefined}
+      className={!customPos ? (
+        dockSide === 'left'
+          ? 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[44px] left-[max(0.5rem,env(safe-area-inset-left,0px))] sm:left-4 z-30 select-none pointer-events-auto transition-all'
+          : 'fixed top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+126px)] sm:top-[calc(max(0.5rem,env(safe-area-inset-top,0px))+86px)] landscape:top-[44px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-30 select-none pointer-events-auto transition-all'
+      ) : 'select-none pointer-events-auto'}
+    >
+      <div className="relative rounded-xl overflow-hidden border border-sky-500/50 shadow-[0_0_15px_rgba(2,132,199,0.35)] bg-neutral-950/90 backdrop-blur-md">
+        {/* Radar Header with Drag & Dock Controls */}
+        <div
+          className="flex items-center justify-between px-1.5 py-0.5 bg-neutral-900/95 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold gap-1 cursor-grab active:cursor-grabbing active:bg-sky-950/40 select-none touch-none"
+          onMouseDown={(e) => handleStartDrag(e.clientX, e.clientY)}
+          onTouchStart={(e) => {
+            if (e.touches.length > 0) {
+              handleStartDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          title="Chạm giữ thanh này để kéo Radar đến vị trí tùy ý"
+        >
+          <div className="flex items-center gap-1 shrink-0">
+            <GripHorizontal className="w-2.5 h-2.5 text-sky-400/60" />
+            <Compass className="w-2.5 h-2.5 animate-spin text-sky-400" style={{ animationDuration: '8s' }} />
+            <span className="text-[7.5px] sm:text-[8px] tracking-wider">RADAR</span>
+          </div>
+
+          <div
+            className="flex items-center gap-0.5 shrink-0"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            {/* Reset custom dragged pos */}
+            {customPos && (
+              <button
+                onClick={handleResetPos}
+                className="p-0.5 hover:text-amber-300 text-neutral-400 transition-colors"
+                title="Khôi phục vị trí mặc định"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+              </button>
+            )}
+
+            {/* Switch dock side Left / Right */}
+            <button
+              onClick={handleToggleDockSide}
+              className="p-0.5 hover:text-white text-sky-300 transition-colors"
+              title={dockSide === 'right' ? 'Đổi sang góc Trái' : 'Đổi sang góc Phải'}
+            >
+              <ArrowLeftRight className="w-2.5 h-2.5" />
+            </button>
+
+            {/* Minimize / Maximize */}
             <button
               onClick={() => setIsMinimized(prev => !prev)}
-              className="p-0.5 hover:text-white transition-colors"
+              className="p-0.5 hover:text-white transition-colors text-sky-300"
               title={isMinimized ? 'Mở rộng Radar' : 'Thu nhỏ Radar'}
             >
               {isMinimized ? <Maximize2 className="w-2.5 h-2.5" /> : <Minimize2 className="w-2.5 h-2.5" />}
             </button>
+
+            {/* Close */}
             {onClose && (
               <button
                 onClick={onClose}
                 className="p-0.5 hover:text-red-400 text-sky-400/80 transition-colors"
-                title="Ẩn Radar (Mở lại trong menu công cụ)"
+                title="Ẩn Radar"
               >
                 <X className="w-2.5 h-2.5" />
               </button>

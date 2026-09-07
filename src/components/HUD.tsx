@@ -570,16 +570,14 @@ export const HUD: React.FC<HUDProps> = ({
         )}
       </div>
 
-      {/* TACTICAL MINIMAP RADAR (Optimized for both Portrait and Landscape Viewports) */}
+      {/* TACTICAL MINIMAP RADAR (Self-docked, draggable, anti-overlap) */}
       {radarData && showRadar && (
-        <div className="absolute top-[calc(max(0.35rem,env(safe-area-inset-top,0px))+76px)] sm:top-[calc(max(0.35rem,env(safe-area-inset-top,0px))+82px)] landscape:top-[42px] sm:landscape:top-[46px] right-[max(0.5rem,env(safe-area-inset-right,0px))] sm:right-4 z-20 pointer-events-auto">
-          <MiniMapRadar
-            player={player}
-            zombies={radarData.zombies}
-            drops={radarData.drops}
-            onClose={() => setShowRadar(false)}
-          />
-        </div>
+        <MiniMapRadar
+          player={player}
+          zombies={radarData.zombies}
+          drops={radarData.drops}
+          onClose={() => setShowRadar(false)}
+        />
       )}
 
       {/* FLOATING PROMPT: AUTO-DISMISSES AFTER 5 SECONDS */}
