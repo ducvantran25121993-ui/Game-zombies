@@ -11,6 +11,7 @@ import { soundManager } from '../utils/audio';
 import { WARRIOR_CLASSES, WarriorClass } from '../data/warriors';
 import { CompanionDroneConfig } from '../data/drones';
 import { INITIAL_EQUIPMENT } from '../data/equipment';
+import { WeaponVisualArtwork, DroneVisualArtwork, EquipmentVisualArtwork } from './ShopVisualArtwork';
 
 interface ShopModalProps {
   player: PlayerStats;
@@ -331,6 +332,30 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                           )}
                         </div>
 
+                        {/* Equipment Visual Artwork Showcase */}
+                        <div 
+                          className="w-full h-24 sm:h-28 rounded-2xl mb-3 flex items-center justify-center relative overflow-hidden border shadow-inner group/gear"
+                          style={{
+                            background: `radial-gradient(ellipse at center, ${item.color}25 0%, rgba(10, 10, 15, 0.95) 75%)`,
+                            borderColor: `${item.color}44`
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                          <div className="w-full h-full max-w-[120px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/gear:scale-110 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">
+                            <EquipmentVisualArtwork slotId={item.id} level={item.level} color={item.color} />
+                          </div>
+                          <span 
+                            className="absolute top-2 right-2 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase backdrop-blur-md"
+                            style={{
+                              backgroundColor: `${item.color}22`,
+                              color: item.color,
+                              borderColor: `${item.color}44`
+                            }}
+                          >
+                            CẤP {item.level}/{item.maxLevel}
+                          </span>
+                        </div>
+
                         {/* Stars Indicator */}
                         <div className="flex items-center justify-between py-1.5 px-2.5 bg-neutral-950/70 rounded-xl border border-neutral-800/80 mb-3">
                           <div className="flex items-center gap-1">
@@ -525,6 +550,23 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                           )}
                         </div>
 
+                        {/* Drone Visual Illustration Window */}
+                        <div 
+                          className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/drone"
+                          style={{
+                            background: `radial-gradient(ellipse at center, ${drone.color}22 0%, rgba(10, 10, 15, 0.95) 75%)`,
+                            borderColor: `${drone.glowColor}44`
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                          <div className="w-full h-full max-w-[150px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/drone:scale-110 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">
+                            <DroneVisualArtwork droneId={drone.id} type={drone.type} color={drone.color} glowColor={drone.glowColor} />
+                          </div>
+                          <span className="absolute bottom-1.5 right-2 text-[8px] font-mono text-cyan-300/70 uppercase">
+                            AI DEFENDER MECH
+                          </span>
+                        </div>
+
                         {/* Level Stars & Description */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-1">
@@ -659,7 +701,31 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs bg-neutral-900/60 p-2.5 rounded-xl border border-neutral-800/60 font-mono">
+                      {/* Weapon Visual Illustration Showcase */}
+                      <div 
+                        className="w-full h-24 sm:h-28 rounded-2xl my-2.5 flex items-center justify-center relative overflow-hidden border shadow-inner group/gun"
+                        style={{
+                          background: `radial-gradient(ellipse at center, ${weapon.color}22 0%, rgba(10, 10, 15, 0.95) 75%)`,
+                          borderColor: `${weapon.color}44`
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
+                        <div className="w-full h-full max-w-[190px] p-2 flex items-center justify-center transition-transform duration-300 group-hover/gun:scale-105 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">
+                          <WeaponVisualArtwork weaponId={weapon.id} color={weapon.color} />
+                        </div>
+                        <span 
+                          className="absolute top-2 right-2 text-[9px] font-mono font-black px-1.5 py-0.5 rounded border uppercase backdrop-blur-md"
+                          style={{
+                            backgroundColor: `${weapon.color}22`,
+                            color: weapon.color,
+                            borderColor: `${weapon.color}44`
+                          }}
+                        >
+                          {weapon.id.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-xs bg-neutral-900/60 p-2.5 rounded-xl border border-neutral-800/60 font-mono">
                         <div className="text-neutral-400">
                           Sát thương: <span className="text-white font-bold">{weapon.damage}</span>
                         </div>

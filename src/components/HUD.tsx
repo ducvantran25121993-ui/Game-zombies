@@ -3,7 +3,7 @@ import { PlayerStats, Weapon, WeaponType, ActiveBuffs, MapEnvironmentId, Zombie,
 import { 
   Heart, Shield, Zap, Crosshair, RefreshCw, 
   Flame, Skull, DollarSign, Award, Bomb, Radio,
-  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X, Target
+  Clock, ShieldAlert, Sparkles, UserCheck, Lock, ShoppingCart, MapPin, X, Target, Pause, Compass
 } from 'lucide-react';
 import { WARRIOR_CLASSES } from '../data/warriors';
 import { MAP_ENVIRONMENTS } from '../data/maps';
@@ -97,6 +97,9 @@ export const HUD: React.FC<HUDProps> = ({
   }, [currentWeapon, player.gold]);
 
   const canAffordAnything = Boolean(affordableLockedWeapon || canUpgradeCurrent);
+
+  // Radar visibility state (allows player to show/hide to prevent obscuring other HUD elements)
+  const [showRadar, setShowRadar] = useState(true);
 
   // 5-second Auto-Dismiss Notification System for newly affordable weapons/gear
   const [notification, setNotification] = useState<{ id: string; title: string; subtitle: string } | null>(null);
@@ -241,6 +244,16 @@ export const HUD: React.FC<HUDProps> = ({
             {canAffordAnything && (
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-600 animate-ping border border-white" />
             )}
+          </button>
+
+          {/* Dedicated Pause Button */}
+          <button
+            onClick={onPause}
+            className="px-1.5 sm:px-2 py-1 rounded-xl border border-amber-500/60 bg-neutral-950/90 hover:bg-amber-950/50 text-amber-300 hover:text-amber-200 flex items-center gap-1 shadow-md transition-all active:scale-90 text-[8px] sm:text-[10px] font-black backdrop-blur-md pointer-events-auto shrink-0"
+            title="Tạm Dừng Trò Chơi (Phím ESC hoặc P)"
+          >
+            <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
+            <span>DỪNG</span>
           </button>
 
           {/* Tactical Gadgets & Grenade Controls */}
@@ -455,6 +468,22 @@ export const HUD: React.FC<HUDProps> = ({
               </button>
             )}
 
+            {/* Tactical Radar Toggle Button */}
+            {radarData && (
+              <button
+                onClick={() => setShowRadar(prev => !prev)}
+                className={`px-1.5 py-0.5 sm:py-1 rounded-lg border text-[8px] sm:text-[10px] font-black flex items-center gap-1 backdrop-blur-md shadow-sm transition-all active:scale-95 ${
+                  showRadar
+                    ? 'bg-sky-500/25 border-sky-400/80 text-sky-300'
+                    : 'bg-neutral-900/90 border-neutral-700 text-neutral-500 hover:text-neutral-300'
+                }`}
+                title={showRadar ? 'Ẩn Radar để mở rộng tầm nhìn' : 'Bật Radar GPS'}
+              >
+                <Compass className={`w-2.5 h-2.5 ${showRadar ? 'text-sky-400 animate-spin' : 'text-neutral-500'}`} style={{ animationDuration: '8s' }} />
+                <span className="hidden xs:inline">RADAR</span>
+              </button>
+            )}
+
             <button
               onClick={onToggleMute}
               className="p-1 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 backdrop-blur-md transition-all shadow-sm pointer-events-auto"
@@ -474,13 +503,14 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
-      {/* TACTICAL MINIMAP RADAR (Top Right Floating Widget) */}
-      {radarData && (
-        <div className="absolute top-[72px] sm:top-[80px] right-2 sm:right-4 z-20 pointer-events-auto">
+      {/* TACTICAL MINIMAP RADAR (Safely Positioned Below Header Controls) */}
+      {radarData && showRadar && (
+        <div className="absolute top-[88px] sm:top-[94px] right-2 sm:right-4 z-20 pointer-events-auto">
           <MiniMapRadar
             player={player}
             zombies={radarData.zombies}
             drops={radarData.drops}
+            onClose={() => setShowRadar(false)}
           />
         </div>
       )}

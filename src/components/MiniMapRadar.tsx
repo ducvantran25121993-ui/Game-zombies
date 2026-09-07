@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { PlayerStats, Zombie, DropItem } from '../types/game';
-import { Compass, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
+import { Compass, Eye, EyeOff, Maximize2, Minimize2, X } from 'lucide-react';
 
 interface MiniMapRadarProps {
   player: PlayerStats;
@@ -8,6 +8,7 @@ interface MiniMapRadarProps {
   drops: DropItem[];
   mapWidth?: number;
   mapHeight?: number;
+  onClose?: () => void;
 }
 
 export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
@@ -15,7 +16,8 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
   zombies,
   drops,
   mapWidth = 2600,
-  mapHeight = 2000
+  mapHeight = 2000,
+  onClose
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -165,18 +167,29 @@ export const MiniMapRadar: React.FC<MiniMapRadarProps> = ({
     <div className="flex flex-col items-end gap-1 select-none pointer-events-auto">
       <div className="relative rounded-xl overflow-hidden border border-sky-500/50 shadow-[0_0_15px_rgba(2,132,199,0.3)] bg-neutral-950/90 backdrop-blur-md">
         {/* Radar Header */}
-        <div className="flex items-center justify-between px-2 py-0.5 bg-neutral-900/90 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold">
+        <div className="flex items-center justify-between px-2 py-0.5 bg-neutral-900/90 border-b border-sky-500/30 text-[8px] text-sky-400 font-mono font-bold gap-2">
           <span className="flex items-center gap-1">
             <Compass className="w-2.5 h-2.5 animate-spin" style={{ animationDuration: '8s' }} />
             RADAR GPS
           </span>
-          <button
-            onClick={() => setIsMinimized(prev => !prev)}
-            className="p-0.5 hover:text-white transition-colors"
-            title={isMinimized ? 'Mở rộng Radar' : 'Thu nhỏ Radar'}
-          >
-            {isMinimized ? <Maximize2 className="w-2.5 h-2.5" /> : <Minimize2 className="w-2.5 h-2.5" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsMinimized(prev => !prev)}
+              className="p-0.5 hover:text-white transition-colors"
+              title={isMinimized ? 'Mở rộng Radar' : 'Thu nhỏ Radar'}
+            >
+              {isMinimized ? <Maximize2 className="w-2.5 h-2.5" /> : <Minimize2 className="w-2.5 h-2.5" />}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-0.5 hover:text-red-400 text-sky-400/80 transition-colors"
+                title="Ẩn Radar (Mở lại trong menu công cụ)"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Canvas or Minimized Pill */}
