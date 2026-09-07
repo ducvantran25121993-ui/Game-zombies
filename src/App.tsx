@@ -347,9 +347,12 @@ export const App: React.FC = () => {
         let current = m.current;
         if (m.id === 'first_blood') current = player.kills;
         else if (m.id === 'combo_master') current = Math.max(m.current, player.combo);
+        else if (m.id === 'headshot_marksman') current = player.headshots || 0;
         else if (m.id === 'wave_veteran') current = Math.max(m.current, wave);
+        else if (m.id === 'wave_nightmare_apocalypse') current = Math.max(m.current, wave);
         else if (m.id === 'gold_tycoon') current = Math.max(m.current, player.gold);
         else if (m.id === 'zombie_annihilator') current = player.kills;
+        else if (m.id === 'k9_tactical_synergy') current = player.roguelikeSkills?.k9_war_dog || 0;
 
         const completed = current >= m.target;
         if (current !== m.current || completed !== m.completed) {
@@ -365,7 +368,7 @@ export const App: React.FC = () => {
       }
       return prevMissions;
     });
-  }, [player.kills, player.combo, player.gold, wave, gameState]);
+  }, [player.kills, player.combo, player.gold, player.headshots, player.roguelikeSkills, wave, gameState]);
 
   const handleMapChange = useCallback((newMapId: MapEnvironmentId) => {
     setSelectedMapId(newMapId);

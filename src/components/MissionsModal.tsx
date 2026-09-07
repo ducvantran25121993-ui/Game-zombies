@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mission, GameRecordStats, Achievement } from '../types/game';
 import { 
   Award, CheckCircle2, ChevronRight, DollarSign, 
-  Flame, Skull, Trophy, X, Zap, Target, Crosshair, Shield, Sparkles, BookOpen 
+  Flame, Skull, Trophy, X, Zap, Target, Crosshair, Shield, Sparkles, BookOpen, Dog, AlertTriangle
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { BestiaryViewer } from './BestiaryViewer';
@@ -46,10 +46,13 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
     switch (iconName) {
       case 'Crosshair': return <Crosshair className="w-5 h-5 text-sky-400" />;
       case 'Flame': return <Flame className="w-5 h-5 text-amber-500" />;
+      case 'Target': return <Target className="w-5 h-5 text-rose-400" />;
       case 'Skull': return <Skull className="w-5 h-5 text-red-500" />;
       case 'Zap': return <Zap className="w-5 h-5 text-yellow-400" />;
       case 'Shield': return <Shield className="w-5 h-5 text-indigo-400" />;
       case 'DollarSign': return <DollarSign className="w-5 h-5 text-emerald-400" />;
+      case 'Trophy': return <Trophy className="w-5 h-5 text-amber-300" />;
+      case 'Dog': return <Dog className="w-5 h-5 text-amber-400" />;
       default: return <Award className="w-5 h-5 text-purple-400" />;
     }
   };
@@ -151,75 +154,120 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
               onClaimAchievement={onClaimAchievement}
             />
           ) : activeTab === 'missions' ? (
-            missions.map(m => {
-              const progressPct = Math.min(100, Math.round((m.current / m.target) * 100));
-              return (
-                <div
-                  key={m.id}
-                  className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                    m.claimed
-                      ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
-                      : m.completed
-                      ? 'bg-amber-950/30 border-amber-500/60 shadow-lg shadow-amber-500/10'
-                      : 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 shrink-0">
-                      {getMissionIcon(m.icon)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs sm:text-sm font-black text-white">{m.titleVi}</h4>
-                        {m.claimed && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-800 text-emerald-400 font-bold flex items-center gap-0.5">
-                            <CheckCircle2 className="w-2.5 h-2.5" /> ĐÃ NHẬN
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-neutral-400 mt-0.5">{m.descVi}</p>
-
-                      {/* Progress bar */}
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <div className="h-1.5 w-32 sm:w-44 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800">
-                          <div 
-                            className={`h-full transition-all duration-300 ${
-                              m.completed ? 'bg-amber-400' : 'bg-sky-500'
-                            }`}
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
-                        <span className="text-[9px] sm:text-[10px] font-mono text-neutral-400">
-                          {m.current} / {m.target}
-                        </span>
-                      </div>
-                    </div>
+            <div className="space-y-3">
+              {/* Hardcore Difficulty Notice Banner */}
+              <div className="p-3 rounded-xl bg-gradient-to-r from-red-950/40 via-purple-950/30 to-amber-950/20 border border-red-800/40 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-red-950/80 border border-red-600/60 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
                   </div>
-
-                  {/* Reward & Action */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-800/80">
-                    <div className="flex items-center gap-1 font-black text-amber-400 text-xs sm:text-sm">
-                      <DollarSign className="w-3.5 h-3.5 text-amber-400" />
-                      <span>+{m.rewardGold} Vàng</span>
-                    </div>
-
-                    {m.completed && !m.claimed ? (
-                      <button
-                        onClick={() => onClaimReward(m.id)}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 font-black text-xs hover:brightness-110 active:scale-95 transition-all shadow-md shadow-amber-500/30 flex items-center gap-1 shrink-0"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>NHẬN</span>
-                      </button>
-                    ) : (
-                      <span className="text-[10px] font-bold text-neutral-500 font-mono">
-                        {m.claimed ? 'HOÀN THÀNH' : `${progressPct}%`}
-                      </span>
-                    )}
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-red-200 tracking-wide uppercase flex items-center gap-1.5">
+                      CHIẾN DỊCH KHÓ: THỬ THÁCH & TIỀN THƯỞNG CAO
+                    </h4>
+                    <p className="text-[10px] sm:text-xs text-neutral-400">
+                      Chỉ tiêu nhiệm vụ đã được nâng lên mức tử thần với phần thưởng Vàng dồi dào tương xứng!
+                    </p>
                   </div>
                 </div>
-              );
-            })
+                <div className="hidden sm:flex items-center gap-1.5 shrink-0 text-[10px] font-bold text-amber-300 bg-black/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>10 NHIỆM VỤ</span>
+                </div>
+              </div>
+
+              {missions.map(m => {
+                const progressPct = Math.min(100, Math.round((m.current / m.target) * 100));
+                return (
+                  <div
+                    key={m.id}
+                    className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                      m.claimed
+                        ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
+                        : m.completed
+                        ? 'bg-amber-950/30 border-amber-500/60 shadow-lg shadow-amber-500/10'
+                        : m.difficulty === 'nightmare'
+                        ? 'bg-red-950/15 border-red-900/40 hover:border-red-700/60'
+                        : 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 shrink-0">
+                        {getMissionIcon(m.icon)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs sm:text-sm font-black text-white">{m.titleVi}</h4>
+                          
+                          {/* Difficulty Badge */}
+                          {m.difficulty === 'nightmare' ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950/80 border border-red-600/80 text-red-300 font-extrabold tracking-wider uppercase shadow-sm shadow-red-500/30 flex items-center gap-0.5 animate-pulse">
+                              <Skull className="w-2.5 h-2.5 text-red-400" /> ÁC MỘNG
+                            </span>
+                          ) : m.difficulty === 'expert' ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-950/80 border border-purple-600/70 text-purple-300 font-bold tracking-wider uppercase">
+                              CHUYÊN GIA
+                            </span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-600/70 text-amber-300 font-bold tracking-wider uppercase">
+                              THỬ THÁCH
+                            </span>
+                          )}
+
+                          {m.claimed && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-neutral-800 text-emerald-400 font-bold flex items-center gap-0.5">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> ĐÃ NHẬN
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-neutral-400 mt-0.5">{m.descVi}</p>
+
+                        {/* Progress bar */}
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 w-32 sm:w-44 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800">
+                            <div 
+                              className={`h-full transition-all duration-300 ${
+                                m.completed 
+                                  ? 'bg-amber-400' 
+                                  : m.difficulty === 'nightmare' 
+                                  ? 'bg-rose-500' 
+                                  : 'bg-sky-500'
+                              }`}
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[9px] sm:text-[10px] font-mono text-neutral-400">
+                            {m.current} / {m.target}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reward & Action */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-800/80">
+                      <div className="flex items-center gap-1 font-black text-amber-400 text-xs sm:text-sm">
+                        <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                        <span>+{m.rewardGold.toLocaleString()} Vàng</span>
+                      </div>
+
+                      {m.completed && !m.claimed ? (
+                        <button
+                          onClick={() => onClaimReward(m.id)}
+                          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-neutral-950 font-black text-xs hover:brightness-110 active:scale-95 transition-all shadow-md shadow-amber-500/30 flex items-center gap-1 shrink-0"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>NHẬN</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-bold text-neutral-500 font-mono">
+                          {m.claimed ? 'HOÀN THÀNH' : `${progressPct}%`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex flex-col">

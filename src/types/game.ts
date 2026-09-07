@@ -501,6 +501,7 @@ export interface Mission {
   completed: boolean;
   claimed: boolean;
   icon: string;
+  difficulty?: 'hard' | 'expert' | 'nightmare';
 }
 
 export interface GameRecordStats {
