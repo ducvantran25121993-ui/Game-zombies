@@ -603,6 +603,13 @@ export const HUD: React.FC<HUDProps> = ({
             <span className="font-mono text-white">{(activeBuffs.shieldTimer / 1000).toFixed(1)}s</span>
           </div>
         )}
+        {(player.roguelikeSkills?.k9_war_dog || 0) > 0 && (
+          <div className="flex items-center gap-1 bg-amber-950/90 border border-amber-500/60 px-2 sm:px-3 py-1 rounded-xl text-[10px] sm:text-xs font-bold text-amber-200 backdrop-blur-md shadow-lg shadow-amber-500/20">
+            <span>🐕</span>
+            <span>K-9 CHIẾN KHUYỂN:</span>
+            <span className="font-mono text-amber-400">CẤP {player.roguelikeSkills?.k9_war_dog}</span>
+          </div>
+        )}
       </div>
 
       {/* BOTTOM FOOTER: Desktop Only Full Weapon Info (Strictly hidden on touch devices to prevent overlapping virtual controls) */}

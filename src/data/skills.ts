@@ -81,22 +81,52 @@ export const ROGUELIKE_SKILLS_DATABASE: Record<RoguelikeSkillId, RoguelikeSkill>
     rarity: 'common',
     color: '#6366f1',
     maxLevel: 3
+  },
+  k9_war_dog: {
+    id: 'k9_war_dog',
+    nameVi: 'Chiến Khuyển K-9 Đồng Đội',
+    descVi: 'Triệu hồi Chó Nghiệp Vụ K-9: tự động cắn xé zombie, sủa gầm làm chậm quái, và chạy đi tha ngọc EXP/Đạn về cho chủ nhân!',
+    icon: 'Dog',
+    rarity: 'legendary',
+    color: '#f59e0b',
+    maxLevel: 3,
+    minPlayerLevel: 2
   }
 };
 
-export const getRandomSkillDraft = (currentSkills: Record<string, number> = {}): RoguelikeSkill[] => {
+export const getRandomSkillDraft = (
+  currentSkills: Record<string, number> = {},
+  playerLevel: number = 1
+): RoguelikeSkill[] => {
   const allSkills = Object.values(ROGUELIKE_SKILLS_DATABASE);
-  // Filter out maxed skills
+  // Filter out maxed skills and skills requiring higher player level
   const available = allSkills.filter(s => {
     const lvl = currentSkills[s.id] || 0;
-    return lvl < s.maxLevel;
+    if (lvl >= s.maxLevel) return false;
+    if (s.minPlayerLevel && playerLevel < s.minPlayerLevel) return false;
+    return true;
   });
 
   if (available.length <= 3) {
     return available;
   }
 
-  // Shuffle and pick 3
-  const shuffled = [...available].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 3);
+  // If K-9 war dog is available and not yet unlocked at level >= 2, prioritize showing it
+  const dogLvl = currentSkills['k9_war_dog'] || 0;
+  const dogSkill = available.find(s => s.id === 'k9_war_dog');
+  let selected: RoguelikeSkill[] = [];
+
+  if (dogSkill && dogLvl === 0 && Math.random() < 0.75) {
+    selected.push(dogSkill);
+  }
+
+  const remaining = available.filter(s => !selected.some(sel => sel.id === s.id));
+  const shuffled = [...remaining].sort(() => 0.5 - Math.random());
+  
+  while (selected.length < 3 && shuffled.length > 0) {
+    const next = shuffled.pop();
+    if (next) selected.push(next);
+  }
+
+  return selected.sort(() => 0.5 - Math.random());
 };

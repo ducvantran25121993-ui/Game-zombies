@@ -297,7 +297,8 @@ export type RoguelikeSkillId =
   | 'fire_aura'
   | 'twin_shot'
   | 'adrenaline_rush'
-  | 'shockwave_armor';
+  | 'shockwave_armor'
+  | 'k9_war_dog';
 
 export interface RoguelikeSkill {
   id: RoguelikeSkillId;
@@ -307,6 +308,26 @@ export interface RoguelikeSkill {
   rarity: 'common' | 'rare' | 'legendary';
   color: string;
   maxLevel: number;
+  minPlayerLevel?: number;
+}
+
+export interface WarDogCompanion {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  level: number;
+  state: 'follow' | 'attack' | 'fetch';
+  targetZombieId: string | null;
+  targetDrop: DropItem | null;
+  hasCarriedItem: boolean;
+  carriedDropType: PowerUpType | null;
+  attackCooldown: number;
+  barkCooldown: number;
+  runCycle: number;
+  tailAngle: number;
+  biteAnimation: number;
 }
 
 export type DynamicArenaEventType = 'airdrop' | 'blackout' | 'swarm_alert' | 'red_alert' | null;

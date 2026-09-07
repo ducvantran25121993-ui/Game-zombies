@@ -4,7 +4,8 @@ import {
   Particle, Decal, DropItem, ActiveTurret, FloatingText, 
   Obstacle, ActiveBuffs, GameDifficulty, GameMode, PowerUpType,
   MapEnvironmentId, BossHazard, SweepingLaser, TentacleHook, GameViewMode,
-  ArenaEventState, EnvironmentalHazardZone, DynamicArenaEventType, TacticalGrenadeType
+  ArenaEventState, EnvironmentalHazardZone, DynamicArenaEventType, TacticalGrenadeType,
+  WarDogCompanion
 } from '../types/game';
 import { MAP_SIZE, ZOMBIE_TEMPLATES, BOSS_SKILL_DATABASE } from '../utils/constants';
 import { soundManager } from '../utils/audio';
@@ -15,6 +16,7 @@ import { renderObstacles } from '../utils/renderObstacles';
 import { renderDrops } from '../utils/renderDrops';
 import { CompanionDroneConfig, ActiveDroneState } from '../data/drones';
 import { renderCompanionDrone } from '../utils/renderCompanionDrone';
+import { renderWarDog } from '../utils/renderWarDog';
 import { MAP_ENVIRONMENTS } from '../data/maps';
 import { 
   processBossCombatAI, 
@@ -225,6 +227,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     currentArenaEvent: ArenaEventState | null;
     environmentalZones: EnvironmentalHazardZone[];
     vampiricKillCounter: number;
+    warDog: WarDogCompanion | null;
   }>({
     player: { 
       ...player, 
@@ -238,6 +241,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     weapons: { ...weapons },
     currentMapId: (selectedMapId as MapEnvironmentId) || 'rooftop',
     activeDrones: [],
+    warDog: null,
     laserBeams: [],
     zombies: [],
     bullets: [],
@@ -2998,6 +3002,388 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
+      // ==========================================
+      // K-9 WAR DOG COMPANION LOGIC
+      // ==========================================
+      const dogSkillLevel = p.roguelikeSkills?.k9_war_dog || 0;
+      if (dogSkillLevel > 0) {
+        if (!state.warDog) {
+          state.warDog = {
+            x: p.x - 32,
+            y: p.y - 32,
+            vx: 0,
+            vy: 0,
+            angle: p.angle,
+            level: dogSkillLevel,
+            state: 'follow',
+            targetZombieId: null,
+            targetDrop: null,
+            hasCarriedItem: false,
+            carriedDropType: null,
+            attackCooldown: 0,
+            barkCooldown: 2500,
+            runCycle: 0,
+            tailAngle: 0,
+            biteAnimation: 0
+          };
+        } else {
+          state.warDog.level = dogSkillLevel;
+        }
+
+        const dog = state.warDog;
+        dog.attackCooldown = Math.max(0, dog.attackCooldown - dt);
+        dog.barkCooldown = Math.max(0, dog.barkCooldown - dt);
+        dog.biteAnimation = Math.max(0, dog.biteAnimation - dt * 0.008);
+        dog.tailAngle = Math.sin(currentTime * 0.012) * 0.35;
+
+        // Base speed
+        const dogSpeed = dog.level === 1 ? 4.8 : dog.level === 2 ? 6.0 : 7.2;
+
+        // A. Intimidating Roar / Bark Ability
+        if (dog.barkCooldown <= 0) {
+          const barkRange = dog.level >= 2 ? 270 : 210;
+          const threatZombies = state.zombies.filter(z => z.hp > 0 && Math.hypot(z.x - dog.x, z.y - dog.y) < barkRange);
+          if (threatZombies.length >= 1) {
+            dog.barkCooldown = dog.level >= 2 ? 5500 : 7000;
+            soundManager.playDogBark();
+            state.screenShake = Math.max(state.screenShake, dog.level >= 2 ? 5 : 3);
+            
+            // Sonic shockwave particles
+            for (let sa = 0; sa < Math.PI * 2; sa += Math.PI / 6) {
+              state.particles.push({
+                x: dog.x + Math.cos(sa) * 12,
+                y: dog.y + Math.sin(sa) * 12,
+                vx: Math.cos(sa) * (dog.level >= 2 ? 5.5 : 4),
+                vy: Math.sin(sa) * (dog.level >= 2 ? 5.5 : 4),
+                radius: dog.level >= 3 ? 4 : 3,
+                color: dog.level >= 3 ? '#06b6d4' : '#f59e0b',
+                alpha: 0.9,
+                life: 0,
+                maxLife: 18,
+                decay: 0.05,
+                shape: 'spark'
+              });
+            }
+
+            state.floatingTexts.push({
+              id: Math.random().toString(),
+              x: dog.x,
+              y: dog.y - 28,
+              text: dog.level >= 3 ? '⚡ GÂU! (SÓNG XUNG KÍCH)' : '🐕 GÂU GÂU! (UY HIẾP)',
+              color: dog.level >= 3 ? '#38bdf8' : '#fbbf24',
+              alpha: 1,
+              life: 40,
+              isCrit: true
+            });
+
+            // Apply slow & knockback to zombies in radius
+            threatZombies.forEach(z => {
+              z.speed = Math.min(z.speed, 0.9);
+              const pushAngle = Math.atan2(z.y - dog.y, z.x - dog.x);
+              z.x += Math.cos(pushAngle) * (dog.level >= 2 ? 26 : 18);
+              z.y += Math.sin(pushAngle) * (dog.level >= 2 ? 26 : 18);
+              if (dog.level >= 3) {
+                z.hp -= 85;
+                z.hitFlashTimer = 60;
+              }
+            });
+          }
+        }
+
+        // B. State 1: Returning with Carried Item to Player
+        if (dog.hasCarriedItem) {
+          dog.state = 'fetch';
+          const toPlayerX = p.x - dog.x;
+          const toPlayerY = p.y - dog.y;
+          const distToPlayer = Math.hypot(toPlayerX, toPlayerY);
+          dog.angle = Math.atan2(toPlayerY, toPlayerX);
+          dog.runCycle += dt * 0.018;
+
+          if (distToPlayer < 44) {
+            // Deliver item!
+            const itemType = dog.carriedDropType;
+            dog.hasCarriedItem = false;
+            dog.carriedDropType = null;
+            soundManager.playPowerUp();
+
+            if (itemType === 'exp_gem' || !itemType) {
+              const expGain = 45 * dog.level;
+              p.exp = (p.exp || 0) + expGain;
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 32,
+                text: `🐕 K-9 THA VỀ: +${expGain} EXP!`,
+                color: '#38bdf8',
+                alpha: 1,
+                life: 45,
+                isCrit: true
+              });
+              if (p.exp >= (p.maxExp || 100)) {
+                p.exp -= p.maxExp || 100;
+                p.level = (p.level || 1) + 1;
+                p.maxExp = Math.round((p.maxExp || 100) * 1.35);
+                soundManager.playLevelUp();
+                if (onLevelUpRef.current) onLevelUpRef.current();
+              }
+              setPlayer(prev => ({ ...prev, exp: p.exp, level: p.level, maxExp: p.maxExp }));
+            } else if (itemType === 'coin_bag' || itemType === 'gold_ingot') {
+              const goldGain = 50 * dog.level;
+              p.gold += goldGain;
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 32,
+                text: `🐕 K-9 THA VỀ: +${goldGain} VÀNG!`,
+                color: '#facc15',
+                alpha: 1,
+                life: 45,
+                isCrit: true
+              });
+              setPlayer(prev => ({ ...prev, gold: p.gold }));
+            } else if (itemType === 'ammo' || itemType === 'airdrop_crate') {
+              (Object.values(state.weapons) as Weapon[]).forEach(w => {
+                if (w.reserveAmmo !== -1) w.reserveAmmo = Math.min(w.magSize * 6, w.reserveAmmo + w.magSize * 2);
+              });
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 32,
+                text: '🐕 K-9 THA VỀ HỘP ĐẠN!',
+                color: '#22c55e',
+                alpha: 1,
+                life: 45,
+                isCrit: true
+              });
+              setWeapons({ ...state.weapons });
+            } else {
+              p.hp = Math.min(p.maxHp, p.hp + 30);
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: p.x,
+                y: p.y - 32,
+                text: '🐕 K-9 THA VỀ TÚI CỨU THƯƠNG!',
+                color: '#ef4444',
+                alpha: 1,
+                life: 45,
+                isCrit: true
+              });
+              setPlayer(prev => ({ ...prev, hp: p.hp }));
+            }
+
+            // Burst spark particles
+            for (let s = 0; s < 10; s++) {
+              state.particles.push({
+                x: p.x,
+                y: p.y,
+                vx: (Math.random() - 0.5) * 5,
+                vy: (Math.random() - 0.5) * 5,
+                radius: 3,
+                color: '#38bdf8',
+                alpha: 1,
+                life: 0,
+                maxLife: 18,
+                decay: 0.05,
+                shape: 'spark'
+              });
+            }
+          } else {
+            dog.x += (toPlayerX / distToPlayer) * dogSpeed * 1.1;
+            dog.y += (toPlayerY / distToPlayer) * dogSpeed * 1.1;
+          }
+        } 
+        // C. State 2: Fetching nearby drop item
+        else {
+          const fetchRadius = dog.level === 1 ? 320 : dog.level === 2 ? 460 : 650;
+          let closestDrop: DropItem | null = null;
+          let closestDropDist = fetchRadius;
+
+          state.drops.forEach(d => {
+            const dist = Math.hypot(d.x - dog.x, d.y - dog.y);
+            if (dist < closestDropDist) {
+              closestDropDist = dist;
+              closestDrop = d;
+            }
+          });
+
+          // If drop found and no zombie biting dog right now
+          const threatNearby = state.zombies.some(z => z.hp > 0 && Math.hypot(z.x - dog.x, z.y - dog.y) < 80);
+
+          if (closestDrop && !threatNearby && Math.random() < 0.85) {
+            dog.state = 'fetch';
+            const dx = (closestDrop as DropItem).x - dog.x;
+            const dy = (closestDrop as DropItem).y - dog.y;
+            dog.angle = Math.atan2(dy, dx);
+            dog.runCycle += dt * 0.016;
+
+            if (closestDropDist < 26) {
+              dog.hasCarriedItem = true;
+              dog.carriedDropType = (closestDrop as DropItem).type;
+              soundManager.playDogBite();
+              const dropIndex = state.drops.indexOf(closestDrop as DropItem);
+              if (dropIndex !== -1) {
+                state.drops.splice(dropIndex, 1);
+              }
+              state.floatingTexts.push({
+                id: Math.random().toString(),
+                x: dog.x,
+                y: dog.y - 20,
+                text: '🐕 ĐÃ NGẬM ĐỒ!',
+                color: '#38bdf8',
+                alpha: 1,
+                life: 25,
+                isCrit: false
+              });
+            } else {
+              dog.x += (dx / closestDropDist) * dogSpeed;
+              dog.y += (dy / closestDropDist) * dogSpeed;
+            }
+          } 
+          // D. State 3: Attack nearby zombie
+          else {
+            const attackSearchRadius = dog.level === 1 ? 260 : dog.level === 2 ? 340 : 440;
+            let targetZombie: Zombie | null = null;
+            let targetDist = attackSearchRadius;
+
+            state.zombies.forEach(z => {
+              if (z.hp <= 0) return;
+              const dist = Math.hypot(z.x - dog.x, z.y - dog.y);
+              if (dist < targetDist) {
+                targetDist = dist;
+                targetZombie = z;
+              }
+            });
+
+            if (targetZombie && targetDist < attackSearchRadius) {
+              dog.state = 'attack';
+              const toTargetX = (targetZombie as Zombie).x - dog.x;
+              const toTargetY = (targetZombie as Zombie).y - dog.y;
+              dog.angle = Math.atan2(toTargetY, toTargetX);
+              dog.runCycle += dt * 0.02;
+
+              if (targetDist < 36 && dog.attackCooldown <= 0) {
+                dog.attackCooldown = dog.level >= 2 ? 650 : 850;
+                dog.biteAnimation = 1.0;
+                soundManager.playDogBite();
+
+                const biteDmg = dog.level === 1 ? 95 : dog.level === 2 ? 165 : 245;
+                (targetZombie as Zombie).hp -= biteDmg;
+                (targetZombie as Zombie).hitFlashTimer = 100;
+
+                (targetZombie as Zombie).x += Math.cos(dog.angle) * 20;
+                (targetZombie as Zombie).y += Math.sin(dog.angle) * 20;
+
+                state.floatingTexts.push({
+                  id: Math.random().toString(),
+                  x: (targetZombie as Zombie).x,
+                  y: (targetZombie as Zombie).y - 22,
+                  text: `🐕 -${biteDmg} CẮN XÉ!`,
+                  color: '#f97316',
+                  alpha: 1,
+                  life: 30,
+                  isCrit: true
+                });
+
+                // Blood & Bite sparks
+                for (let b = 0; b < 5; b++) {
+                  state.particles.push({
+                    x: (targetZombie as Zombie).x,
+                    y: (targetZombie as Zombie).y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: 3,
+                    color: '#dc2626',
+                    alpha: 0.9,
+                    life: 0,
+                    maxLife: 20,
+                    decay: 0.05,
+                    shape: 'spark'
+                  });
+                }
+
+                // Level 2 Cleave: damage 1 additional nearby zombie
+                if (dog.level >= 2) {
+                  const extraZombie = state.zombies.find(other => other.id !== (targetZombie as Zombie).id && other.hp > 0 && Math.hypot(other.x - dog.x, other.y - dog.y) < 90);
+                  if (extraZombie) {
+                    extraZombie.hp -= Math.round(biteDmg * 0.65);
+                    extraZombie.hitFlashTimer = 60;
+                  }
+                }
+
+                // Level 3 Chain Lightning from bite!
+                if (dog.level >= 3) {
+                  const lightningTargets = state.zombies
+                    .filter(other => other.id !== (targetZombie as Zombie).id && other.hp > 0 && Math.hypot(other.x - dog.x, other.y - dog.y) < 220)
+                    .slice(0, 3);
+                  
+                  if (lightningTargets.length > 0) {
+                    soundManager.playThunder();
+                    lightningTargets.forEach(lt => {
+                      state.laserBeams.push({
+                        x1: dog.x,
+                        y1: dog.y,
+                        x2: lt.x,
+                        y2: lt.y,
+                        color: '#06b6d4',
+                        alpha: 1.2
+                      });
+                      lt.hp -= 120;
+                      lt.hitFlashTimer = 80;
+                    });
+                  }
+                }
+
+                // If killed by K-9
+                if ((targetZombie as Zombie).hp <= 0) {
+                  p.kills += 1;
+                  p.score += (targetZombie as Zombie).scoreValue || 50;
+                  state.floatingTexts.push({
+                    id: Math.random().toString(),
+                    x: (targetZombie as Zombie).x,
+                    y: (targetZombie as Zombie).y - 35,
+                    text: '🐕 K-9 TIÊU DIỆT!',
+                    color: '#22c55e',
+                    alpha: 1,
+                    life: 35,
+                    isCrit: true
+                  });
+                }
+              } else {
+                dog.x += (toTargetX / targetDist) * dogSpeed * 1.15;
+                dog.y += (toTargetY / targetDist) * dogSpeed * 1.15;
+              }
+            } 
+            // E. State 4: Follow Player at flank
+            else {
+              dog.state = 'follow';
+              const flankAngle = p.angle + Math.PI * 0.65;
+              const flankDist = 48;
+              const targetX = p.x + Math.cos(flankAngle) * flankDist;
+              const targetY = p.y + Math.sin(flankAngle) * flankDist;
+
+              const dx = targetX - dog.x;
+              const dy = targetY - dog.y;
+              const distToFlank = Math.hypot(dx, dy);
+
+              if (distToFlank > 320) {
+                dog.x = targetX;
+                dog.y = targetY;
+              } else if (distToFlank > 15) {
+                dog.angle = Math.atan2(dy, dx);
+                dog.runCycle += dt * 0.014;
+                const spd = Math.min(dogSpeed, distToFlank * 0.15);
+                dog.x += (dx / distToFlank) * spd;
+                dog.y += (dy / distToFlank) * spd;
+              } else {
+                dog.angle = p.angle;
+              }
+            }
+          }
+        }
+      } else {
+        state.warDog = null;
+      }
+
       // 6. UPDATE BULLETS
       for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
@@ -4715,6 +5101,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           });
         }
       });
+
+      // Render K-9 War Dog Companion
+      if (state.warDog) {
+        renderWarDog({
+          ctx,
+          dog: state.warDog,
+          time: currentTime
+        });
+      }
 
       // Render Particles
       for (let i = state.particles.length - 1; i >= 0; i--) {

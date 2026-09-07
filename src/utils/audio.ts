@@ -818,6 +818,61 @@ class SoundEngine {
     this.musicOscillators.push(bassOsc);
   }
 
+  public playDogBark() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      // Dog bark formant frequency sweep
+      osc.frequency.setValueAtTime(420, t);
+      osc.frequency.exponentialRampToValueAtTime(160, t + 0.12);
+
+      gain.gain.setValueAtTime(this.sfxVolume * 0.45, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.14);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.15);
+    } catch {
+      // ignore
+    }
+  }
+
+  public playDogBite() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.09);
+
+      gain.gain.setValueAtTime(this.sfxVolume * 0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.1);
+    } catch {
+      // ignore
+    }
+  }
+
   public stopMusic() {
     this.musicOscillators.forEach(osc => {
       try {

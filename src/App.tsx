@@ -318,12 +318,12 @@ export const App: React.FC = () => {
 
   const handleLevelUp = useCallback(() => {
     const currentSkills = player.roguelikeSkills || {};
-    const drafted = getRandomSkillDraft(currentSkills);
+    const drafted = getRandomSkillDraft(currentSkills, player.level || 1);
     if (drafted.length > 0) {
       setDraftSkills(drafted);
       setIsSkillDraftOpen(true);
     }
-  }, [player.roguelikeSkills]);
+  }, [player.roguelikeSkills, player.level]);
 
   const handleSelectSkill = useCallback((skill: RoguelikeSkill) => {
     setIsSkillDraftOpen(false);

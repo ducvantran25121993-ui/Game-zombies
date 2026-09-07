@@ -2,7 +2,7 @@ import React from 'react';
 import { RoguelikeSkill } from '../types/game';
 import { 
   CornerUpRight, Bomb, Zap, Snowflake, HeartPulse, 
-  Flame, ChevronsUp, Activity, ShieldAlert, Sparkles, Star
+  Flame, ChevronsUp, Activity, ShieldAlert, Sparkles, Star, Dog, PawPrint
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 
@@ -22,7 +22,9 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Flame: <Flame className="w-8 h-8" />,
   ChevronsUp: <ChevronsUp className="w-8 h-8" />,
   Activity: <Activity className="w-8 h-8" />,
-  ShieldAlert: <ShieldAlert className="w-8 h-8" />
+  ShieldAlert: <ShieldAlert className="w-8 h-8" />,
+  Dog: <Dog className="w-8 h-8 text-amber-400" />,
+  PawPrint: <PawPrint className="w-8 h-8 text-amber-400" />
 };
 
 export const SkillDraftModal: React.FC<SkillDraftModalProps> = ({
@@ -116,7 +118,15 @@ export const SkillDraftModal: React.FC<SkillDraftModalProps> = ({
 
                 {/* Skill Description */}
                 <p className="text-xs text-zinc-300 text-center leading-relaxed mb-4 min-h-[48px]">
-                  {skill.descVi}
+                  {skill.id === 'k9_war_dog' ? (
+                    currentLvl === 0 
+                      ? '🐕 Triệu hồi Chiến Khuyển K-9: Tự động lao vào cắn xé quái (90 ST), tha ngọc EXP/Đạn về cho chủ nhân!'
+                      : currentLvl === 1
+                      ? '🛡️ K-9 Bọc Thép Hạng Nặng: +50% tốc độ chạy, cắn lan 2 quái (160 ST), sủa gầm làm chậm quái xung quanh 35%!'
+                      : '⚡ Cyber-Hound Tận Thế: Chó máy công nghệ cao, cắn giật tia sét chuỗi (240 ST), gom ngọc EXP tầm xa siêu tốc!'
+                  ) : (
+                    skill.descVi
+                  )}
                 </p>
 
                 {/* Action button look */}
