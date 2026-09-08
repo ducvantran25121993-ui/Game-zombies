@@ -4,15 +4,33 @@ interface RenderObstaclesParams {
   ctx: CanvasRenderingContext2D;
   obstacles: Obstacle[];
   time: number;
+  camera?: { x: number; y: number };
+  viewport?: { width: number; height: number; zoom: number };
 }
 
-export const renderObstacles = ({ ctx, obstacles, time }: RenderObstaclesParams) => {
+export const renderObstacles = ({ ctx, obstacles, time, camera, viewport }: RenderObstaclesParams) => {
+  const hasViewport = Boolean(camera && viewport);
+  const margin = hasViewport ? 120 / (viewport!.zoom || 1) : 0;
+  const halfVw = hasViewport ? (viewport!.width / 2) / (viewport!.zoom || 1) + margin : 0;
+  const halfVh = hasViewport ? (viewport!.height / 2) / (viewport!.zoom || 1) + margin : 0;
+
   obstacles.forEach((obs) => {
     if ((obs.hp || 1) <= 0) return;
 
-    ctx.save();
     const cx = obs.x + obs.width / 2;
     const cy = obs.y + obs.height / 2;
+
+    // Viewport Frustum Culling
+    if (hasViewport) {
+      if (
+        Math.abs(cx - camera!.x) > halfVw + obs.width / 2 ||
+        Math.abs(cy - camera!.y) > halfVh + obs.height / 2
+      ) {
+        return; // Skip drawing off-screen obstacle
+      }
+    }
+
+    ctx.save();
     const rot = obs.angle || 0;
 
     // 1. DIRECTIONAL GROUND DROP SHADOW (2.5D Isometric Slanted Shadow to South-East)

@@ -94,9 +94,9 @@ export class ThreeRenderer {
       alpha: false
     });
     this.renderer.setSize(this.width, this.height, false);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
 
@@ -114,9 +114,9 @@ export class ThreeRenderer {
     const renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(renderPass);
 
-    // Unreal Bloom: Soft glow for muzzle flashes, glowing red eyes, acid, tracers
+    // Unreal Bloom: Downsampled to half resolution for fast execution
     this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(this.width, this.height),
+      new THREE.Vector2(Math.floor(this.width * 0.5), Math.floor(this.height * 0.5)),
       0.65, // strength
       0.35, // radius
       0.82  // threshold (only bright highlights bloom)
@@ -135,12 +135,12 @@ export class ThreeRenderer {
     this.ambientLight = new THREE.AmbientLight(0x1e293b, 0.42);
     this.scene.add(this.ambientLight);
 
-    // High-angle Moonlight with Dramatic Soft Shadows
+    // High-angle Moonlight with Optimized Shadow Maps
     this.moonLight = new THREE.DirectionalLight(0x94a3b8, 0.95);
     this.moonLight.position.set(380, 850, 260);
     this.moonLight.castShadow = true;
-    this.moonLight.shadow.mapSize.width = 2048;
-    this.moonLight.shadow.mapSize.height = 2048;
+    this.moonLight.shadow.mapSize.width = 1024;
+    this.moonLight.shadow.mapSize.height = 1024;
     this.moonLight.shadow.camera.near = 50;
     this.moonLight.shadow.camera.far = 1800;
     const d = 550;
@@ -156,10 +156,7 @@ export class ThreeRenderer {
     this.scene.add(this.flashlightTarget);
 
     this.flashlight = new THREE.SpotLight(0xffedd5, 4.5, 450, Math.PI * 0.22, 0.45, 1.3);
-    this.flashlight.castShadow = true;
-    this.flashlight.shadow.mapSize.width = 1024;
-    this.flashlight.shadow.mapSize.height = 1024;
-    this.flashlight.shadow.bias = -0.0003;
+    this.flashlight.castShadow = false; // Moonlight already handles crisp ground shadows; disabling spotlight shadow map cuts shadow render passes in half
     this.flashlight.target = this.flashlightTarget;
     this.scene.add(this.flashlight);
 
@@ -341,7 +338,7 @@ export class ThreeRenderer {
     this.height = height;
     this.renderer.setSize(width, height, false);
     this.composer.setSize(width, height);
-    this.bloomPass.setSize(width, height);
+    this.bloomPass.setSize(Math.floor(width * 0.5), Math.floor(height * 0.5));
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }

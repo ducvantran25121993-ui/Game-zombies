@@ -1006,8 +1006,6 @@ export function renderBossSpecialEffects(
     } else if (hz.type === 'lava_pool') {
       // Molten orange/red magma
       ctx.fillStyle = 'rgba(234, 88, 12, 0.55)';
-      ctx.shadowColor = '#f97316';
-      ctx.shadowBlur = 12;
       ctx.beginPath();
       ctx.arc(hz.x, hz.y, hz.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -1026,8 +1024,6 @@ export function renderBossSpecialEffects(
       const progress = hz.timer / hz.maxTimer;
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = '#dc2626';
-      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.arc(hz.x, hz.y, hz.radius, 0, Math.PI * 2);
       ctx.stroke();
@@ -1105,8 +1101,6 @@ export function renderBossSpecialEffects(
       // Blazing red death ray beam
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = laser.width;
-      ctx.shadowColor = '#dc2626';
-      ctx.shadowBlur = 24;
       ctx.beginPath();
       ctx.moveTo(laser.x, laser.y);
       ctx.lineTo(
@@ -1128,8 +1122,6 @@ export function renderBossSpecialEffects(
     ctx.save();
     ctx.strokeStyle = hook.color;
     ctx.lineWidth = 4.5;
-    ctx.shadowColor = hook.color;
-    ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.moveTo(hook.startX, hook.startY);
     ctx.lineTo(hook.currentX, hook.currentY);

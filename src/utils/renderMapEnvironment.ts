@@ -67,15 +67,12 @@ export const renderMapEnvironment = ({
     const blinkAviation = Math.floor(time * 0.003) % 2 === 0;
     if (blinkAviation) {
       ctx.fillStyle = '#ef4444';
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 12;
       for (let bx = -borderPad + 60; bx < mW + borderPad; bx += 400) {
         ctx.beginPath();
         ctx.arc(bx, -380, 4, 0, Math.PI * 2);
         ctx.arc(bx, mH + 380, 4, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.shadowBlur = 0;
     }
     ctx.restore();
 
@@ -263,8 +260,6 @@ export const renderMapEnvironment = ({
     // Helipad Corner Beacon Lights (Individual paths to prevent cross-fill hourglass glitch)
     const beaconAlpha = 0.7 + Math.sin(time * 0.005) * 0.3;
     ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 14;
     const beacons = [
       { x: cx - heliRadius + 24, y: cy - heliRadius + 24 },
       { x: cx + heliRadius - 24, y: cy - heliRadius + 24 },
@@ -272,6 +267,14 @@ export const renderMapEnvironment = ({
       { x: cx + heliRadius - 24, y: cy + heliRadius - 24 }
     ];
     beacons.forEach(b => {
+      // Outer faint halo
+      ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main beacon
+      ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
       ctx.beginPath();
       ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
       ctx.fill();
@@ -280,9 +283,7 @@ export const renderMapEnvironment = ({
       ctx.beginPath();
       ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = `rgba(239, 68, 68, ${beaconAlpha})`;
     });
-    ctx.shadowBlur = 0;
 
   } else if (mapId === 'street') {
     // Dark Asphalt Urban Road
@@ -500,12 +501,9 @@ export const renderMapEnvironment = ({
       const wx = (w * 220 + Math.sin(time * 0.002 + w) * 80 + mW) % mW;
       const wy = (w * 180 + Math.cos(time * 0.003 + w) * 60 + mH) % mH;
       ctx.fillStyle = 'rgba(192, 132, 252, 0.6)';
-      ctx.shadowColor = '#c084fc';
-      ctx.shadowBlur = 16;
       ctx.beginPath();
       ctx.arc(wx, wy, 4 + Math.sin(time * 0.005 + w) * 2, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
   } else if (mapId === 'desert_outpost') {
@@ -659,8 +657,6 @@ export const renderMapEnvironment = ({
     const pulseHeat = 0.7 + Math.sin(time * 0.004) * 0.3;
     ctx.save();
     ctx.strokeStyle = `rgba(239, 68, 68, ${pulseHeat})`;
-    ctx.shadowColor = '#ea580c';
-    ctx.shadowBlur = 24;
     ctx.lineWidth = 14;
     
     // Cross Lava Streams
@@ -673,7 +669,6 @@ export const renderMapEnvironment = ({
     ctx.moveTo(60, mH * 0.65);
     ctx.bezierCurveTo(mW * 0.4, mH * 0.6, mW * 0.6, mH * 0.75, mW - 60, mH * 0.65);
     ctx.stroke();
-    ctx.shadowBlur = 0;
     ctx.restore();
 
     // Central Fiery Magma Pool
@@ -696,12 +691,9 @@ export const renderMapEnvironment = ({
       const ex = (eb * 170 + Math.sin(time * 0.003 + eb) * 90 + mW) % mW;
       const ey = (mH - (time * 0.08 + eb * 130) % mH);
       ctx.fillStyle = eb % 2 === 0 ? '#facc15' : '#ef4444';
-      ctx.shadowColor = '#f97316';
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(ex, ey, 2.5 + Math.sin(eb + time * 0.005) * 1.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
   }
 
@@ -735,8 +727,6 @@ export const renderMapEnvironment = ({
   else if (mapId === 'bunker') beaconColor = '#10b981';
 
   ctx.fillStyle = beaconBlink ? beaconColor : '#334155';
-  ctx.shadowColor = beaconBlink ? beaconColor : 'transparent';
-  ctx.shadowBlur = beaconBlink ? 14 : 0;
 
   for (let px = 200; px < mW; px += 350) {
     ctx.beginPath();
@@ -750,7 +740,6 @@ export const renderMapEnvironment = ({
     ctx.arc(mW, py, 6, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.shadowBlur = 0;
 
   // Hazard warning border line
   ctx.save();

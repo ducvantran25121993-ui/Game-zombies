@@ -477,11 +477,15 @@ function renderAirdropCrate(ctx: CanvasRenderingContext2D, item: DropItem, time:
   // Strobe Danger Beacon Light
   const strobe = Math.floor(time / 200) % 2 === 0;
   ctx.save();
+  if (strobe) {
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+    ctx.beginPath();
+    ctx.arc(0, -h / 2 - 4, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.beginPath();
   ctx.arc(0, -h / 2 - 4, 4, 0, Math.PI * 2);
   ctx.fillStyle = strobe ? '#ef4444' : '#7f1d1d';
-  ctx.shadowColor = '#ef4444';
-  ctx.shadowBlur = strobe ? 16 : 4;
   ctx.fill();
   ctx.restore();
 

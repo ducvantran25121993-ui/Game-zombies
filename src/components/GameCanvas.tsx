@@ -1712,8 +1712,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const p = state.player;
       const wep = state.currentWeapon;
 
-      // Realtime periodic synchronization of Gold, Score, HP, Armor, Grenades, Ultimate back to React App State
-      if (currentTime - lastStateSync > 60) {
+      // Realtime periodic synchronization of Gold, Score, HP, Armor, Grenades, Ultimate back to React App State (optimized interval)
+      if (currentTime - lastStateSync > 110) {
         lastStateSync = currentTime;
         setPlayer(prev => {
           if (
@@ -4808,6 +4808,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (state.screenShake < 0.1) state.screenShake = 0;
       }
 
+      // High-performance entity pruning & caps
+      if (state.particles.length > 60) {
+        state.particles.splice(0, state.particles.length - 60);
+      }
+      if (state.decals.length > 25) {
+        state.decals.splice(0, state.decals.length - 25);
+      }
+      if (state.floatingTexts.length > 20) {
+        state.floatingTexts.splice(0, state.floatingTexts.length - 20);
+      }
+      if (state.drops.length > 35) {
+        state.drops.splice(0, state.drops.length - 35);
+      }
+      for (let di = state.decals.length - 1; di >= 0; di--) {
+        state.decals[di].alpha -= 0.0006 * dt;
+        if (state.decals[di].alpha <= 0.04) {
+          state.decals.splice(di, 1);
+        }
+      }
+
       // ==========================================
       // 11. RENDERING FRAME (3D WEBGL OR 2D CANVAS)
       // ==========================================
@@ -4872,8 +4892,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             ctx.save();
             ctx.strokeStyle = isTargetedBoss ? '#ef4444' : '#10b981';
             ctx.lineWidth = 2;
-            ctx.shadowColor = isTargetedBoss ? '#ef4444' : '#10b981';
-            ctx.shadowBlur = 8;
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, isTargetedBoss ? 28 : 20, 0, Math.PI * 2);
             ctx.stroke();
@@ -4896,8 +4914,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             ctx.fillStyle = ft.color;
             ctx.font = ft.isCrit ? '900 13px system-ui, sans-serif' : 'bold 11px system-ui, sans-serif';
             ctx.textAlign = 'center';
-            ctx.shadowColor = ft.isCrit ? ft.color : '#000000';
-            ctx.shadowBlur = ft.isCrit ? 8 : 4;
             ctx.fillText(ft.text, pos.x, pos.y);
             ctx.restore();
           }
@@ -4929,16 +4945,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           time: currentTime
         });
 
-      // Render Decals (Blood / Blast marks)
+      // Render Decals (Blood / Blast marks) - Fast batch rendering
       state.decals.forEach(decal => {
-        ctx.save();
         ctx.globalAlpha = decal.alpha;
         ctx.fillStyle = decal.color;
         ctx.beginPath();
         ctx.arc(decal.x, decal.y, decal.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
       });
+      ctx.globalAlpha = 1;
 
       // Render Dynamic Environmental Hazard Zones (Toxic Slime Pools & High-Voltage Electric Leaks)
       state.environmentalZones.forEach(zone => {
@@ -5000,18 +5015,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#7dd3fc';
-          ctx.shadowColor = '#38bdf8';
-          ctx.shadowBlur = 8;
           ctx.fillText('⚡', 0, 0);
         }
         ctx.restore();
       });
 
-      // Render Detailed Environmental Obstacles (Vehicles, Trees, Streetlights, HVAC, Servers, Barrels)
+      // Render Detailed Environmental Obstacles with camera viewport culling
       renderObstacles({
         ctx,
         obstacles: state.obstacles,
-        time: currentTime
+        time: currentTime,
+        camera: state.camera,
+        viewport: { width: canvas.width, height: canvas.height, zoom }
       });
 
       // Render Sentry Turrets
@@ -5048,8 +5063,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         currentTime
       );
 
-      // Render Horrifying Grotesque Zombies (Decaying flesh, gory wounds, glowing demonic eyes, claw reach)
+      // Render Horrifying Grotesque Zombies with Frustum Culling
+      const zCullMargin = 120 / zoom;
+      const zHalfW = (canvas.width / 2) / zoom + zCullMargin;
+      const zHalfH = (canvas.height / 2) / zoom + zCullMargin;
+      const camX = state.camera.x;
+      const camY = state.camera.y;
+
       state.zombies.forEach(z => {
+        // Frustum cull off-screen regular minions
+        if (!z.isBoss) {
+          if (Math.abs(z.x - camX) > zHalfW || Math.abs(z.y - camY) > zHalfH) {
+            return;
+          }
+        }
+
         const isFrozen = state.activeBuffs.freezeEnemiesTimer > 0;
         renderZombie({
           ctx,
@@ -5069,7 +5097,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.fillRect(z.x - barW / 2, z.y - z.radius - 11, barW * (z.hp / z.maxHp), 4);
         }
 
-        // Target Lock & Auto-Aim Indicators
+        // Target Lock & Auto-Aim Indicators (Fast vector indicators without shadowBlur)
         const isTargetedBoss = Boolean(z.isBoss && state.targetedBossId === z.id);
         const isAutoAimTarget = Boolean(state.autoAimTargetId === z.id && autoAimEnabledRef.current);
 
@@ -5077,12 +5105,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.save();
           const isBossLock = isTargetedBoss;
           const reticleColor = isBossLock ? '#ef4444' : z.isBoss ? '#f59e0b' : '#10b981';
-          const shadowColor = isBossLock ? '#f87171' : z.isBoss ? '#fbbf24' : '#34d399';
           
           ctx.strokeStyle = reticleColor;
           ctx.lineWidth = isBossLock ? 3 : 2;
-          ctx.shadowColor = shadowColor;
-          ctx.shadowBlur = isBossLock ? 16 : 10;
           const rot = (currentTime / (isBossLock ? 180 : 300));
           const r = z.radius + (isBossLock ? 16 : 10);
 
@@ -5120,8 +5145,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.font = 'bold 9px monospace';
           ctx.textAlign = 'center';
           ctx.fillStyle = '#fbbf24';
-          ctx.shadowColor = '#000000';
-          ctx.shadowBlur = 4;
           const bounce = Math.sin(currentTime / 200) * 3;
           ctx.fillText('🎯 [Chạm/Click để Khóa]', z.x, z.y - z.radius - 18 + bounce);
           ctx.restore();
@@ -5134,8 +5157,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.globalAlpha = Math.max(0, beam.alpha);
         ctx.strokeStyle = beam.color;
         ctx.lineWidth = 3;
-        ctx.shadowColor = beam.color;
-        ctx.shadowBlur = 12;
         ctx.beginPath();
         ctx.moveTo(beam.x1, beam.y1);
         ctx.lineTo(beam.x2, beam.y2);
@@ -5150,12 +5171,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.restore();
       });
 
-      // Render Bullets
+      // Render Bullets - High performance fast batch rendering
       state.bullets.forEach(b => {
-        ctx.save();
+        // Subtle outer glow halo
+        ctx.fillStyle = b.isEnemyBullet ? 'rgba(239, 68, 68, 0.35)' : 'rgba(251, 191, 36, 0.28)';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius + (b.isEnemyBullet ? 2.5 : 1.5), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core bullet
         ctx.fillStyle = b.color;
-        ctx.shadowColor = b.color;
-        ctx.shadowBlur = b.isEnemyBullet ? 14 : 8;
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
         ctx.fill();
@@ -5166,7 +5191,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.arc(b.x, b.y, b.radius * 0.45, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.restore();
       });
 
       // Render Ultra-Realistic Tactical Warrior (High-tech combat armor, NVG visor, custom weapons & laser sight)
@@ -5469,13 +5493,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.textAlign = 'center';
         ctx.font = '900 13px system-ui, -apple-system, sans-serif';
         ctx.fillStyle = state.waveHazard.color;
-        ctx.shadowColor = state.waveHazard.color;
-        ctx.shadowBlur = 8;
         ctx.fillText(`⚠️ ${state.waveHazard.nameVi}`, canvas.width / 2, bannerY);
 
         ctx.font = 'bold 9.5px system-ui, -apple-system, sans-serif';
         ctx.fillStyle = '#f3f4f6';
-        ctx.shadowBlur = 0;
         ctx.fillText(state.waveHazard.descVi, canvas.width / 2, bannerY + 16);
         ctx.restore();
       }
@@ -5494,13 +5515,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
           ctx.font = '900 22px system-ui, -apple-system, sans-serif';
           ctx.fillStyle = '#facc15';
-          ctx.shadowColor = '#eab308';
-          ctx.shadowBlur = 12;
           ctx.fillText(state.bossDefeatedBanner.text, canvas.width / 2, bannerY);
 
           ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
           ctx.fillStyle = '#fef08a';
-          ctx.shadowBlur = 4;
           ctx.fillText(state.bossDefeatedBanner.subText, canvas.width / 2, bannerY + 22);
           ctx.restore();
         }

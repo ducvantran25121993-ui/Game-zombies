@@ -62,8 +62,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     if (z.bossSpecialState === 'charging') {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 15;
       for (let s = 0; s < 5; s++) {
         const streakY = (s - 2) * (r * 0.35);
         ctx.beginPath();
@@ -76,11 +74,9 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     // SHIELD BUBBLE (Cyber Mecha Barrier)
     if (z.shieldTimer && z.shieldTimer > 0) {
       const shieldPulse = Math.sin(time * 0.01) * 3;
-      ctx.strokeStyle = '#06b6d4';
+      ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 18;
-      ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
       ctx.beginPath();
       ctx.arc(0, 0, r + 14 + shieldPulse, 0, Math.PI * 2);
       ctx.fill();
@@ -92,8 +88,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
       const enragePulse = Math.sin(time * 0.014) * 6;
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 4;
-      ctx.shadowColor = '#f59e0b';
-      ctx.shadowBlur = 25;
       ctx.beginPath();
       ctx.arc(0, 0, r + 20 + enragePulse, 0, Math.PI * 2);
       ctx.stroke();
@@ -407,13 +401,11 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
   ctx.arc(eyeOffsetX, eyeSpreadY, 4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Glowing Irises & Eye Flare
+  // Glowing Irises & Eye Flare (Lightweight dual circle flare)
   ctx.fillStyle = eyeGlowColor;
-  ctx.shadowColor = eyeGlowColor;
-  ctx.shadowBlur = 8;
   ctx.beginPath();
-  ctx.arc(eyeOffsetX + 1, -eyeSpreadY, 2.5, 0, Math.PI * 2);
-  ctx.arc(eyeOffsetX + 1, eyeSpreadY, 2.5, 0, Math.PI * 2);
+  ctx.arc(eyeOffsetX + 1, -eyeSpreadY, 3, 0, Math.PI * 2);
+  ctx.arc(eyeOffsetX + 1, eyeSpreadY, 3, 0, Math.PI * 2);
   ctx.fill();
 
   // Pupil Slits
@@ -422,7 +414,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
   ctx.arc(eyeOffsetX + 1.5, -eyeSpreadY, 1, 0, Math.PI * 2);
   ctx.arc(eyeOffsetX + 1.5, eyeSpreadY, 1, 0, Math.PI * 2);
   ctx.fill();
-  ctx.shadowBlur = 0;
 
   // Extra Boss Eyes (Horrific Eldritch Mutation)
   if (isBoss) {
@@ -440,8 +431,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
     ctx.strokeStyle = '#bae6fd';
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
     ctx.fill();
@@ -471,8 +460,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
       // Boss damage effect: Outer bright crimson/white rim aura, preserving the boss's monstrous textures
       ctx.strokeStyle = `rgba(255, 255, 255, ${0.85 * flashAlpha})`;
       ctx.lineWidth = 3.5;
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.arc(0, 0, r * 1.06, 0, Math.PI * 2);
       ctx.stroke();
@@ -483,8 +470,6 @@ export const renderZombie = ({ ctx, zombie: z, time, isFrozen }: RenderZombiePar
     } else {
       // Regular zombie quick translucent flash
       ctx.fillStyle = `rgba(255, 255, 255, ${0.28 * flashAlpha})`;
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(0, 0, r * 1.05, 0, Math.PI * 2);
       ctx.fill();
